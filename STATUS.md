@@ -3,9 +3,11 @@
 > Living tracker for the AUTOSAR / non-AUTOSAR AI skills plugin.
 > Technical design is in [README.md](README.md). Update this file as work lands.
 
-- **Branch:** `MQBST2-AI-Skills-Development` (off `release/X541`, local only — not pushed)
-- **Last updated:** 2026-08-13
-- **Overall phase:** Phase A — three skills dry-run once each; defect fixes applied; re-validation pending
+- **Repo:** `Signata-GmbH/signata-swe-claude-skills` (canonical home — edit here, not the CEA staging branch)
+- **Release:** **v0.0.1 (first beta)** — tag `signata-swe-claude-skills--v0.0.1`
+- **Last updated:** 2026-08-17
+- **Overall phase:** Beta — rolling out org-wide via managed settings for real-world testing
+- **Origin note:** developed on CEA staging branch `MQBST2-AI-Skills-Development` (now frozen); migrated here 2026-08-17
 
 ---
 
