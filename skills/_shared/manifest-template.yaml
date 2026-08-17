@@ -1,0 +1,102 @@
+# =====================================================================
+# MODULE MANIFEST  —  module: <MODULE_NAME>
+# ---------------------------------------------------------------------
+# ONE per module, shared by the three AI skills. INHERITS the per-repo
+# project config (20_AI/ai_project.yaml) — project facts (compiler, target,
+# layout, flavor, variants, docs) live there, NOT here. This file holds only
+# MODULE-specific inputs + the skill-owned run ledgers.
+#
+# Flavor: fields tagged  # [A] autosar-only  or  # [N] nonautosar-only are
+# emitted by the skill only when they match project.type; untagged fields
+# apply to both. The skill scaffolds the correct subset on first run.
+#
+# `last_run:` blocks are SKILL-OWNED — do not hand-edit. They drive in-place
+# re-runs and form the audit trail (which skill version + which source
+# revision + which requirement revision produced which output).
+#
+# LOCATION (derived by the skills):  20_AI/manifests/<MODULE_NAME>.yaml
+# =====================================================================
+
+schema_version: 1
+inherits: 20_AI/ai_project.yaml     # project-level config; do not duplicate its fields here
+
+module:
+  name:        <MODULE_NAME>        # <-- fill   e.g. FUSA_PosDet | SAPF_Mode
+  upper:       <MODULE_UPPER>       # derived    e.g. FUSA_POSDET | SAPF_MODE
+  asil:        inherit              # inherit project default, or override e.g. ASIL-B(D)
+  cycle_times: <CYCLE_TIMES>        # <-- fill   e.g. "10 ms cyclic + Init (once)"
+
+# PER-MODULE documents (extend/override the project-wide docs in ai_project.yaml).
+docs:
+  sdd:              <path>          # <-- fill   MANDATORY (all skills) — per-module Software Detailed Design (.pdf/.xlsx)
+  architecture:     inherit        # inherit the project ADD, or a module-specific section path (.pdf/.xlsx).
+                                   #   OPTIONAL but asked explicitly; N/A only via explicit engineer decision.
+  extra:            []             # optional additional documents to consider on a run (U2)
+  run_instructions: ""             # optional free-text custom instructions for a run (U2)
+
+# ---------------------------------------------------------------------
+# CODE DEVELOPMENT   (/autosar-code-dev or /code-dev)
+# ---------------------------------------------------------------------
+code_dev:
+  # -- scope (mechanism depends on project.type / requirements.scoping) --
+  related_modules:    []            # [A] sibling modules whose reqs also apply ([] if none)
+  expected_row_count: "?"           # [A] filtered-row count (incl. related_modules); "?" learns it
+  sw_req_ids:         []            # [N] explicit SW_Req IDs — no reliable module column
+  release_filter:     N/A           # [N] alt. to sw_req_ids, e.g. 'aRequiredForRelease == "B0-Sample"'
+  # -- both flavors --
+  peer_anchors:       []            # <-- fill  style-reference modules (never modified)
+  known_deferrals:    []            # <-- optional  seed the Deferred Items table
+  open_questions:     []            # <-- optional  seed Phase-1; mirrored to 20_AI/<MODULE>_Phase1_Questions_<Skill>.xlsx
+
+  last_run:                         # SKILL-OWNED ledger
+    timestamp:        null
+    skill_version:    null
+    source_sha:       null          # git SHA the run was authored against (revision pinning)
+    requirements_sha: null          # digest of the whole filtered set (scope-drift guard)
+    requirements:     {}            # ID -> { hash, files: [file:line, ...] }
+    files_created:    []
+    deferred_items:   []
+
+# ---------------------------------------------------------------------
+# CODE REVIEW   (/autosar-code-review or /code-review)
+# ---------------------------------------------------------------------
+code_review:
+  expected_row_count:  "?"          # [A] filter is SWC name ONLY (no related_modules)
+  sw_req_ids:          []           # [N] explicit in-scope SW_Req IDs
+  complexity_threshold: 15          # <-- confirm  HIS/cyclomatic limit
+  reviewer:            "AI Reviewer"
+  domain_model:                     # [A] §0.6 AUTO fields; derived once, confirmed, then reused
+    signal_keyword_equivalents: AUTO
+    upstream_producers:         AUTO
+    domain_functional_checks:   AUTO
+    rte_io_signatures:          AUTO
+
+  last_run:                         # SKILL-OWNED ledger
+    timestamp:          null
+    skill_version:      null
+    source_sha:         null
+    row_count_seen:     null
+    findings_file:      null        # path of the saved Findings-List xlsx copy
+    findings:           []
+    checklist_coverage: {}          # walked / pass / fail / na / question counts
+
+# ---------------------------------------------------------------------
+# UNIT TEST   (/autosar-unit-test or /unit-test)
+# ---------------------------------------------------------------------
+unit_test:
+  env:                <MODULE_UPPER>   # derived  VectorCAST environment name
+  subprograms:        all              # <-- confirm  all | [subprogram, ...]
+  requirement_filter: all              # [A] all | [SW_Requ-ID, ...]
+  sw_req_ids:         []               # [N] explicit IDs, or use release_filter
+  release_filter:     N/A              # [N] e.g. 'aRequiredForRelease == "B0-Sample"'
+  expected_row_count: "?"              # count gate — confirmed by the engineer on first run (never silently learned)
+  stub_plan:          {}              # [N] siblings to STUB vs INCLUDE (e.g. stub SAPF_EH_*, motor3ph_*)
+
+  last_run:                            # SKILL-OWNED ledger (in-place req -> case map)
+    timestamp:               null
+    skill_version:           null
+    source_sha:              null      # revision pinning (harmonized up from non-AUTOSAR)
+    source_blob_hashes:      {}       # file -> git blob hash at author time
+    requirements_source_sha: null
+    requirements:            {}       # ID -> { hash, cases: [SAPF_Mode.001, ...] }
+    coverage_only_cases:     []

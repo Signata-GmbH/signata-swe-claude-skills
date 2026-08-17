@@ -1,0 +1,71 @@
+# =====================================================================
+# AI PROJECT CONFIG  —  ONE per repository.
+# ---------------------------------------------------------------------
+# Read by all three AUTOSAR/non-AUTOSAR AI skills. Holds everything that
+# varies by PROJECT (never by module). The per-module manifests in
+# 20_AI/manifests/<MODULE>.yaml INHERIT these values — so project facts
+# (compiler, target, layout, flavor) live here exactly once and are never
+# hardcoded in a skill.
+#
+# The skills SCAFFOLD and CONFIRM this file on first run in a repo:
+# derivable fields are pre-filled; non-derivable ones (compiler/target)
+# are asked once, then never again.
+#
+# LOCATION (standardised, derived by the skills):  20_AI/ai_project.yaml
+# =====================================================================
+
+schema_version: 1
+
+project:
+  name: <PROJECT_NAME>            # <-- fill   e.g. MQB-ST2   |   Small_Actuator
+  # `type` selects the skill FLAVOR for the WHOLE repo (one type per repo).
+  type: <autosar | nonautosar>   # <-- fill
+
+# Resolves the per-project toolchain (the GreenHills-vs-TASKING question):
+# each repo sets its own; nothing is assumed by the skills.
+toolchain:
+  compiler: <COMPILER>           # <-- fill   e.g. GreenHills | TASKING | mlx16-gcc
+  target:   <TARGET>             # <-- fill   e.g. "NXP S32M244 / Cortex-M7" | "Melexis MLX81332 (16-bit MLX core)"
+
+safety:
+  default_asil: <ASIL or N/A>    # <-- fill   e.g. ASIL-B  (N/A for nonautosar)
+
+# Source-tree roots. These differ between projects; skills READ them.
+# Fill the column matching project.type; set the others to N/A.
+layout:
+  app_root:  <APP_ROOT>          # <-- fill   autosar: 00_SW/02_App   | nonautosar: 00_SW/01_APPL
+  rte_inc:   <RTE_INC or N/A>    # <-- fill   autosar: 00_SW/01_BSW/Rte/inc   | nonautosar: N/A
+  vcast_env: <VCAST_ENV>         # <-- fill   autosar: 00_SW/06_Test/unit/VectorCAST_UnitTest/environment
+                                 #            nonautosar: 10_Test/Unit_Test/environment
+  # non-AUTOSAR extras (N/A on AUTOSAR projects):
+  lin_ldf:   <LDF or N/A>        # <-- fill   nonautosar: 01_Config/Small_Aktuator.ldf
+  linif:     <LINIF or N/A>      # <-- fill   nonautosar: 00_SW/02_IF/LINIF
+  stubs:     <STUBS or N/A>      # <-- fill   nonautosar: 10_Test/Unit_Test/Stubs
+
+# How in-scope requirements are SELECTED — differs by flavor.
+requirements:
+  workbook: 20_AI/SW_Requirements.xlsx   # <-- confirm
+  # autosar     -> by-module-filter : filter aFunctionModule + aVariant
+  # nonautosar  -> explicit-id-list : no reliable module column; IDs are
+  #                listed per-module in the manifest (or a release filter).
+  scoping:  <by-module-filter | explicit-id-list>   # <-- fill (matches project.type)
+  # AUTOSAR only — the two-line-cell variant trap (embedded newline, quoted):
+  variants:                              # <-- fill for autosar; [] for nonautosar
+    - "MQB"
+    - "MQB\nCEA"
+
+# PROJECT-WIDE documents only. Per-module documents (SDD, a module-specific
+# architecture section, per-run extras/instructions) live in the module manifest.
+docs:
+  root:             20_AI/               # <-- confirm  base folder inputs live in
+  signals_params:   <path>              # <-- fill  Signals & Parameters (source of truth) — MANDATORY (all skills)
+  architecture:     <path or N/A>        # <-- OPTIONAL but the skill asks explicitly (.pdf or .xlsx);
+                                        #    project Architecture Design Document. N/A only via an explicit
+                                        #    engineer decision — the skill must never self-substitute the SDD.
+                                        #    A module may override/add its own section in the manifest.
+  coding_guideline: <path or N/A>        # <-- fill  SIGNATA guideline — MANDATORY for code-review (+ non-AUTOSAR code-dev)
+  checklist:        <path or N/A>        # <-- fill  SWE.3/SWE4 review checklist workbook — MANDATORY for code-review
+
+coverage:
+  # Skill default; a module may override in its manifest if ever needed.
+  unit_test: <STATEMENT+MCDC | Statement+Branch>   # <-- fill  autosar: STATEMENT+MCDC | nonautosar: Statement+Branch

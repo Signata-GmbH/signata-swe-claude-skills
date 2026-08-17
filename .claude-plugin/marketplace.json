@@ -1,0 +1,11 @@
+{
+  "name": "signata",
+  "owner": { "name": "Signata GmbH" },
+  "plugins": [
+    {
+      "name": "signata-swe-claude-skills",
+      "source": "./",
+      "description": "AUTOSAR & non-AUTOSAR SWE.3 AI skills: code-dev, code-review, unit-test."
+    }
+  ]
+}
