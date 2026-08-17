@@ -57,13 +57,17 @@ manifests).
 
 ## B. Publish org-wide (managed settings — Teams/Enterprise)
 
+> ⚠️ **This is the channel that reaches Claude Code — CLI / VS Code / JetBrains.**
+> The separate **claude.ai → Admin → Plugins** org-sync only reaches claude.ai web +
+> Desktop; it does **not** deliver to the VS Code/JetBrains extension.
+
 Admin: **claude.ai → Admin Settings → Claude Code → Managed settings.** Paste:
 
 ```json
 {
   "extraKnownMarketplaces": {
     "signata": {
-      "source": { "source": "github", "repo": "Signata-GmbH/signata-swe-claude-skills" },
+      "source": { "source": "url", "url": "git@github.com:Signata-GmbH/signata-swe-claude-skills.git" },
       "autoUpdate": true
     }
   },
@@ -73,24 +77,23 @@ Admin: **claude.ai → Admin Settings → Claude Code → Managed settings.** Pa
 }
 ```
 
-- The marketplace source is specified **inline** — no separate registry key needed.
-- Marketplace + plugin are **auto-installed and auto-enabled** for every member on
-  next authentication; settings refresh hourly. Nobody runs an install command.
-- Changes are recorded in the org **audit log**.
+- **Use the SSH `url` source, not the `github`+`repo` shorthand.** The shorthand
+  clones over **HTTPS**, which fails with *"Repository not found"* on our internal +
+  SAML-enforced repo. SSH uses each engineer's existing key and works.
+- **Each client clones the repo itself**, so every engineer needs
+  `ssh -T git@github.com` to authenticate as their **Signata** account (SSO-authorized).
+  Multi-account users add the scoped `insteadOf` rewrite — see
+  [USING-THE-BETA.md](USING-THE-BETA.md).
+- After a **restart**, the marketplace auto-adds and the plugin auto-enables — no
+  `/plugin` command. (On the CLI surface a one-time
+  `claude plugin install signata-swe-claude-skills@signata` is occasionally still needed.)
+- Beta tracks `main` (no `version` in `plugin.json`, `autoUpdate: true`). To **pin a
+  release** instead, put `ref` **inside** `source` (sibling of `url`), e.g.
+  `"ref": "signata-swe-claude-skills--v0.0.1"`, and reintroduce `version`.
 
-**Pin a version org-wide** (optional, for reproducibility) by pinning the
-marketplace to a git ref instead of tracking the branch tip:
-
-```json
-"signata": {
-  "source": { "source": "github", "repo": "Signata-GmbH/signata-swe-claude-skills" },
-  "ref": "signata-swe-claude-skills--v0.0.1"
-}
-```
-
-(Self-service alternative, any plan: an engineer runs
-`/plugin marketplace add Signata-GmbH/signata-swe-claude-skills` then
-`/plugin install signata-swe-claude-skills@signata`.)
+(Self-service alternative, any plan, from a **terminal** — not the VS Code UI:
+`/plugin marketplace add git@github.com:Signata-GmbH/signata-swe-claude-skills.git`
+then `/plugin install signata-swe-claude-skills@signata`.)
 
 ---
 

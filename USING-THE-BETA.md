@@ -16,11 +16,26 @@ Each skill **adapts automatically** to whether the repo is AUTOSAR or non-AUTOSA
 
 ## Getting it
 
-It's pushed to everyone via Claude admin settings — you should just see
-`/code-dev`, `/code-review`, `/unit-test` in the `/` menu. If not, **reload the
-window**. (Self-install alternative: `/plugin marketplace add
-Signata-GmbH/signata-swe-claude-skills` then `/plugin install
-signata-swe-claude-skills@signata`.)
+The plugin is pushed to everyone via Claude Code **managed settings** — after a
+**full restart** of Claude Code / VS Code, the skills appear in the `/` menu
+automatically (namespaced `/signata-swe-claude-skills:unit-test`, …). No `/plugin`
+command needed.
+
+**One-time prerequisite — GitHub SSH access.** The plugin is delivered from an
+internal repo cloned over **SSH**, so your machine must authenticate to GitHub as
+your **Signata** account:
+- Check: `ssh -T git@github.com` → should say *"Hi &lt;your-signata-username&gt;!"* and
+  be SSO-authorized for `Signata-GmbH`.
+- **If it shows a *different* (personal) account** — i.e. you use more than one
+  GitHub identity — add a scoped rewrite so only Signata clones use your work key:
+  ```
+  git config --global url."git@<your-work-host>:Signata-GmbH/".insteadOf "git@github.com:Signata-GmbH/"
+  ```
+  (replace `<your-work-host>` with your work SSH host alias), then verify:
+  `git ls-remote git@github.com:Signata-GmbH/signata-swe-claude-skills.git`.
+
+If the skills still don't show, in a **terminal** run `/plugin marketplace list`
+(expect `signata`) and check `/plugin` → **Errors** tab.
 
 ## Using it
 
