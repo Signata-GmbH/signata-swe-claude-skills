@@ -1,10 +1,12 @@
 {
   "name": "signata",
   "owner": { "name": "Signata GmbH" },
+  "description": "Signata SWE AI skills for AUTOSAR & non-AUTOSAR firmware projects.",
   "plugins": [
     {
       "name": "signata-swe-claude-skills",
       "source": "./",
+      "skills": ["./skills/code-dev", "./skills/code-review", "./skills/unit-test"],
       "description": "AUTOSAR & non-AUTOSAR SWE.3 AI skills: code-dev, code-review, unit-test."
     }
   ]

@@ -1,6 +1,5 @@
 {
   "name": "signata-swe-claude-skills",
   "description": "AUTOSAR & non-AUTOSAR SWE.3 AI skills — code development, code review, and VectorCAST unit-test generation. Adapts per project.type over a shared per-module manifest with fail-closed input governance and an auditable run ledger. (Beta.)",
-  "version": "0.0.1",
   "author": { "name": "Signata GmbH" }
 }
