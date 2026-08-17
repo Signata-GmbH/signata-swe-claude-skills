@@ -50,7 +50,7 @@
 - 🟡 **Re-validate** by re-running each skill on a real module (verify fail-closed acquisition, count gate, regenerate guard)
 - ⬜ Dry-run on a non-AUTOSAR module (`SAPF_Mode`) to exercise the generic flavor + D5
 - ✅ Scaffolded `.claude-plugin/plugin.json` + `marketplace.json` (plugin `signata-swe-claude-skills`, marketplace `signata`) + `PUBLISHING.md` runbook
-- 🟡 Promote to dedicated repo `Signata-GmbH/signata-swe-claude-skills` (skills → `skills/`), tag `…--v1.0.0`
+- 🟡 Promote to dedicated repo `Signata-GmbH/signata-swe-claude-skills` (skills → `skills/`), tag `…--v0.0.1`
 - 🟡 Roll out **org-wide via managed settings** (Teams/Enterprise): `extraKnownMarketplaces` + `enabledPlugins`
 - ⬜ Commit `20_AI/ai_project.yaml` (+ manifests) to product-repo `develop` (NOT `.claude/skills/`)
 

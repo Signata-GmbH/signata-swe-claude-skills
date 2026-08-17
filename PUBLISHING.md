@@ -38,7 +38,7 @@ cp -R <CEA>/.claude/skills/{_shared,unit-test,code-review,code-dev} skills/
 cp    <CEA>/.claude/skills/{README.md,STATUS.md} .
 cp    <CEA>/.claude/skills/.claude-plugin/{plugin.json,marketplace.json} .claude-plugin/
 # (the skill files reference ../_shared/... relatively — that resolves under skills/)
-git add . && git commit -m "Initial plugin: signata-swe-claude-skills v1.0.0"
+git add . && git commit -m "Initial plugin: signata-swe-claude-skills v0.0.1"
 ```
 
 Validate and tag the release:
@@ -46,7 +46,7 @@ Validate and tag the release:
 ```bash
 claude plugin validate . --strict          # catches manifest typos
 claude plugin tag . --push --message "Release %s"
-#   → creates + pushes tag  signata-swe-claude-skills--v1.0.0  (name--v<version>)
+#   → creates + pushes tag  signata-swe-claude-skills--v0.0.1  (name--v<version>)
 ```
 
 **Version lives in ONE place** — `plugin.json` `version`. Do **not** also put a
@@ -84,7 +84,7 @@ marketplace to a git ref instead of tracking the branch tip:
 ```json
 "signata": {
   "source": { "source": "github", "repo": "Signata-GmbH/signata-swe-claude-skills" },
-  "ref": "signata-swe-claude-skills--v1.0.0"
+  "ref": "signata-swe-claude-skills--v0.0.1"
 }
 ```
 
