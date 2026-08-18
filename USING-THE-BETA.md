@@ -16,26 +16,22 @@ Each skill **adapts automatically** to whether the repo is AUTOSAR or non-AUTOSA
 
 ## Getting it
 
-The plugin is pushed to everyone via Claude Code **managed settings** — after a
-**full restart** of Claude Code / VS Code, the skills appear in the `/` menu
-automatically (namespaced `/signata-swe-claude-skills:unit-test`, …). No `/plugin`
-command needed.
+The marketplace is pushed to everyone via Claude Code **managed settings**, so you
+just need **one click** to install it — no CLI, no GitHub login (the repo is public).
 
-**One-time prerequisite — GitHub SSH access.** The plugin is delivered from an
-internal repo cloned over **SSH**, so your machine must authenticate to GitHub as
-your **Signata** account:
-- Check: `ssh -T git@github.com` → should say *"Hi &lt;your-signata-username&gt;!"* and
-  be SSO-authorized for `Signata-GmbH`.
-- **If it shows a *different* (personal) account** — i.e. you use more than one
-  GitHub identity — add a scoped rewrite so only Signata clones use your work key:
-  ```
-  git config --global url."git@<your-work-host>:Signata-GmbH/".insteadOf "git@github.com:Signata-GmbH/"
-  ```
-  (replace `<your-work-host>` with your work SSH host alias), then verify:
-  `git ls-remote git@github.com:Signata-GmbH/signata-swe-claude-skills.git`.
+**One-time, per engineer (VS Code extension):**
+1. **Restart VS Code** (so managed settings register the `signata` marketplace).
+2. Type **`/plugins`** (plural) in the Claude prompt → opens the **Manage plugins** UI.
+   *(Note: the `/plugin` singular subcommands don't work in the extension — use `/plugins`.)*
+3. Under **Available plugins**, find **`signata-swe-claude-skills`** → click **Install**.
+4. **Restart** when prompted.
 
-If the skills still don't show, in a **terminal** run `/plugin marketplace list`
-(expect `signata`) and check `/plugin` → **Errors** tab.
+The skills then appear in the `/` menu as `/signata-swe-claude-skills:unit-test`,
+`…:code-review`, `…:code-dev` — and you never install them again (updates are automatic).
+
+**If it's not under "Available":** the marketplace didn't register (usually a stale
+cache). Close VS Code, delete the folder `%USERPROFILE%\.claude\plugins`
+(`~/.claude/plugins` on macOS/Linux), reopen, and try `/plugins` again.
 
 ## Using it
 
