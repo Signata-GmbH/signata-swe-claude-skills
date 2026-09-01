@@ -19,9 +19,12 @@ it. **Two phases with a hard gate between them — no code in Phase 1.**
 
 ## Step 1 — Resolve project config
 
-Read `20_AI/ai_project.yaml` (scaffold + confirm from
-[../_shared/ai_project.template.yaml](../_shared/ai_project.template.yaml) if
-absent). Note `project.type`.
+Read `20_AI/ai_project.yaml`. If **absent**, follow
+[../_shared/common/project-config.md](../_shared/common/project-config.md) §7
+(missing-config path) — the config is one-per-repo and belongs on the base
+branch: **stop** if it already exists on the base branch or is in flight
+elsewhere (merge it, never duplicate it), otherwise route to `/project-init` or
+bootstrap inline when already on the base branch. Note `project.type`.
 
 ## Step 2 — Load the discipline
 

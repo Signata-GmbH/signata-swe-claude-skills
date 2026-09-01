@@ -19,10 +19,14 @@ them as you reach each step (progressive disclosure).
 
 ## Step 1 — Resolve project config
 
-Read `20_AI/ai_project.yaml`. If it is **absent**, scaffold it from
-[../_shared/ai_project.template.yaml](../_shared/ai_project.template.yaml),
-pre-filling derivable fields and asking for the rest (compiler, target, type),
-then confirm before continuing. Note `project.type` — it selects the flavor below.
+Read `20_AI/ai_project.yaml`. If it is **absent**, do **not** scaffold it blindly
+— load [../_shared/common/project-config.md](../_shared/common/project-config.md)
+and follow its §7 (missing-config path): the config is one-per-repo and belongs on
+the base branch, so a competing copy created on a feature branch is a merge
+conflict in the file every run depends on. If it already exists on the base branch
+or is in flight elsewhere, **stop** and say to merge it; if it exists nowhere, run
+`/project-init` (or, on the base branch, bootstrap inline) and confirm before
+continuing. Note `project.type` — it selects the flavor below.
 
 ## Step 2 — Load the discipline
 

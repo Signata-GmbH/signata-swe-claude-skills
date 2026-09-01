@@ -6,8 +6,8 @@
     {
       "name": "signata-swe-claude-skills",
       "source": "./",
-      "skills": ["./skills/code-dev", "./skills/code-review", "./skills/unit-test"],
-      "description": "AUTOSAR & non-AUTOSAR SWE.3 AI skills: code-dev, code-review, unit-test."
+      "skills": ["./skills/project-init", "./skills/code-dev", "./skills/code-review", "./skills/unit-test"],
+      "description": "AUTOSAR & non-AUTOSAR SWE.3 AI skills: project-init, code-dev, code-review, unit-test."
     }
   ]
 }

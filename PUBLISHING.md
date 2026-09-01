@@ -21,6 +21,7 @@ signata-swe-claude-skills/
 │   └── plugin.json           # plugin manifest + version (already scaffolded)
 ├── skills/                   # ← the CURRENT .claude/skills/ content goes here
 │   ├── _shared/
+│   ├── project-init/SKILL.md
 │   ├── unit-test/SKILL.md
 │   ├── code-review/SKILL.md
 │   └── code-dev/SKILL.md
@@ -34,7 +35,7 @@ Assembly from this dev branch:
 # from a clean clone of the new empty repo
 mkdir -p skills .claude-plugin
 # copy skill content (from the CEA dev branch .claude/skills/)
-cp -R <CEA>/.claude/skills/{_shared,unit-test,code-review,code-dev} skills/
+cp -R <CEA>/.claude/skills/{_shared,project-init,unit-test,code-review,code-dev} skills/
 cp    <CEA>/.claude/skills/{README.md,STATUS.md} .
 cp    <CEA>/.claude/skills/.claude-plugin/{plugin.json,marketplace.json} .claude-plugin/
 # (the skill files reference ../_shared/... relatively — that resolves under skills/)
@@ -122,18 +123,23 @@ refinement."
 
 | File | Commit? | When / where |
 |---|---|---|
-| `20_AI/ai_project.yaml` | ✅ **once, to `develop`** | Scaffold on first skill run, review, commit → every branch inherits the same compiler/layout/variants/doc paths |
+| `20_AI/ai_project.yaml` | ✅ **once, to `develop`** | `/project-init` on `develop` → review → commit; every branch inherits the same compiler/layout/variants/doc paths. Created **once per repo by one engineer** — the skill refuses to author a second copy |
 | `20_AI/manifests/<MODULE>.yaml` + `history/*.jsonl` | ✅ per module | In that module's PR — these are the audit/traceability ledgers |
 | Input docs (requirements, signals&params, SDD, guideline, checklist) | **decision** | Commit if size/licensing allows so paths resolve for everyone; else keep in a shared location and let the fail-closed gate prompt |
 | `.claude/skills/` | ❌ **never on product branches** | The plugin provides the skills; a committed copy would *shadow/conflict* with the installed plugin (project skills override plugin skills) |
 
 **Rollout procedure (run once in the base branch):**
-1. On `develop`, scaffold + commit `20_AI/ai_project.yaml`.
+1. On `develop`, run **`/project-init`** and commit `20_AI/ai_project.yaml`.
+   One engineer per repo does this; if the config already exists on `develop` (or
+   is in flight on someone's branch) the skill **stops** and says to merge that one
+   — two configs authored on two feature branches conflict in the file every run
+   reads.
 2. Add to the repo README/CONTRIBUTING: "The `signata-swe-claude-skills` plugin is
    installed org-wide; `ai_project.yaml` is committed — run `/unit-test <MODULE>`,
    `/code-review <MODULE>`, `/code-dev <MODULE>`."
 3. Everyone branching off `develop` inherits `ai_project.yaml`; manifests accrue
-   per module.
+   per module. Re-running `/project-init` later validates/repairs the existing
+   config instead of overwriting it.
 
 > ⚠️ The current `MQBST2-AI-Skills-Development` branch (skills in `.claude/skills/`)
 > is the **dev staging area** — its content seeds the plugin repo. Do **not** merge

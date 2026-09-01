@@ -1,13 +1,15 @@
 # Using the SWE AI Skills — Beta (v0.0.1)
 
-Three Claude Code skills for our AUTOSAR **and** non-AUTOSAR firmware projects. They
-replace the old copy-paste prompts. **This is a beta** — please try them on real
-modules and report what breaks.
+Claude Code skills for our AUTOSAR **and** non-AUTOSAR firmware projects — three
+per-module workflows plus a one-time per-repo setup. They replace the old
+copy-paste prompts. **This is a beta** — please try them on real modules and
+report what breaks.
 
 ## What you get
 
 | Command | Does |
 |---|---|
+| `/project-init` | **Run once per repo, on `develop`.** Creates `20_AI/ai_project.yaml` (the shared project config) and commits it. Refuses to create a second one if it already exists. |
 | `/code-dev <MODULE>` | Implement a module (or a feature in one) from its requirements + an Implementation Review doc. Two-phase: analysis & questions first, code only after you approve. |
 | `/code-review <MODULE>` | Formal SWE.3 review of the user-implemented C → a populated Findings List, with the checklist walked. |
 | `/unit-test <MODULE>` | Generate / update a VectorCAST `.tst` suite from requirements + code, with an auditable requirement→case ledger. |
@@ -26,8 +28,9 @@ just need **one click** to install it — no CLI, no GitHub login (the repo is p
 3. Under **Available plugins**, find **`signata-swe-claude-skills`** → click **Install**.
 4. **Restart** when prompted.
 
-The skills then appear in the `/` menu as `/signata-swe-claude-skills:unit-test`,
-`…:code-review`, `…:code-dev` — and you never install them again (updates are automatic).
+The skills then appear in the `/` menu as `/signata-swe-claude-skills:project-init`,
+`…:unit-test`, `…:code-review`, `…:code-dev` — and you never install them again
+(updates are automatic).
 
 **If it's not under "Available":** the marketplace didn't register (usually a stale
 cache). Close VS Code, delete the folder `%USERPROFILE%\.claude\plugins`
@@ -35,10 +38,34 @@ cache). Close VS Code, delete the folder `%USERPROFILE%\.claude\plugins`
 
 ## Using it
 
+### Once per repo — `/project-init` on `develop`
+
+`20_AI/ai_project.yaml` holds the project facts every skill run needs (AUTOSAR vs
+non-AUTOSAR, compiler, target, ASIL, source/test roots, where the input documents
+live). It is **one file per repository**, shared by everyone.
+
+1. On the **base branch** (`develop`), at the **repo root**, run `/project-init`.
+2. It detects AUTOSAR vs non-AUTOSAR (showing you the evidence), discovers the
+   layout roots and input documents, and asks only for what it cannot derive —
+   compiler, target, ASIL, and (AUTOSAR) the variant list.
+3. It shows you the finished YAML for approval, writes it, then **asks** whether to
+   commit and push. Say yes — once it is on `develop`, nobody else needs to do this.
+
+**Only one engineer per repo does this.** If you run it and the config already
+exists — on `develop` or on a teammate's branch — it **stops** and tells you to
+merge that one instead of creating a competing copy. Two configs created on two
+feature branches means a merge conflict in the file every run depends on; that is
+what the guard prevents. Re-running it later on an existing config switches to
+**validate/repair** mode: it checks the paths still resolve and offers to fix only
+the broken fields, never overwriting your file.
+
+### Then, per module
+
 1. Open Claude Code at your **repo root** and run e.g. `/unit-test FUSA_PosDet`.
-2. **First run in a repo** scaffolds `20_AI/ai_project.yaml` and asks you to confirm
-   a couple of things it can't derive (compiler, target). Commit that file once to
-   `develop` — everyone then shares it.
+2. **First run for a module** scaffolds that module's manifest
+   (`20_AI/manifests/<MODULE>.yaml`) and confirms the scope with you. If the
+   project config is missing and you are not on `develop`, the skill will point you
+   at `/project-init` rather than quietly creating one on your branch.
 3. The skill will **ask you for the input documents it needs** (requirements
    workbook, SDD, signals & parameters, and for reviews the coding guideline +
    checklist). Provide the path or attach — `.pdf` or `.xlsx` both work. It will

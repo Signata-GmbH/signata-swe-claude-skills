@@ -7,9 +7,13 @@
 # (compiler, target, layout, flavor) live here exactly once and are never
 # hardcoded in a skill.
 #
-# The skills SCAFFOLD and CONFIRM this file on first run in a repo:
-# derivable fields are pre-filled; non-derivable ones (compiler/target)
-# are asked once, then never again.
+# CREATED ONCE PER REPO by the `project-init` skill, ON THE BASE BRANCH,
+# then COMMITTED so every engineer and module shares it. Derivable fields
+# are pre-filled from the repo; non-derivable ones (compiler, target, ASIL,
+# variants) are asked once, then never again. The three module skills read
+# this file; they scaffold it themselves only as a guarded fallback (see
+# common/project-config.md) — two copies created on two feature branches is
+# a merge conflict in the file every run depends on.
 #
 # LOCATION (standardised, derived by the skills):  20_AI/ai_project.yaml
 # =====================================================================

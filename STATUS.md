@@ -5,7 +5,7 @@
 
 - **Repo:** `Signata-GmbH/signata-swe-claude-skills` (canonical home — edit here, not the CEA staging branch)
 - **Release:** **v0.0.1 (first beta)** — tag `signata-swe-claude-skills--v0.0.1`
-- **Last updated:** 2026-08-17
+- **Last updated:** 2026-09-01
 - **Overall phase:** Beta — rolling out org-wide via managed settings for real-world testing
 - **Origin note:** developed on CEA staging branch `MQBST2-AI-Skills-Development` (now frozen); migrated here 2026-08-17
 
@@ -24,6 +24,7 @@
 
 ### Shared discipline — `_shared/common/`  (both flavors)
 - ✅ `no-fabrication.md` — toolchain honesty rule
+- ✅ `project-config.md` — the single per-repo config bootstrap (owned by `project-init`): base-branch derivation, duplicate-config check (local / `origin/<base>` / all fetched branches), base-branch hard gate, evidence-based derivation + ask list, validate-never-overwrite, confirm→write→offer-commit; §7 is the module skills' guarded fallback
 - ✅ `workflow-discipline.md` — §0 standalone · §1 **fail-closed input acquisition + mandatory-doc matrix + count gate** · §2 revision pinning · §3 scaffold→validate→confirm · §4 grounding · §5 Phase-1 questions→xlsx (skill-namespaced) · §6 Gate Table · §7 fidelity · §8 traceability · §9 ledger & history · §10 no-fabrication
 - ✅ `unittest-design.md` — test-design rules + deliverables + symbol-grounding self-check (was the missing D1 content)
 - ✅ `review-quality.md` — finding quality, false-negative prevention, checklist walk, traceability, output mechanics
@@ -41,10 +42,16 @@
 - ✅ `forbidden-constructs.md` — float allowed (limited), SIGNATA guideline authoritative
 - ✅ `review-flavor.md` — MISRA rule-numbers **out**, no AUTOSAR-isms, 4 severities, `AI Suggested Fix` column, ignore Simulink rows
 
+### Setup skill — `project-init/`
+- ✅ `project-init/SKILL.md` — 8-step, one-file-only setup skill: derives the base branch, refuses to author a second config (base branch or in-flight elsewhere), base-branch hard gate, detects `project.type` with shown evidence, discovers layout + docs, asks only compiler/target/ASIL/variants, confirm→write→offer commit+push; validate/repair mode on an existing config (`--validate`)
+- ✅ Registered in `.claude-plugin/marketplace.json`; plugin description updated
+- ⬜ Dry-run `/project-init` on a real repo (AUTOSAR **and** non-AUTOSAR) — verify type detection, the duplicate guard on a branch that already has the config, and validate/repair mode
+
 ### The three skill orchestrators  (complete)
 - ✅ `unit-test/SKILL.md` — 7-step orchestrator; adapts by `project.type`
 - ✅ `code-review/SKILL.md` — 7-step; flavor review stance + checklist walk
 - ✅ `code-dev/SKILL.md` — two-phase hard gate; flavor interface + forbidden rules
+- ✅ Step 1 of all three now routes a missing config through `project-config.md` §7 instead of scaffolding one on whatever branch the engineer happens to be on
 
 ### Validation & packaging
 - ✅ First dry-run of each skill on `FUSA_PosDet` (AUTOSAR) — surfaced defects D1–D10 + confirmed U1–U5
@@ -54,11 +61,19 @@
 - ✅ Scaffolded `.claude-plugin/plugin.json` + `marketplace.json` (plugin `signata-swe-claude-skills`, marketplace `signata`) + `PUBLISHING.md` runbook
 - 🟡 Promote to dedicated repo `Signata-GmbH/signata-swe-claude-skills` (skills → `skills/`), tag `…--v0.0.1`
 - 🟡 Roll out **org-wide via managed settings** (Teams/Enterprise): `extraKnownMarketplaces` + `enabledPlugins`
-- ⬜ Commit `20_AI/ai_project.yaml` (+ manifests) to product-repo `develop` (NOT `.claude/skills/`)
+- ⬜ Commit `20_AI/ai_project.yaml` (+ manifests) to product-repo `develop` (NOT `.claude/skills/`) — now via `/project-init` on `develop`
 
 ---
 
-## Immediate next step
+## Immediate next step (2026-09-01)
+`project-init` added as the fourth skill: the per-repo config is no longer a side
+effect of whichever module run happens first on whichever branch. Next: **dry-run
+`/project-init`** on one AUTOSAR and one non-AUTOSAR repo, exercising (a) fresh
+create on `develop`, (b) the duplicate guard when the config already exists on the
+base branch, (c) validate/repair on an existing config, (d) a module skill invoked
+on a feature branch with no config — it must point at `/project-init`, not scaffold.
+
+## Earlier next step
 `/unit-test` re-validated: docs split, count gate, namespaced questions all work;
 the silent Architecture substitution is now fixed (optional-but-asked +
 no-self-substitution rule). Next: **re-run `/unit-test`** to confirm it now
@@ -92,6 +107,7 @@ no-self-substitution rule). Next: **re-run `/unit-test`** to confirm it now
 | 2026-08-13 | **Architecture → optional but explicitly asked** (was mandatory); added a **no-self-substitution / no-self-waiver** rule (only an explicit engineer decision sets a doc `N/A`); documents may be `.pdf` **or** `.xlsx`. |
 | 2026-08-14 | Re-validated `/unit-test` (explicit ADD ask — no substitution) and `/code-review` (hard-stop acquired guideline+checklist; checklist walked 178). Input governance validated both tiers. |
 | 2026-08-14 | Packaging: plugin **`signata-swe-claude-skills`** (marketplace `signata`), distributed **org-wide via managed settings**. Scaffolded manifests + `PUBLISHING.md`. |
+| 2026-09-01 | **Fourth skill `project-init`** — the per-repo `ai_project.yaml` gets one owner, created **once, on the base branch**, and committed. Rationale: setup was a side effect of the first module run, so it landed on whatever branch that engineer was on; two engineers → two disagreeing configs → a merge conflict in the file every run reads. Guards: duplicate-config check across local/`origin/<base>`/all fetched branches, base-branch hard gate (never auto-switch/stash), validate-never-overwrite, no surviving placeholders, commit/push only on an explicit yes. Procedure factored into `_shared/common/project-config.md`; the three module skills call its §7 as a guarded fallback so they still run standalone. |
 
 ---
 
