@@ -68,7 +68,7 @@ Admin: **claude.ai → Admin Settings → Claude Code → Managed settings.** Pa
 {
   "extraKnownMarketplaces": {
     "signata": {
-      "source": { "source": "url", "url": "git@github.com:Signata-GmbH/signata-swe-claude-skills.git" },
+      "source": { "source": "github", "repo": "Signata-GmbH/signata-swe-claude-skills" },
       "autoUpdate": true
     }
   },
@@ -78,22 +78,36 @@ Admin: **claude.ai → Admin Settings → Claude Code → Managed settings.** Pa
 }
 ```
 
-- **Use the SSH `url` source, not the `github`+`repo` shorthand.** The shorthand
-  clones over **HTTPS**, which fails with *"Repository not found"* on our internal +
-  SAML-enforced repo. SSH uses each engineer's existing key and works.
-- **Each client clones the repo itself**, so every engineer needs
-  `ssh -T git@github.com` to authenticate as their **Signata** account (SSO-authorized).
-  Multi-account users add the scoped `insteadOf` rewrite — see
-  [USING-THE-BETA.md](USING-THE-BETA.md).
+- ⚠️ **`autoUpdate: true` is NOT optional — it is the whole update mechanism.**
+  Without it the marketplace is registered but never refreshed, so every engineer
+  stays pinned to whatever commit they first installed and **no fix or new skill
+  ever reaches them**. Verified 2026-09-01: the deployed config was missing this
+  key, the marketplace cache had advanced to a new commit, and the installed plugin
+  was still on the previous one. Recovery on an already-pinned machine:
+  `claude plugin update signata-swe-claude-skills@signata --scope managed`
+  (`--scope managed` is required — the command defaults to `user` scope and fails
+  with *"not installed at scope user"*, which misleadingly reads as "not installed").
+- **The `github`+`repo` shorthand is correct while the repo is public.** It clones
+  over HTTPS with no credentials — verified 2026-09-01 by an unauthenticated
+  `git ls-remote https://github.com/Signata-GmbH/signata-swe-claude-skills.git`,
+  which succeeds. (Earlier guidance here prescribed the SSH `url` form to work
+  around a *"Repository not found"* failure; that applied when the repo was
+  internal + SAML-enforced. **If the repo is ever made private again, switch back
+  to** `{ "source": "url", "url": "git@github.com:Signata-GmbH/signata-swe-claude-skills.git" }`,
+  and note that each client then clones itself, so every engineer needs
+  `ssh -T git@github.com` authenticated as their SSO-authorized **Signata** account —
+  multi-account users add the scoped `insteadOf` rewrite, see
+  [USING-THE-BETA.md](USING-THE-BETA.md).)
 - After a **restart**, the marketplace auto-adds and the plugin auto-enables — no
   `/plugin` command. (On the CLI surface a one-time
   `claude plugin install signata-swe-claude-skills@signata` is occasionally still needed.)
-- Beta tracks `main` (no `version` in `plugin.json`, `autoUpdate: true`). To **pin a
-  release** instead, put `ref` **inside** `source` (sibling of `url`), e.g.
+- Beta tracks `main` (no `version` in `plugin.json`, `autoUpdate: true`), so a push to
+  `main` ships to everyone on their next restart — there is no staging step. To **pin a
+  release** instead, put `ref` **inside** `source` (sibling of `repo`/`url`), e.g.
   `"ref": "signata-swe-claude-skills--v0.0.1"`, and reintroduce `version`.
 
 (Self-service alternative, any plan, from a **terminal** — not the VS Code UI:
-`/plugin marketplace add git@github.com:Signata-GmbH/signata-swe-claude-skills.git`
+`/plugin marketplace add Signata-GmbH/signata-swe-claude-skills`
 then `/plugin install signata-swe-claude-skills@signata`.)
 
 ---

@@ -36,6 +36,29 @@ The skills then appear in the `/` menu as `/signata-swe-claude-skills:project-in
 cache). Close VS Code, delete the folder `%USERPROFILE%\.claude\plugins`
 (`~/.claude/plugins` on macOS/Linux), reopen, and try `/plugins` again.
 
+**If a new skill or fix doesn't show up after a restart** (e.g. `/project-init`
+missing from the `/` menu), your plugin copy is pinned to an older commit. Check and
+update it from a terminal:
+
+```bash
+claude plugin list      # shows Version: <commit> and Scope: managed
+claude plugin update signata-swe-claude-skills@signata --scope managed
+```
+
+Then **reload VS Code** (Cmd/Ctrl+Shift+P → *Developer: Reload Window*), or quit and
+reopen it. Two gotchas worth knowing:
+
+- **`--scope managed` is required.** The command defaults to `user` scope and fails
+  with *"not installed at scope user"* — which reads like the plugin is missing when
+  it is actually installed org-wide at `managed` scope.
+- **`/reload-skills` will not help here.** It re-reads the skills already loaded in
+  the session; the plugin *cache* is only resolved at startup, so a restart is what
+  picks up a new version.
+
+Seeing the skill on **claude.ai** but not in VS Code is expected during this window:
+claude.ai resolves the repo server-side, while the extension goes through the plugin
+cache on your machine.
+
 ## Using it
 
 ### Once per repo — `/project-init` on `develop`
