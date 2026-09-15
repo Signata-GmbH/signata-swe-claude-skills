@@ -69,7 +69,36 @@
 
 ---
 
-## Immediate next step (2026-09-01)
+### SWE.5 / SWE.6 DOORS test-case generation — `integration-test/`, `qualification-test/`
+- ✅ Analysed `raw/PROMPT_SWE5_Integration_Test_Generation.md` and
+  `raw/PROMPT_SWE6_Qualification_Test_Generation.md` against the vTestStudio
+  project folders in `raw/SWE5_Test_Scripts/` and `raw/SWE6_Test_Scripts/`
+  (`.vtsoproj`, `.vtt` XML test tables, Lauterbach-debugger automation)
+- ✅ New parallel pack `_shared/testspec/` (own config template
+  `ai_test_project.template.yaml`, own bootstrap `project-config.md`, own
+  `workflow-discipline.md`/`no-fabrication.md`/`output-format.md`, own
+  per-module (`integration-test-manifest-template.yaml`) and per-feature
+  (`qualification-test-manifest-template.yaml`) manifest templates, own
+  patterns files) — kept separate from `common/`/`autosar/`/`generic/` because
+  this domain has no source code, no compiler, and no git-SHA revision spine
+- ✅ `integration-test/SKILL.md` (SWE.5, scopes by `aFunctionModule`) and
+  `qualification-test/SKILL.md` (SWE.6, scopes by `aFeature`) — 7-step
+  orchestrators matching the existing skills' shape
+- ✅ Registered in `.claude-plugin/marketplace.json`; plugin + marketplace
+  descriptions updated; `README.md` §3.1/§3.9/§4 updated
+- ⬜ Dry-run either skill against a real vTestStudio project folder + DOORS
+  exports (nothing has been executed yet — this is authored-not-validated,
+  same caveat the other four skills carried before their first dry-run)
+
+## Immediate next step (2026-09-15)
+Dry-run `integration-test` and `qualification-test` against a real
+vTestStudio project folder and real DOORS exports — verify the
+`ai_test_project.yaml` bootstrap (base-branch + duplicate guards), the
+module-name-mapping discovery/caching for SWE.5, the `aFeature` validation for
+SWE.6, and the 3-sheet workbook output — before treating either as more than a
+draft.
+
+## Earlier next step (2026-09-01)
 `project-init` added as the fourth skill: the per-repo config is no longer a side
 effect of whichever module run happens first on whichever branch. Next: **dry-run
 `/project-init`** on one AUTOSAR and one non-AUTOSAR repo, exercising (a) fresh
@@ -113,6 +142,7 @@ no-self-substitution rule). Next: **re-run `/unit-test`** to confirm it now
 | 2026-08-14 | Packaging: plugin **`signata-swe-claude-skills`** (marketplace `signata`), distributed **org-wide via managed settings**. Scaffolded manifests + `PUBLISHING.md`. |
 | 2026-09-01 | **Rollout defect found & documented:** the deployed managed settings registered the `signata` marketplace **without `autoUpdate`**, so the marketplace cache advanced while every installed plugin stayed pinned to its first-installed commit — `project-init` would have reached nobody. Fix: add `"autoUpdate": true` to the marketplace entry in Admin managed settings; recovery on a pinned machine is `claude plugin update … --scope managed` (the command defaults to `user` scope and misleadingly reports "not installed"). Also corrected `PUBLISHING.md` §B: the SSH-`url` prescription was stale — the repo is public, so the `github`+`repo` shorthand clones fine (verified by an unauthenticated `git ls-remote`). |
 | 2026-09-01 | **Fourth skill `project-init`** — the per-repo `ai_project.yaml` gets one owner, created **once, on the base branch**, and committed. Rationale: setup was a side effect of the first module run, so it landed on whatever branch that engineer was on; two engineers → two disagreeing configs → a merge conflict in the file every run reads. Guards: duplicate-config check across local/`origin/<base>`/all fetched branches, base-branch hard gate (never auto-switch/stash), validate-never-overwrite, no surviving placeholders, commit/push only on an explicit yes. Procedure factored into `_shared/common/project-config.md`; the three module skills call its §7 as a guarded fallback so they still run standalone. |
+| 2026-09-15 | **Two new skills, `integration-test` (SWE.5) and `qualification-test` (SWE.6)**, generating DOORS test-case rows from xlsx exports. Three decisions made analysing `raw/PROMPT_SWE5_*`/`raw/PROMPT_SWE6_*` against the real vTestStudio project folders also in `raw/`: (1) these run in a **separate repo** — a vTestStudio project folder, not the SWE.3 C-source repo — so they get their **own** per-repo config `ai_test_project.yaml` and a parallel `_shared/testspec/` pack, not a third `project.type` flavor on the existing config; (2) **v1 is Excel-only** — the `.vtt`/CAPL automation-script generation visible in those folders is deferred to v2; (3) `integration-test` is **AUTOSAR-only for v1** since its only validated pattern is RTE-debugger breakpoint testing — it stops rather than inventing a black-box pattern for a module with no RTE symbols. Both raw prompts hardcoded project-specific facts (MQBST2's `RELEASE`, `ENVIRONMENT`, `CLASSIFICATION_RULE`, its `aFeature` list, a module-name mapping table) directly in the prompt text; all moved into `ai_test_project.yaml`, resolved/confirmed per repo like the other skills' config, never hardcoded in the skill body. |
 | 2026-09-15 | **Renamed plugin** `signata-swe-claude-skills` → **`signata-swe`** (marketplace name `signata` unchanged) so the `/` menu prefix is shorter. Repo name and the `signata-swe-claude-skills--v0.0.1` tag stay as-is (historical). **Action required outside this repo:** update the org's managed-settings `enabledPlugins` key from `signata-swe-claude-skills@signata` to `signata-swe@signata` — engineers who already installed the old plugin name should reinstall/restart to pick up the new one. |
 
 ---

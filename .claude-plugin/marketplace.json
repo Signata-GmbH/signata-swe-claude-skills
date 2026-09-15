@@ -6,8 +6,8 @@
     {
       "name": "signata-swe",
       "source": "./",
-      "skills": ["./skills/project-init", "./skills/code-dev", "./skills/code-review", "./skills/unit-test"],
-      "description": "AUTOSAR & non-AUTOSAR SWE.3 AI skills: project-init, code-dev, code-review, unit-test."
+      "skills": ["./skills/project-init", "./skills/code-dev", "./skills/code-review", "./skills/unit-test", "./skills/integration-test", "./skills/qualification-test"],
+      "description": "AUTOSAR & non-AUTOSAR SWE.3 AI skills (project-init, code-dev, code-review, unit-test) plus DOORS SWE.5/SWE.6 test-case generation (integration-test, qualification-test)."
     }
   ]
 }

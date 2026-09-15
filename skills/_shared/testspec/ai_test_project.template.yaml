@@ -1,0 +1,91 @@
+# =====================================================================
+# AI TEST-SPEC PROJECT CONFIG  —  ONE per vTestStudio project folder.
+# ---------------------------------------------------------------------
+# Read by the two DOORS test-case-generation skills: integration-test
+# (SWE.5) and qualification-test (SWE.6). This is a SEPARATE config from
+# 20_AI/ai_project.yaml — that file describes the SWE.3 C-source repo
+# (compiler, target, RTE layout); this one describes the vTestStudio
+# project folder these two skills run in instead, which has no source
+# code, no compiler, and no git-SHA build to pin against. Holds
+# everything that varies by PROJECT (never by module/feature) for DOORS
+# test-case generation — the per-module/per-feature manifests in
+# 20_AI/manifests/{integration-test,qualification-test}/ inherit these.
+#
+# CREATED ONCE PER REPO, following the same base-branch + duplicate
+# guards as ai_project.yaml (see testspec/project-config.md). Derivable
+# fields are pre-filled from the supplied DOORS exports; the rest are
+# asked once, then never again — several are marked "To confirm" in the
+# source prompts precisely because they must never be guessed by the
+# model.
+#
+# LOCATION (standardised, derived by the skills):  20_AI/ai_test_project.yaml
+# =====================================================================
+
+schema_version: 1
+
+project:
+  name: <PROJECT_NAME>            # <-- fill   e.g. MQBST2
+
+# The DOORS baseline these test cases are authored against — this repo's
+# equivalent of a git revision pin (there is no source code / git SHA here).
+# Digit-zero vs letter-O and similar near-identical release strings are a
+# known trap in the source DOORS exports — quote exactly and confirm.
+release:
+  id: <RELEASE_ID>                # <-- fill   e.g. C1_0150_I014
+  # AUTOSAR-style variant cell — mind the two-line-cell trap: a variant
+  # value may contain an embedded newline (e.g. "MQB\nCEA"); quote exactly
+  # as the workbook holds it.
+  variants:
+    - "<VARIANT_1>"                # <-- fill   e.g. "MQB"
+
+# Fixed attribute values shared by every test case emitted for this repo.
+# Never hardcode these in a skill — always read them from here.
+attributes:
+  environment: <ENVIRONMENT>       # <-- fill   e.g. "Software Test Bench" — exact spelling/case; several near-duplicate
+                                    #     spellings tend to exist in DOORS (case, "bench" vs "Bench") — confirm the
+                                    #     canonical one and note the variants seen in Open Points.
+  status_filter:                   # <-- fill   aStatusOfAnalysis values in scope, e.g.:
+    - "ready for implementation"
+    - "implemented"
+    - "released"
+  classification_rule: <path or description>  # <-- fill   pointer to the governing HowTo/decision-matrix section
+                                                #     (e.g. "HowTo Creating the Test Specification in DOORS, §4.6").
+                                                #     This is a REFERENCE, never a fixed classification value — the
+                                                #     skill applies the matrix per test case and shows its reasoning.
+
+# PROJECT-WIDE documents. Per-module/per-feature documents (existing test
+# cases for one module/feature, run-specific extras) live in the manifest.
+docs:
+  root:                 20_AI/               # <-- confirm  base folder inputs live in
+  architecture_export:  <path>               # <-- fill  software architecture export (DOORS xlsx) — SWE.5 test basis
+  requirements_workbook: <path>              # <-- fill  SW requirements export (DOORS xlsx) — SWE.6 test basis
+  signals_params:       <path>               # <-- fill  Signals & Parameters export — MANDATORY (both skills)
+  a2l_or_varlist:        <path or N/A>       # <-- fill  A2L file or code variable list — MANDATORY for SWE.6
+  diagspec:               <path or N/A>      # <-- fill  UDS DiagSpec (e.g. EE0339_UDS_DiagSpec) — diagnostic features only
+  integration_test_spec_export: <path or N/A> # <-- fill  existing SWE.5 test-spec export (exemplars + coverage baseline)
+  qualification_test_spec_export: <path or N/A> # <-- fill  existing SWE.6 test-spec export (exemplars + coverage baseline)
+
+# ---------------------------------------------------------------------
+# INTEGRATION TEST (SWE.5) — AUTOSAR / RTE-debugger pattern only in v1.
+# ---------------------------------------------------------------------
+integration_test:
+  testability_filter:              # <-- fill   aTestability values in scope, e.g. ["test"]
+    - "test"
+  # aFunctionModule (architecture) -> integration-test-spec section heading.
+  # DISCOVERED ONCE per module (walk the Object Heading hierarchy + cross-check
+  # the aFeature mix — see integration-test-patterns.md), then CACHED here so
+  # later runs / other engineers don't re-derive it. Never seed this by
+  # analogy — an unresolved module is asked about, not guessed.
+  module_name_mapping: {}          # <-- learned  e.g. { FUSA_ParkLckCtrl: "FUSA_ParkLckCntrl" }
+
+# ---------------------------------------------------------------------
+# QUALIFICATION TEST (SWE.6)
+# ---------------------------------------------------------------------
+qualification_test:
+  # Valid aFeature values — discovered from the requirements workbook on
+  # first run and cached here; re-validated (not blindly trusted) on later
+  # runs in case the export gained/renamed a feature.
+  valid_features: []               # <-- learned  e.g. ["CAN", "Actuator Data", ...]
+  nrc_table: <path or "not available">  # <-- fill  negative-diagnostic-case NRC lookup; if unavailable, negative
+                                          #     diagnostic cases leave the expected response as a to-be-completed
+                                          #     placeholder and are listed in Open Points, never guessed.

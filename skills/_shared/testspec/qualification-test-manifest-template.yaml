@@ -1,0 +1,42 @@
+# =====================================================================
+# QUALIFICATION-TEST MANIFEST (SWE.6)  —  feature: <FEATURE_NAME>
+# ---------------------------------------------------------------------
+# ONE per feature. INHERITS the per-repo test-spec config
+# (20_AI/ai_test_project.yaml) — release, variants, environment,
+# classification rule, and project-wide docs live there, NOT here. This
+# file holds only FEATURE-specific inputs + the skill-owned run ledger.
+#
+# `last_run:` is SKILL-OWNED — do not hand-edit. It drives in-place
+# re-runs and forms the audit trail.
+#
+# LOCATION (derived by the skill):
+#   20_AI/manifests/qualification-test/<FEATURE_SLUG>.yaml
+#   (FEATURE_SLUG = aFeature value, lowercased, non-alphanumeric runs -> "_")
+# =====================================================================
+
+schema_version: 1
+inherits: 20_AI/ai_test_project.yaml
+
+feature:
+  name: <FEATURE_NAME>             # <-- fill   the exact aFeature value, e.g. "Actuator Data"
+  slug: <FEATURE_SLUG>             # derived    e.g. actuator_data
+
+# PER-FEATURE documents (extend the project-wide docs.* in ai_test_project.yaml).
+docs:
+  existing_qualification_test_cases: <path>  # <-- fill  MANDATORY — this feature's slice of the existing
+                                              #     qualification-test-spec export (exemplars + coverage baseline)
+  extra: []                        # optional additional documents for a run
+  run_instructions: ""             # optional free-text custom instructions for a run
+
+scope:
+  expected_row_count: "?"          # count gate — confirmed by the engineer on first run, never silently learned
+  requirement_ids: []              # optional — restrict this run to a subset; [] = all in-scope requirements
+
+last_run:                          # SKILL-OWNED ledger
+  timestamp:        null
+  skill_version:    null
+  release_id:       null           # release.id the run was authored against (baseline pinning)
+  variants:         []
+  input_hashes:     {}             # supplied file -> git hash-object result
+  requirements:     {}             # requirement ID -> { hash, cases: [proposed titles] }
+  open_points:      []

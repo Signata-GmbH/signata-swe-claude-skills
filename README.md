@@ -1,10 +1,12 @@
 # AUTOSAR / non-AUTOSAR AI Skills — Technical Documentation
 
-A Claude Code **plugin** that turns SIGNATA's three engineering AI prompts —
-**Code Development**, **Code Review**, and **Unit-Test Generation** — into
-reusable **skills** developers invoke by name, instead of copy-pasting a large
-prompt and hand-filling inputs every time. A fourth skill, **Project Init**,
-bootstraps the per-repo config those three read.
+A Claude Code **plugin** that turns SIGNATA's engineering AI prompts —
+**Code Development**, **Code Review**, **Unit-Test Generation**, and (for a
+vTestStudio project folder) **Integration-Test** and **Qualification-Test
+Generation** — into reusable **skills** developers invoke by name, instead of
+copy-pasting a large prompt and hand-filling inputs every time. Two setup
+skills, **Project Init** and (inline, per §3.9) the test-spec config bootstrap,
+lay down the per-repo config each group reads.
 
 > Status & roadmap live in [STATUS.md](STATUS.md). This file is the *why* and
 > *how*: purpose, architecture, and the key decisions behind them.
@@ -73,11 +75,19 @@ This project makes the prompts **first-class, versioned, invokable tooling**:
 │       ├── requirements-scope.md    #   explicit SW_Req ID list (no reliable module column)
 │       ├── forbidden-constructs.md  #   float-allowed-limited, guideline authoritative
 │       └── review-flavor.md         #   MISRA-out, no AUTOSAR-isms, AI-Suggested-Fix column
-├── project-init/ SKILL.md        # setup — per-repo config, once, on the base branch
-├── code-dev/     SKILL.md        # orchestrator — two-phase hard gate
-├── code-review/  SKILL.md        # orchestrator — findings + checklist walk
-└── unit-test/    SKILL.md        # orchestrator — .tst authoring
+├── project-init/     SKILL.md    # setup — per-repo config, once, on the base branch
+├── code-dev/         SKILL.md    # orchestrator — two-phase hard gate
+├── code-review/      SKILL.md    # orchestrator — findings + checklist walk
+├── unit-test/        SKILL.md    # orchestrator — .tst authoring
+├── integration-test/ SKILL.md    # orchestrator — SWE.5 DOORS test-case generation
+└── qualification-test/ SKILL.md  # orchestrator — SWE.6 DOORS test-case generation
 ```
+
+`integration-test` and `qualification-test` run in a **different repo** — a
+vTestStudio project folder, not the SWE.3 C-source repo — so they read a
+**separate** `_shared/testspec/` pack (own config template, own bootstrap
+procedure, own discipline/no-fabrication/output-format files, own manifest
+templates) instead of `common/`/`autosar/`/`generic/`. See §3.9.
 
 ### 3.2 Three *adaptive* module skills, not six
 
@@ -192,6 +202,40 @@ requirement-hash spine is used opportunistically but never required. `/project-i
 is *not* a pipeline stage either — the module skills fall back to the same guarded
 bootstrap if it never ran.
 
+### 3.9 A second, parallel config: the DOORS test-spec skills
+
+`integration-test` (SWE.5) and `qualification-test` (SWE.6) generate draft
+DOORS test-case rows (a 3-sheet Excel workbook an engineer reviews and enters
+into DOORS by hand) from DOORS xlsx exports. Two things separate them from the
+other four skills:
+
+- **They run in a vTestStudio project folder**, not the SWE.3 C-source repo —
+  no compiler, no RTE layout, no `.c`/`.h`. So they read their **own** per-repo
+  config, `20_AI/ai_test_project.yaml`, bootstrapped by
+  `_shared/testspec/project-config.md` (same base-branch + duplicate guards as
+  `ai_project.yaml`, just for a different file and a different repo).
+- **They have no source code to pin a git revision against.** The audit spine
+  is `release.id` + `variants` (the DOORS baseline) plus a content hash of every
+  supplied xlsx export — `_shared/testspec/workflow-discipline.md` §2 is the
+  test-spec equivalent of `common/workflow-discipline.md` §2.
+
+Everything else about the shape is deliberately the same: a hard Phase-1→
+Phase-2 gate, fail-closed input acquisition, a scope-count confirmation gate, a
+skill-namespaced Phase-1-questions workbook, a self-check checklist, and a
+`last_run`/history ledger for in-place re-runs. `integration-test` scopes by
+**module** (`aFunctionModule`); `qualification-test` scopes by **feature**
+(`aFeature`) — a different axis, so their manifests live in separate
+directories (`20_AI/manifests/integration-test/` /
+`20_AI/manifests/qualification-test/`) rather than sharing
+`20_AI/manifests/<MODULE>.yaml` with the SWE.3 skills.
+
+**v1 scope is Excel-only.** A real vTestStudio project folder also holds `.vtt`
+test tables and `.vtsoproj`/CAPL automation — generating or updating those is an
+explicit **v2**, not attempted here. `integration-test` is also **AUTOSAR-only
+for v1**: its only validated pattern is RTE-debugger breakpoint testing
+(`Rte_Write`/`Rte_Read`), so it stops rather than inventing a black-box pattern
+for a module with no RTE symbols to work from.
+
 ---
 
 ## 4. Key decisions
@@ -209,6 +253,8 @@ bootstrap if it never ran.
 | 9 | **Scaffold → validate → confirm inputs** | Developer never copy-pastes a fill block; the skill owns the path, schema, and defaults. |
 | 10 | **Develop as project skills, then promote to a plugin repo** | Fast local iteration now; a dedicated marketplace repo for org-wide, versioned distribution later. |
 | 11 | **A dedicated `/project-init` skill** for the per-repo config | Setup was a side effect of the first module run, so it happened on whatever branch that engineer was on. Two engineers → two disagreeing configs → a merge conflict in the file every run reads. One owner, one procedure, base-branch + duplicate guards; the module skills keep a guarded fallback so they still run standalone. |
+| 12 | **A separate `_shared/testspec/` pack + `ai_test_project.yaml`** for `integration-test`/`qualification-test`, not a third `project.type` flavor | These skills run in a different repo (vTestStudio project folder) with no source code, no compiler, and no git-SHA build to pin against — the SWE.3 flavor mechanism and revision pinning genuinely don't apply. A parallel pack keeps the two domains from growing irrelevant conditionals into each other's shared files. |
+| 13 | **Excel-only v1; AUTOSAR-only `integration-test`** | The vTestStudio `.vtt`/CAPL automation-script generation the user ultimately wants is deferred to v2 rather than attempted without a validated pattern. `integration-test`'s only validated pattern is RTE-debugger breakpoint testing, so it stops on a module with no RTE symbols rather than inventing a black-box equivalent. |
 
 ---
 
