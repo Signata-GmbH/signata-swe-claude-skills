@@ -25,10 +25,10 @@ just need **one click** to install it — no CLI, no GitHub login (the repo is p
 1. **Restart VS Code** (so managed settings register the `signata` marketplace).
 2. Type **`/plugins`** (plural) in the Claude prompt → opens the **Manage plugins** UI.
    *(Note: the `/plugin` singular subcommands don't work in the extension — use `/plugins`.)*
-3. Under **Available plugins**, find **`signata-swe-claude-skills`** → click **Install**.
+3. Under **Available plugins**, find **`signata-swe`** → click **Install**.
 4. **Restart** when prompted.
 
-The skills then appear in the `/` menu as `/signata-swe-claude-skills:project-init`,
+The skills then appear in the `/` menu as `/signata-swe:project-init`,
 `…:unit-test`, `…:code-review`, `…:code-dev` — and you never install them again
 (updates are automatic).
 
@@ -42,7 +42,7 @@ update it from a terminal:
 
 ```bash
 claude plugin list      # shows Version: <commit> and Scope: managed
-claude plugin update signata-swe-claude-skills@signata --scope managed
+claude plugin update signata-swe@signata --scope managed
 ```
 
 Then **reload VS Code** (Cmd/Ctrl+Shift+P → *Developer: Reload Window*), or quit and

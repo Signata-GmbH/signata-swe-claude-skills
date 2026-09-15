@@ -73,7 +73,7 @@ Admin: **claude.ai → Admin Settings → Claude Code → Managed settings.** Pa
     }
   },
   "enabledPlugins": {
-    "signata-swe-claude-skills@signata": true
+    "signata-swe@signata": true
   }
 }
 ```
@@ -84,7 +84,7 @@ Admin: **claude.ai → Admin Settings → Claude Code → Managed settings.** Pa
   ever reaches them**. Verified 2026-09-01: the deployed config was missing this
   key, the marketplace cache had advanced to a new commit, and the installed plugin
   was still on the previous one. Recovery on an already-pinned machine:
-  `claude plugin update signata-swe-claude-skills@signata --scope managed`
+  `claude plugin update signata-swe@signata --scope managed`
   (`--scope managed` is required — the command defaults to `user` scope and fails
   with *"not installed at scope user"*, which misleadingly reads as "not installed").
 - **The `github`+`repo` shorthand is correct while the repo is public.** It clones
@@ -100,7 +100,7 @@ Admin: **claude.ai → Admin Settings → Claude Code → Managed settings.** Pa
   [USING-THE-BETA.md](USING-THE-BETA.md).)
 - After a **restart**, the marketplace auto-adds and the plugin auto-enables — no
   `/plugin` command. (On the CLI surface a one-time
-  `claude plugin install signata-swe-claude-skills@signata` is occasionally still needed.)
+  `claude plugin install signata-swe@signata` is occasionally still needed.)
 - Beta tracks `main` (no `version` in `plugin.json`, `autoUpdate: true`), so a push to
   `main` ships to everyone on their next restart — there is no staging step. To **pin a
   release** instead, put `ref` **inside** `source` (sibling of `repo`/`url`), e.g.
@@ -108,7 +108,7 @@ Admin: **claude.ai → Admin Settings → Claude Code → Managed settings.** Pa
 
 (Self-service alternative, any plan, from a **terminal** — not the VS Code UI:
 `/plugin marketplace add Signata-GmbH/signata-swe-claude-skills`
-then `/plugin install signata-swe-claude-skills@signata`.)
+then `/plugin install signata-swe@signata`.)
 
 ---
 
@@ -148,7 +148,7 @@ refinement."
    is in flight on someone's branch) the skill **stops** and says to merge that one
    — two configs authored on two feature branches conflict in the file every run
    reads.
-2. Add to the repo README/CONTRIBUTING: "The `signata-swe-claude-skills` plugin is
+2. Add to the repo README/CONTRIBUTING: "The `signata-swe` plugin is
    installed org-wide; `ai_project.yaml` is committed — run `/unit-test <MODULE>`,
    `/code-review <MODULE>`, `/code-dev <MODULE>`."
 3. Everyone branching off `develop` inherits `ai_project.yaml`; manifests accrue

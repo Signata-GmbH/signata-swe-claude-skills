@@ -5,7 +5,11 @@
 
 - **Repo:** `Signata-GmbH/signata-swe-claude-skills` (canonical home — edit here, not the CEA staging branch)
 - **Release:** **v0.0.1 (first beta)** — tag `signata-swe-claude-skills--v0.0.1`
-- **Last updated:** 2026-09-01
+- **Plugin name:** `signata-swe` (marketplace `signata`) — renamed 2026-09-15 from
+  `signata-swe-claude-skills` for a shorter invocation prefix (`/signata-swe:code-dev`
+  etc.). Repo name and the existing `signata-swe-claude-skills--v0.0.1` tag are
+  unchanged.
+- **Last updated:** 2026-09-15
 - **Overall phase:** Beta — rolling out org-wide via managed settings for real-world testing
 - **Origin note:** developed on CEA staging branch `MQBST2-AI-Skills-Development` (now frozen); migrated here 2026-08-17
 
@@ -109,6 +113,7 @@ no-self-substitution rule). Next: **re-run `/unit-test`** to confirm it now
 | 2026-08-14 | Packaging: plugin **`signata-swe-claude-skills`** (marketplace `signata`), distributed **org-wide via managed settings**. Scaffolded manifests + `PUBLISHING.md`. |
 | 2026-09-01 | **Rollout defect found & documented:** the deployed managed settings registered the `signata` marketplace **without `autoUpdate`**, so the marketplace cache advanced while every installed plugin stayed pinned to its first-installed commit — `project-init` would have reached nobody. Fix: add `"autoUpdate": true` to the marketplace entry in Admin managed settings; recovery on a pinned machine is `claude plugin update … --scope managed` (the command defaults to `user` scope and misleadingly reports "not installed"). Also corrected `PUBLISHING.md` §B: the SSH-`url` prescription was stale — the repo is public, so the `github`+`repo` shorthand clones fine (verified by an unauthenticated `git ls-remote`). |
 | 2026-09-01 | **Fourth skill `project-init`** — the per-repo `ai_project.yaml` gets one owner, created **once, on the base branch**, and committed. Rationale: setup was a side effect of the first module run, so it landed on whatever branch that engineer was on; two engineers → two disagreeing configs → a merge conflict in the file every run reads. Guards: duplicate-config check across local/`origin/<base>`/all fetched branches, base-branch hard gate (never auto-switch/stash), validate-never-overwrite, no surviving placeholders, commit/push only on an explicit yes. Procedure factored into `_shared/common/project-config.md`; the three module skills call its §7 as a guarded fallback so they still run standalone. |
+| 2026-09-15 | **Renamed plugin** `signata-swe-claude-skills` → **`signata-swe`** (marketplace name `signata` unchanged) so the `/` menu prefix is shorter. Repo name and the `signata-swe-claude-skills--v0.0.1` tag stay as-is (historical). **Action required outside this repo:** update the org's managed-settings `enabledPlugins` key from `signata-swe-claude-skills@signata` to `signata-swe@signata` — engineers who already installed the old plugin name should reinstall/restart to pick up the new one. |
 
 ---
 
