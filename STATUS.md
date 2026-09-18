@@ -9,7 +9,7 @@
   `signata-swe-claude-skills` for a shorter invocation prefix (`/signata-swe:code-dev`
   etc.). Repo name and the existing `signata-swe-claude-skills--v0.0.1` tag are
   unchanged.
-- **Last updated:** 2026-09-15
+- **Last updated:** 2026-09-18
 - **Overall phase:** Beta — rolling out org-wide via managed settings for real-world testing
 - **Origin note:** developed on CEA staging branch `MQBST2-AI-Skills-Development` (now frozen); migrated here 2026-08-17
 
@@ -29,6 +29,7 @@
 ### Shared discipline — `_shared/common/`  (both flavors)
 - ✅ `no-fabrication.md` — toolchain honesty rule
 - ✅ `project-config.md` — the single per-repo config bootstrap (owned by `project-init`): base-branch derivation, duplicate-config check (local / `origin/<base>` / all fetched branches), base-branch hard gate, evidence-based derivation + ask list, validate-never-overwrite, confirm→write→offer-commit; §7 is the module skills' guarded fallback
+- ✅ `defect-analysis.md` — evidence taxonomy + fail-closed evidence gate + build reconciliation · hypothesis discipline (≥2 candidates) · four verdicts (V1 code / V2 requirement / V3 not-this-module / V4 not-localisable) · minimal-diff rule · blast radius · engineer-executed verification plan · debugging-specific honesty rules
 - ✅ `workflow-discipline.md` — §0 standalone · §1 **fail-closed input acquisition + mandatory-doc matrix + count gate** · §2 revision pinning · §3 scaffold→validate→confirm · §4 grounding · §5 Phase-1 questions→xlsx (skill-namespaced) · §6 Gate Table · §7 fidelity · §8 traceability · §9 ledger & history · §10 no-fabrication
 - ✅ `unittest-design.md` — test-design rules + deliverables + symbol-grounding self-check (was the missing D1 content)
 - ✅ `review-quality.md` — finding quality, false-negative prevention, checklist walk, traceability, output mechanics
@@ -51,11 +52,13 @@
 - ✅ Registered in `.claude-plugin/marketplace.json`; plugin description updated
 - ⬜ Dry-run `/project-init` on a real repo (AUTOSAR **and** non-AUTOSAR) — verify type detection, the duplicate guard on a branch that already has the config, and validate/repair mode
 
-### The three skill orchestrators  (complete)
+### The SWE.3 skill orchestrators  (complete)
 - ✅ `unit-test/SKILL.md` — 7-step orchestrator; adapts by `project.type`
 - ✅ `code-review/SKILL.md` — 7-step; flavor review stance + checklist walk
 - ✅ `code-dev/SKILL.md` — two-phase hard gate; flavor interface + forbidden rules
-- ✅ Step 1 of all three now routes a missing config through `project-config.md` §7 instead of scaffolding one on whatever branch the engineer happens to be on
+- ✅ `code-fix/SKILL.md` — 8-step, two-phase hard gate; intake/issue-ID → evidence gate → RCA + verdict → minimal diff → verification plan → per-issue ledger
+- ✅ Step 1 of all four now routes a missing config through `project-config.md` §7 instead of scaffolding one on whatever branch the engineer happens to be on
+- ⬜ Dry-run `/code-fix` on a real bench defect (AUTOSAR **and** non-AUTOSAR) — verify the evidence gate rejects a symptom-only report, that the build/working-tree reconciliation fires, that a V2/V3 conclusion really does stop before a diff, and that the invalidated-unit-test list is derived from `unit_test.last_run`
 
 ### Validation & packaging
 - ✅ First dry-run of each skill on `FUSA_PosDet` (AUTOSAR) — surfaced defects D1–D10 + confirmed U1–U5
@@ -90,7 +93,23 @@
   exports (nothing has been executed yet — this is authored-not-validated,
   same caveat the other four skills carried before their first dry-run)
 
-## Immediate next step (2026-09-15)
+### Fifth SWE.3 skill — `code-fix/`
+- ✅ `_shared/common/defect-analysis.md` (new shared discipline, see above)
+- ✅ `code-fix/SKILL.md` — symptom-driven counterpart of `code-dev`, same guard-rails, own entry path
+- ✅ `manifest-template.yaml` gains a `code_fix:` section: `issue_seq` + per-issue `issues:` records (verdict, root cause, evidence digest, invalidated tests, follow-ups, status) + `last_run`
+- ✅ `workflow-discipline.md` §1.1 doc matrix gains a `code-fix` column (+ the issue-evidence row), §0 four sections, §5 `CodeFix` question-workbook namespace; `no-fabrication.md` gains the never-claim-reproduced/fixed/verified rule
+- ✅ Registered in `.claude-plugin/marketplace.json` + `plugin.json`; `README.md` §1/§3.1/§3.2/§3.8/§3.9 (new)/§4 row 14 updated
+- ⬜ Dry-run (see the orchestrator section above)
+
+## Immediate next step (2026-09-18)
+Dry-run `/code-fix` on a real test-bench defect in one AUTOSAR and one
+non-AUTOSAR module. The four things to falsify: (a) a symptom-only report with
+no artifact must be **refused** at the evidence gate, not "investigated";
+(b) a conforming-code case must land as **V2** and produce **no diff**;
+(c) the analysis must name a candidate outside the area the engineer pointed at;
+(d) the blast radius must list the existing VectorCAST cases the fix invalidates.
+
+## Earlier next step (2026-09-15)
 Dry-run `integration-test` and `qualification-test` against a real
 vTestStudio project folder and real DOORS exports — verify the
 `ai_test_project.yaml` bootstrap (base-branch + duplicate guards), the
@@ -143,6 +162,7 @@ no-self-substitution rule). Next: **re-run `/unit-test`** to confirm it now
 | 2026-09-01 | **Rollout defect found & documented:** the deployed managed settings registered the `signata` marketplace **without `autoUpdate`**, so the marketplace cache advanced while every installed plugin stayed pinned to its first-installed commit — `project-init` would have reached nobody. Fix: add `"autoUpdate": true` to the marketplace entry in Admin managed settings; recovery on a pinned machine is `claude plugin update … --scope managed` (the command defaults to `user` scope and misleadingly reports "not installed"). Also corrected `PUBLISHING.md` §B: the SSH-`url` prescription was stale — the repo is public, so the `github`+`repo` shorthand clones fine (verified by an unauthenticated `git ls-remote`). |
 | 2026-09-01 | **Fourth skill `project-init`** — the per-repo `ai_project.yaml` gets one owner, created **once, on the base branch**, and committed. Rationale: setup was a side effect of the first module run, so it landed on whatever branch that engineer was on; two engineers → two disagreeing configs → a merge conflict in the file every run reads. Guards: duplicate-config check across local/`origin/<base>`/all fetched branches, base-branch hard gate (never auto-switch/stash), validate-never-overwrite, no surviving placeholders, commit/push only on an explicit yes. Procedure factored into `_shared/common/project-config.md`; the three module skills call its §7 as a guarded fallback so they still run standalone. |
 | 2026-09-15 | **Two new skills, `integration-test` (SWE.5) and `qualification-test` (SWE.6)**, generating DOORS test-case rows from xlsx exports. Three decisions made analysing `raw/PROMPT_SWE5_*`/`raw/PROMPT_SWE6_*` against the real vTestStudio project folders also in `raw/`: (1) these run in a **separate repo** — a vTestStudio project folder, not the SWE.3 C-source repo — so they get their **own** per-repo config `ai_test_project.yaml` and a parallel `_shared/testspec/` pack, not a third `project.type` flavor on the existing config; (2) **v1 is Excel-only** — the `.vtt`/CAPL automation-script generation visible in those folders is deferred to v2; (3) `integration-test` is **AUTOSAR-only for v1** since its only validated pattern is RTE-debugger breakpoint testing — it stops rather than inventing a black-box pattern for a module with no RTE symbols. Both raw prompts hardcoded project-specific facts (MQBST2's `RELEASE`, `ENVIRONMENT`, `CLASSIFICATION_RULE`, its `aFeature` list, a module-name mapping table) directly in the prompt text; all moved into `ai_test_project.yaml`, resolved/confirmed per repo like the other skills' config, never hardcoded in the skill body. |
+| 2026-09-18 | **Fifth SWE.3 skill `code-fix`** — the follow-up/defect path: test-bench evidence (debugger dump, CAN/LIN trace, DTC, failing SWE.4/5/6 case, measurement), a pointer to suspect code or a requirement, or a `/code-dev`–`/code-review` follow-up, in → root-cause analysis + minimal fix out. Made a **separate skill rather than a `code-dev` mode** because the input (evidence, not a specification), the allowed output (four verdicts, three of which forbid a diff), and the exit criterion (an engineer-executed verification plan) all invert, while every guard-rail stays shared. Three deliberate guards, all new: (1) a **fail-closed evidence gate** — observed-vs-expected **+** one artifact (or a statically traceable reproduction condition) **+** the build identity, plus reconciliation of that build against the working tree, since an already-fixed and a never-existed defect look identical by inspection; (2) **V2/V3/V4 verdicts** so "the code is correct — this is a requirement / calibration / upstream / bench-harness defect" is a complete answer instead of being converted into a diff (explicitly: suppressing a symptom by widening a tolerance or deleting an assertion is a spec change, → V2); (3) a **minimal-diff rule + blast radius** — drive-by cleanups demoted to findings, and the existing unit-test cases a fix invalidates listed from `unit_test.last_run` (read, never written). Per-issue ledger in a new manifest `code_fix.issues` section keyed by tracker ID or `<MODULE_UPPER>-FIX-NNN`. |
 | 2026-09-15 | **Renamed plugin** `signata-swe-claude-skills` → **`signata-swe`** (marketplace name `signata` unchanged) so the `/` menu prefix is shorter. Repo name and the `signata-swe-claude-skills--v0.0.1` tag stay as-is (historical). **Action required outside this repo:** update the org's managed-settings `enabledPlugins` key from `signata-swe-claude-skills@signata` to `signata-swe@signata` — engineers who already installed the old plugin name should reinstall/restart to pick up the new one. |
 
 ---

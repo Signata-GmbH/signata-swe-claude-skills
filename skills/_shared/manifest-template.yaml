@@ -58,6 +58,38 @@ code_dev:
     deferred_items:   []
 
 # ---------------------------------------------------------------------
+# CODE FIX   (/code-fix)  —  one entry per reported defect
+# ---------------------------------------------------------------------
+code_fix:
+  issue_seq:  0                     # SKILL-OWNED  last auto-coined <MODULE_UPPER>-FIX-NNN number
+  issues:     []                    # SKILL-OWNED  append-only per-issue record; re-runs update in place:
+                                    #   - id:            SAPF_MODE-FIX-001   # or the tracker ID (Jira/Polarion/DOORS)
+                                    #     opened:        2026-09-18
+                                    #     observed:      "…"                 # engineer's words, verbatim
+                                    #     expected:      "…"
+                                    #     expectation_source: SW_Requ-123 | TC-456 | engineer-judgement
+                                    #     evidence:      []                  # [{kind, ref, digest}] kind per defect-analysis §2
+                                    #     evidence_build: <sha|tag|release>   # build the observation was made on
+                                    #     verdict:       V1 | V2 | V3 | V4    # defect-analysis §5
+                                    #     root_cause:    "file:line — mechanism"
+                                    #     requirements:  []                  # IDs the symptom touches
+                                    #     files_changed: []
+                                    #     report:        20_AI/CodeFix/<MODULE>_<ID>_FixReport.md
+                                    #     tests_invalidated: []              # existing unit-test cases the fix changes
+                                    #     follow_ups:    []                  # /unit-test, /code-review diff, req change request
+                                    #     status:        analysed | fix-proposed | fix-applied | no-change | blocked
+
+  last_run:                         # SKILL-OWNED ledger
+    timestamp:        null
+    skill_version:    null
+    issue_id:         null
+    source_sha:       null          # working-tree revision the analysis was authored against
+    evidence_sha:     null          # digest of the supplied evidence set
+    verdict:          null
+    files_changed:    []
+    deferred_items:   []
+
+# ---------------------------------------------------------------------
 # CODE REVIEW   (/autosar-code-review or /code-review)
 # ---------------------------------------------------------------------
 code_review:
