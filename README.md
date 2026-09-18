@@ -1,11 +1,12 @@
 # AUTOSAR / non-AUTOSAR AI Skills — Technical Documentation
 
 A Claude Code **plugin** that turns SIGNATA's engineering AI prompts —
-**Code Development**, **Code Review**, **Unit-Test Generation**, and (for a
-vTestStudio project folder) **Integration-Test** and **Qualification-Test
+**Code Development**, **Defect Analysis & Fix**, **Code Review**,
+**Unit-Test Generation**, and (for a vTestStudio project folder)
+**Integration-Test** and **Qualification-Test
 Generation** — into reusable **skills** developers invoke by name, instead of
 copy-pasting a large prompt and hand-filling inputs every time. Two setup
-skills, **Project Init** and (inline, per §3.9) the test-spec config bootstrap,
+skills, **Project Init** and (inline, per §3.10) the test-spec config bootstrap,
 lay down the per-repo config each group reads.
 
 > Status & roadmap live in [STATUS.md](STATUS.md). This file is the *why* and
@@ -26,7 +27,7 @@ We had six hand-crafted prompts — the three use-cases above, each in an
 
 This project makes the prompts **first-class, versioned, invokable tooling**:
 
-- `/code-dev`, `/code-review`, `/unit-test` — three commands, any repo.
+- `/code-dev`, `/code-fix`, `/code-review`, `/unit-test` — four commands, any repo.
 - `/project-init` — one command, once per repo, to lay down the shared config.
 - Project- and module-specific inputs come from small **config files** the skill
   scaffolds and confirms, not from copy-paste.
@@ -62,6 +63,7 @@ This project makes the prompts **first-class, versioned, invokable tooling**:
 │   ├── common/                   # flavor-AGNOSTIC discipline (both flavors load these)
 │   │   ├── project-config.md        #   per-repo config bootstrap: base-branch + duplicate guards
 │   │   ├── workflow-discipline.md   #   gates, revision pinning, Gate Table, ledger/history
+│   │   ├── defect-analysis.md       #   evidence taxonomy, hypotheses, verdicts, minimal diff
 │   │   ├── review-quality.md        #   finding quality, checklist walk, traceability
 │   │   ├── vectorcast-syntax.md     #   .tst grammar (shared verbatim)
 │   │   └── no-fabrication.md        #   toolchain-honesty rule
@@ -77,6 +79,7 @@ This project makes the prompts **first-class, versioned, invokable tooling**:
 │       └── review-flavor.md         #   MISRA-out, no AUTOSAR-isms, AI-Suggested-Fix column
 ├── project-init/     SKILL.md    # setup — per-repo config, once, on the base branch
 ├── code-dev/         SKILL.md    # orchestrator — two-phase hard gate
+├── code-fix/         SKILL.md    # orchestrator — evidence → root cause → minimal diff
 ├── code-review/      SKILL.md    # orchestrator — findings + checklist walk
 ├── unit-test/        SKILL.md    # orchestrator — .tst authoring
 ├── integration-test/ SKILL.md    # orchestrator — SWE.5 DOORS test-case generation
@@ -87,13 +90,13 @@ This project makes the prompts **first-class, versioned, invokable tooling**:
 vTestStudio project folder, not the SWE.3 C-source repo — so they read a
 **separate** `_shared/testspec/` pack (own config template, own bootstrap
 procedure, own discipline/no-fabrication/output-format files, own manifest
-templates) instead of `common/`/`autosar/`/`generic/`. See §3.9.
+templates) instead of `common/`/`autosar/`/`generic/`. See §3.10.
 
-### 3.2 Three *adaptive* module skills, not six
+### 3.2 Four *adaptive* module skills, not eight
 
-We chose **three skills that adapt to the project** over six flavor-specific
-ones. Because `project.type` is fixed per repo, a skill reads it and loads the
-right flavor automatically — the developer always types the same `/unit-test`
+We chose **skills that adapt to the project** over flavor-specific pairs.
+Because `project.type` is fixed per repo, a skill reads it and loads the right
+flavor automatically — the developer always types the same `/unit-test`
 regardless of AUTOSAR vs non-AUTOSAR. Each `SKILL.md` is a thin **orchestrator**:
 
 ```
@@ -195,14 +198,54 @@ corroborating trail.
 
 ### 3.8 No pipeline assumption
 
-The three module workflows are **decoupled**. Any of them can be the first to run
-for a module (review may run on code Code-Gen never produced). Each independently
+The four module workflows are **decoupled**. Any of them can be the first to run
+for a module (review may run on code Code-Gen never produced; `/code-fix` runs on
+a legacy module no skill ever touched). Each independently
 scaffolds the manifest and populates **only its own** section; a shared
 requirement-hash spine is used opportunistically but never required. `/project-init`
 is *not* a pipeline stage either — the module skills fall back to the same guarded
 bootstrap if it never ran.
 
-### 3.9 A second, parallel config: the DOORS test-spec skills
+### 3.9 `code-fix`: the symptom-driven counterpart of `code-dev`
+
+`/code-fix` is the follow-up path — for a defect found at the test bench, a
+failing SWE.4/5/6 case, or an issue in code `/code-dev` just produced. It reuses
+`code-dev`'s entire guard-rail set (fail-closed inputs, hard Phase-1 gate,
+revision pinning, grounding, fidelity rules, no-fabrication, ledger) and both
+flavor packs. It is a **separate skill**, not a mode, because three things
+invert:
+
+- **The input is evidence, not a specification.** A Trace32 dump or a CANoe log
+  establishes *what happened*, never *why*; "the bug is in `Foo_Calc()`" is the
+  engineer's hypothesis, not a finding. `_shared/common/defect-analysis.md` §2
+  is an evidence taxonomy — per artifact kind: what it proves, what it does
+  **not** prove, what to ask for when it is missing — behind a fail-closed
+  **evidence gate** (observed-vs-expected **+** one artifact or a statically
+  traceable reproduction condition **+** the build identity). It also
+  **reconciles the evidence's build against the working tree**, because an
+  already-fixed defect and a never-existed defect look identical by inspection.
+- **The correct answer may be "change nothing here."** Four verdicts (§5):
+  **V1** code defect · **V2** requirement defect/ambiguity (the code conforms —
+  no change without an explicit engineer decision) · **V3** upstream /
+  calibration / build-config / integration / bench-harness defect · **V4** not
+  localisable (name the artifact that would decide it, and stop). A
+  development-shaped workflow has no such verdict, so it always emits a diff —
+  which is how a symptom gets buried instead of fixed.
+- **A fix is a minimal diff with a blast radius.** §6 is the mirror of
+  code-dev's regenerate guard: every changed line justified by the root cause,
+  drive-by cleanups demoted to findings, no renames, and no symptom suppression
+  (widening a tolerance or deleting an assertion is a spec change → V2). §7
+  then derives what the change can break — callers, shared state, re-derived
+  Gate Table, other requirements on those lines, variants, and the existing
+  unit-test cases the fix invalidates (read from `unit_test.last_run`, never
+  written). §8 is a verification plan **the engineer executes**: nothing is
+  reproduced, fixed, or verified in this environment.
+
+The manifest gains a `code_fix:` section whose `issues:` list is keyed by issue
+ID (tracker ID, else `<MODULE_UPPER>-FIX-NNN`), so a module accumulates an
+auditable defect history and a re-run updates its issue in place.
+
+### 3.10 A second, parallel config: the DOORS test-spec skills
 
 `integration-test` (SWE.5) and `qualification-test` (SWE.6) generate draft
 DOORS test-case rows (a 3-sheet Excel workbook an engineer reviews and enters
@@ -245,7 +288,7 @@ for a module with no RTE symbols to work from.
 | 1 | **Skills, not slash commands or CLAUDE.md** | Progressive disclosure keeps context lean; shared files factor out triplicated rules; auto-selectable per project. |
 | 2 | **One plugin, three *adaptive* module skills** (not six) | `project.type` is one-per-repo, so the skill auto-loads the flavor; the shared skeleton is maintained once. |
 | 3 | **Two-level config** (`ai_project.yaml` → manifest) | Separates reusable *workflow* from project-specific *data*; makes compiler/target/layout dynamic per project. |
-| 4 | **One manifest per module**, at `20_AI/manifests/` | Shared by all three workflows; collected next to the prompts/inputs for easy review. |
+| 4 | **One manifest per module**, at `20_AI/manifests/` | Shared by all four SWE.3 workflows; collected next to the prompts/inputs for easy review. |
 | 5 | **Harmonize up** into `common/` | The non-AUTOSAR prompts were more evolved (revision pinning, Gate Table, questions-xlsx, run history); both flavors now inherit those. |
 | 6 | **In-place re-runs** driven by `last_run` hashes | A re-run updates changed artifacts in place instead of duplicating or clobbering. |
 | 7 | **Ledger (working state) + append-only JSONL history** | `last_run` powers re-runs; the JSONL is the immutable audit trail. Git corroborates. |
@@ -255,6 +298,7 @@ for a module with no RTE symbols to work from.
 | 11 | **A dedicated `/project-init` skill** for the per-repo config | Setup was a side effect of the first module run, so it happened on whatever branch that engineer was on. Two engineers → two disagreeing configs → a merge conflict in the file every run reads. One owner, one procedure, base-branch + duplicate guards; the module skills keep a guarded fallback so they still run standalone. |
 | 12 | **A separate `_shared/testspec/` pack + `ai_test_project.yaml`** for `integration-test`/`qualification-test`, not a third `project.type` flavor | These skills run in a different repo (vTestStudio project folder) with no source code, no compiler, and no git-SHA build to pin against — the SWE.3 flavor mechanism and revision pinning genuinely don't apply. A parallel pack keeps the two domains from growing irrelevant conditionals into each other's shared files. |
 | 13 | **Excel-only v1; AUTOSAR-only `integration-test`** | The vTestStudio `.vtt`/CAPL automation-script generation the user ultimately wants is deferred to v2 rather than attempted without a validated pattern. `integration-test`'s only validated pattern is RTE-debugger breakpoint testing, so it stops on a module with no RTE symbols rather than inventing a black-box equivalent. |
+| 14 | **`code-fix` as a fifth SWE.3 skill, not a mode of `code-dev`** | The fix workflow inverts the input (evidence, not a requirement set), the allowed output (four verdicts — three of which forbid a diff), and the exit criterion (a verification plan the engineer runs, since nothing is reproducible here). Bolting a second entry path onto `code-dev` would double its branching for both workflows and leave the evidence gate nowhere to live; a separate orchestrator sharing `workflow-discipline`, `no-fabrication`, and both flavor packs keeps the guard-rails identical where they genuinely are identical. |
 
 ---
 
@@ -279,5 +323,5 @@ for a module with no RTE symbols to work from.
   (STATEMENT+MCDC), RTE I/O, MemMap, runnables.
 - **non-AUTOSAR** side: Small_Actuator, Melexis MLX81332, LIN 2.2, VectorCAST
   (Statement+Branch), `_cfg.h` IF-macros, scheduler-driven.
-- Neither builds/runs a toolchain in-session — the **no-fabrication** rule is
-  absolute across all three skills.
+- Neither builds/runs a toolchain in-session, and no debugger or test bench is
+  reachable either — the **no-fabrication** rule is absolute across every skill.

@@ -1,5 +1,5 @@
 {
   "name": "signata-swe",
-  "description": "AUTOSAR & non-AUTOSAR SWE.3 AI skills — project-init (one-per-repo config bootstrap), code development, code review, and VectorCAST unit-test generation — plus DOORS SWE.5/SWE.6 test-case generation (integration-test, qualification-test) for a vTestStudio project folder. Adapts per project.type / own per-repo config over a shared manifest with fail-closed input governance and an auditable run ledger. (Beta.)",
+  "description": "AUTOSAR & non-AUTOSAR SWE.3 AI skills — project-init (one-per-repo config bootstrap), code development, defect root-cause analysis & fix, code review, and VectorCAST unit-test generation — plus DOORS SWE.5/SWE.6 test-case generation (integration-test, qualification-test) for a vTestStudio project folder. Adapts per project.type / own per-repo config over a shared manifest with fail-closed input governance and an auditable run ledger. (Beta.)",
   "author": { "name": "Signata GmbH" }
 }

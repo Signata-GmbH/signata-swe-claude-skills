@@ -1,6 +1,6 @@
 # Using the SWE AI Skills — Beta (v0.0.1)
 
-Claude Code skills for our AUTOSAR **and** non-AUTOSAR firmware projects — three
+Claude Code skills for our AUTOSAR **and** non-AUTOSAR firmware projects — four
 per-module workflows plus a one-time per-repo setup. They replace the old
 copy-paste prompts. **This is a beta** — please try them on real modules and
 report what breaks.
@@ -11,6 +11,7 @@ report what breaks.
 |---|---|
 | `/project-init` | **Run once per repo, on `develop`.** Creates `20_AI/ai_project.yaml` (the shared project config) and commits it. Refuses to create a second one if it already exists. |
 | `/code-dev <MODULE>` | Implement a module (or a feature in one) from its requirements + an Implementation Review doc. Two-phase: analysis & questions first, code only after you approve. |
+| `/code-fix <MODULE> [issue-id]` | Root-cause a defect found at the test bench (or in code `/code-dev` just produced) and propose a **minimal** fix. Bring your evidence — a debugger dump, a CAN/LIN trace, a DTC, a failing test case, a scope shot — plus what you expected and which build you saw it on; it asks if that's missing. It may conclude the code is correct and the requirement, calibration, upstream signal, or bench setup is at fault, and then proposes no change. Nothing is verified here: you get a verification plan to run. |
 | `/code-review <MODULE>` | Formal SWE.3 review of the user-implemented C → a populated Findings List, with the checklist walked. |
 | `/unit-test <MODULE>` | Generate / update a VectorCAST `.tst` suite from requirements + code, with an auditable requirement→case ledger. |
 
@@ -29,7 +30,7 @@ just need **one click** to install it — no CLI, no GitHub login (the repo is p
 4. **Restart** when prompted.
 
 The skills then appear in the `/` menu as `/signata-swe:project-init`,
-`…:unit-test`, `…:code-review`, `…:code-dev` — and you never install them again
+`…:unit-test`, `…:code-review`, `…:code-dev`, `…:code-fix` — and you never install them again
 (updates are automatic).
 
 **If it's not under "Available":** the marketplace didn't register (usually a stale

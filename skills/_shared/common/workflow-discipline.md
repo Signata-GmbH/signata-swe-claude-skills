@@ -1,6 +1,7 @@
 # Common workflow discipline (both flavors)
 
-> Loaded by all three module skills regardless of `project.type`. This is the
+> Loaded by all four module skills (`code-dev`, `code-fix`, `code-review`,
+> `unit-test`) regardless of `project.type`. This is the
 > shared backbone — harmonized up from the stronger patterns across the AUTOSAR and
 > non-AUTOSAR prompts. Flavor packs (`autosar/`, `generic/`) layer the
 > project-type-specific mechanics on top; they never restate this file.
@@ -17,9 +18,11 @@
   branch or is in flight elsewhere; otherwise `/project-init`, or bootstrap inline
   when already on the base branch) — never scaffold a competing copy on a feature
   branch.
-- **Populate only your own workflow section.** The three sections
-  (`code_dev` / `code_review` / `unit_test`) are independent; another's
-  `last_run` may be `null` and that is valid.
+- **Populate only your own workflow section.** The four sections
+  (`code_dev` / `code_fix` / `code_review` / `unit_test`) are independent;
+  another's `last_run` may be `null` and that is valid. `code-fix` *reads*
+  `unit_test.last_run` opportunistically (to list the cases a fix invalidates)
+  but never writes it.
 - Review and test operate on **whatever code is actually present**. Absent
   Code-Gen artifacts (traceability comments in a given form, an
   Implementation_Review.md, …) are **findings, not blockers**.
@@ -28,15 +31,20 @@
 
 ### 1.1 Required inputs per skill
 
-| Document (config/manifest key) | unit-test | code-review | code-dev |
-|---|:--:|:--:|:--:|
-| SW Requirements workbook (`requirements.workbook`) | ✔ | ✔ | ✔ |
-| Module source `<MODULE>.c/.h` / Agnosar stub + RTE interface | ✔ | ✔ | ✔ |
-| SDD (`manifest docs.sdd`) | ✔ | ✔ | ✔ |
-| Signals & Parameters (`docs.signals_params`) | ✔ | ✔ | ✔ |
-| Architecture Design Document (`docs.architecture` — project or module) | ask | ask | ask |
-| Coding guideline (`docs.coding_guideline`) | – | ✔ | non-AUTOSAR ✔ / AUTOSAR opt |
-| Review checklist workbook (`docs.checklist`) | – | ✔ | – |
+| Document (config/manifest key) | unit-test | code-review | code-dev | code-fix |
+|---|:--:|:--:|:--:|:--:|
+| SW Requirements workbook (`requirements.workbook`) | ✔ | ✔ | ✔ | ✔ |
+| Module source `<MODULE>.c/.h` / Agnosar stub + RTE interface | ✔ | ✔ | ✔ | ✔ |
+| SDD (`manifest docs.sdd`) | ✔ | ✔ | ✔ | ✔ |
+| Signals & Parameters (`docs.signals_params`) | ✔ | ✔ | ✔ | ✔ |
+| Architecture Design Document (`docs.architecture` — project or module) | ask | ask | ask | ask |
+| Coding guideline (`docs.coding_guideline`) | – | ✔ | non-AUTOSAR ✔ / AUTOSAR opt | non-AUTOSAR ✔ / AUTOSAR opt |
+| Review checklist workbook (`docs.checklist`) | – | ✔ | – | – |
+| Issue evidence (observed/expected + artifact + build identity) | – | – | – | ✔ |
+
+`code-fix`'s evidence row is governed by the **evidence gate** in
+[defect-analysis.md](defect-analysis.md) §2, which defines what counts as an
+artifact and what each kind does and does not establish.
 
 ✔ = mandatory · **ask** = optional but must be **explicitly offered** at the gate ·
 – = optional (recorded if present). Any document may be **`.pdf` or `.xlsx`**.
@@ -116,7 +124,7 @@ than an honest stop.
 
 - Write the numbered questions to a **skill-namespaced** workbook
   `20_AI/<MODULE>_Phase1_Questions_<Skill>.xlsx` (`<Skill>` = `UnitTest` /
-  `CodeReview` / `CodeDev`) so the three skills never clobber each other's
+  `CodeReview` / `CodeDev` / `CodeFix`) so the skills never clobber each other's
   questions. One row each: `QID | Requirement | Function | Question | AI Proposal |
   Answer(blank) | Status(open)`.
 - If the workbook already exists, **read it back first**: rows with a non-empty
