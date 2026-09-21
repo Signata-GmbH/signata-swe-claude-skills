@@ -18,13 +18,25 @@ inherits: 20_AI/ai_test_project.yaml
 
 module:
   name: <MODULE_NAME>              # <-- fill   e.g. FUSA_ParkLckCtrl (an aFunctionModule value)
+  # Modules at the other end of this module's ports. DISCOVERED at the Phase-1
+  # gate (integration-test-patterns.md §2) and confirmed by the engineer — an
+  # ambiguous or unresolvable pairing is asked about, never guessed. Their
+  # objects come into scope, and each interface is mirrored into their sections
+  # (§3) unless integration_test.peer_module_mirroring is false.
+  peers: []                        # <-- confirm  e.g. ["FUSA_MotCtrl", "CDD_MotDrv"]
 
 # PER-MODULE documents (extend the project-wide docs.* in ai_test_project.yaml).
 docs:
   existing_integration_test_cases: <path>  # <-- fill  MANDATORY — this module's slice of the existing
-                                            #     integration-test-spec export (exemplars + coverage baseline)
-  rte_headers: <path or N/A>       # <-- fill  ARXML or Rte_*.h / Rte_Type.h — only needed for interfaces
-                                    #     with no existing test cases
+                                            #     integration-test-spec export (exemplars + coverage baseline).
+                                            #     Include the PEER modules' slices too — a mirrored section needs
+                                            #     the peer's test-spec spelling and its existing coverage.
+  rte_headers: <path or N/A>       # <-- fill  this module's Rte_<Module>.h / ARXML slice — needed for
+                                    #     interfaces with no existing test cases (the Rte_Write/Rte_Read
+                                    #     symbol and the element name, which the architecture does not give)
+                                    #     and for any reader type whose width the Min-1/Max+1 wrap depends
+                                    #     on. PROJECT-WIDE datatype/enum definitions are NOT here — they
+                                    #     live in docs.rte_type_headers in ai_test_project.yaml (patterns §5.2)
   extra: []                        # optional additional documents for a run
   run_instructions: ""             # optional free-text custom instructions for a run
 
@@ -38,5 +50,7 @@ last_run:                          # SKILL-OWNED ledger
   release_id:       null           # release.id the run was authored against (baseline pinning)
   variants:         []
   input_hashes:     {}             # supplied file -> git hash-object result
-  interfaces:       {}             # interface name -> { hash, cases: [proposed titles] }
+  interfaces:       {}             # interface name -> { hash, writer, reader, data_type, cases: [titles],
+                                    #                     mirrored_into: [module, ...] }
+  peers:            []             # peer modules the run resolved (mirrors the confirmed module.peers)
   open_points:      []

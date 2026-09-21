@@ -17,6 +17,29 @@ report what breaks.
 
 Each skill **adapts automatically** to whether the repo is AUTOSAR or non-AUTOSAR.
 
+### The two DOORS test-spec skills
+
+These run in the **vTestStudio project folder**, not the C-source repo, and read
+their own config (`20_AI/ai_test_project.yaml`, bootstrapped on first run). They
+produce a 3-sheet Excel workbook (Test Cases / Traceability / Open Points) that
+you review and enter into DOORS by hand — nothing is written to DOORS.
+
+| Command | Does | Bring |
+|---|---|---|
+| `/integration-test <MODULE>` | SWE.5 interface test cases for a module **and the peer modules its ports run to** — one side writes (`Rte_Write`), the other reads (`Rte_Read`), so both ends are named in every case. AUTOSAR/RTE-debugger only. | The **Functional_Architecture** DOORS export (its section 1.2 UserDefinedTypes chapter comes with it), the existing SWE.5 test-spec export for the module and its peers, and `Rte_Type.h`/ARXML. |
+| `/qualification-test <FEATURE>` | SWE.6 test cases for a feature — requirements-based, boundary-value and diagnostic (UDS DID/RID). | The **SW requirements** export, Signals & Parameters, an A2L or code variable list, and the UDS DiagSpec for diagnostic features. |
+
+**Export your architecture with both `Object Heading` and `Object Text`
+columns.** A DOORS view that emits one content column gives you either the
+names (module, port, type, struct member) or the text (the `DataType:` and
+`Range:` lines) — never both, and `/integration-test` needs both. If your view
+can only do one at a time, hand it **two exports of the same module** (one of
+each) and it will join them on the `ID` column. It checks this before doing any
+work and stops rather than guessing.
+
+Both skills **stop and ask** rather than invent a symbol, a limit or an enum
+value; whatever they can't resolve lands on the Open Points sheet.
+
 ## Getting it
 
 The marketplace is pushed to everyone via Claude Code **managed settings**, so you

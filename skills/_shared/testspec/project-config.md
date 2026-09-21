@@ -70,11 +70,22 @@ from the "most common" spelling seen:**
 
 - **`docs.*`** — glob under `docs.root` (default `20_AI/`) for each document;
   several candidates → pick-one popup; none → ask for the path. Every document
-  may be `.pdf` or `.xlsx`.
+  may be `.pdf` or `.xlsx`. For `functional_architecture_export`, filenames are
+  weak evidence — the same DOORS module exported twice from two views (one
+  showing object names, one showing object text) looks like two documents and is
+  easily mistaken for two modules. Confirm by content and by `ID` set: an
+  identical `ID` set means one module in two views, so point
+  `functional_architecture_export` at the view with the names and
+  `functional_architecture_export_text_view` at the other, rather than treating
+  them as separate documents.
 - **`qualification_test.valid_features`** — derive from the distinct `aFeature`
   values in `docs.requirements_workbook` once it is available; present the list
   for confirmation (it is a **learned** field, re-validated on later runs, not
   a one-time fixed enum — a repo's requirements export can gain a feature).
+- **`integration_test.peer_modules`** — starts empty; each `integration-test`
+  run that resolves a module's writer→reader pairings appends them here after
+  engineer confirmation, so a later run of the same module (or of one of its
+  peers) reuses the pairing instead of re-deriving it. Never seeded by analogy.
 - **`integration_test.module_name_mapping`** — starts empty; each
   `integration-test` run that resolves a new module's mapping (per
   `integration-test-patterns.md`'s discovery method) appends its entry here so

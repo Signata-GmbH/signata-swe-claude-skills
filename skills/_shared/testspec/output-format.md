@@ -24,7 +24,11 @@ confirm which skill is running before writing the header row.
 A heading row (module, interface, test group, parameterised logical parent) is
 included as its own row with `atsType`, `atsRegression`, `atsClassification`
 and `atsState` all set to `no testcase`, so the DOORS hierarchy is reproducible
-from the sheet alone. A concrete test case is a row with a real `atsType`
+from the sheet alone. For SWE.5 that is two levels — a module-level heading
+(`FUSA_MotCtrl`, `Mot_Drv`) opening the section, then an interface-level heading
+per port or connection (`P_Mot_Mov_Data`, `FUSA-MotCtrl to CDD_Drv`) — and the
+sheet carries one such section per module in scope, the target's and each
+peer's. A concrete test case is a row with a real `atsType`
 (`positive` / `negative` / `qualitative`, or `logical testcase` for a SWE.6
 parameterised parent).
 
@@ -54,9 +58,13 @@ running skill.
 
 **Sheet 2 — `Traceability`.** One row per generated test case: proposed title,
 the requirement/architecture object it covers (and, for SWE.6, which clause of
-the requirement text), the interface + sender/receiver modules (SWE.5 only).
-The engineer creates the DOORS links by hand from this sheet — it must be
-complete and readable on its own.
+the requirement text). For SWE.5 also: the interface, its data type, the
+**writer** module/file and the **reader** module/file, which module's section
+the row sits under, whether the row is the **primary** or a **mirror**
+(integration-test-patterns.md §3), and which range the Min/Mid/Max values came
+from — the documented `Range:` or the implementation type's limits (§5.2). The
+engineer creates the DOORS links by hand from this sheet — it must be complete
+and readable on its own.
 
 The integration-test and qualification-test DOORS modules share the `SW_TST-`
 prefix and their ID numbers **collide** — a reference to an *existing* test

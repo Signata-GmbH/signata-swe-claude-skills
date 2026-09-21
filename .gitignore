@@ -1,0 +1,5 @@
+# Customer DOORS exports / test-spec workbooks used to develop the skills.
+# This repo is published org-wide as a plugin — project data must not land here.
+*.xlsx
+*.xlsm
+~$*

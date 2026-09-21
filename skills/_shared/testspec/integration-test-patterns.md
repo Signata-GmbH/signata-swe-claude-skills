@@ -5,13 +5,13 @@
 > [no-fabrication.md](no-fabrication.md), and
 > [output-format.md](output-format.md).
 
-## AUTOSAR-only guard (v1)
+## 0. AUTOSAR-only guard (v1)
 
 The only validated pattern here is **RTE-debugger-based, white-box**: the
 Debug SW is flashed to the target ECU, breakpoints are set on RTE calls,
 variables are edited, and the value is observed at the receiving end. This
-only makes sense where the module has `Rte_Write`/`Rte_Read` symbols to hang a
-breakpoint on.
+only makes sense where the module has `Rte_Write`/`Rte_Read`/`Rte_Call`
+symbols to hang a breakpoint on.
 
 If the target module's architecture entry and existing test cases show **no**
 RTE symbols (no ARXML/`Rte_*.h`, no existing RTE-pattern test cases, no
@@ -19,11 +19,59 @@ RTE symbols (no ARXML/`Rte_*.h`, no existing RTE-pattern test cases, no
 say plainly that this skill only supports RTE-based integration testing in its
 current version, rather than inventing a black-box equivalent.
 
-## 1. Scope
+## 1. The test basis: Functional_Architecture, not SW requirements
+
+An SWE.5 test case traces to an **architecture object** — a component, a port,
+a runnable — so the test basis is the **Functional_Architecture** DOORS export
+(`docs.functional_architecture_export`). That is **one** DOORS module, and it
+contains its own **UserDefinedTypes chapter** (section 1.2) — the `in
+UserDefinedTypes` references point *within* the same document, not at a
+separate module. The SW requirements export is the SWE.6 basis and is **not
+read by this skill**; do not accept one in place of the other
+(workflow-discipline §1.1).
+
+Every object carries a **name** (`Object Heading`) and a **text**
+(`Object Text`), and this skill needs both — the names give the ports, types
+and members, the text gives the ranges and the `DataType:` lines. A
+single-content-column export shows only one of the two, so the export may
+arrive as two views joined on `ID`; workflow-discipline §1.3 gates that.
+
+### 1.1 How the architecture module is laid out
+
+Numbering varies by project — confirm it at the Phase-1 gate rather than
+hardcoding these numbers. Per level, what is in the **name** and what is in the
+**text**:
+
+| Section | Name holds | Text holds | Used for |
+|---|---|---|---|
+| `1.1` | component-diagram entries per module | — | `aFeature` cross-check when resolving a module |
+| `1.2` | **the type name** (`Mot_Mov_Data_St`, `ParkLck_State_en`) | the type's prose description | §5.2 |
+| `1.2.<n>.<m>` | **a struct member** (`DutyCyc_perc_u08`, `Movement`) | that member's `Range:` / factor / init value | §5.2 |
+| `1.3.1.<n>` | the component | purpose, runnable list, ROM/RAM, execution time | P-05 |
+| `1.3.1.<n>.1.<m>` | the runnable | task mapping ("should be called from 2msec Task_FUSA_2ms", "Triggered in the rte init") | P-05 |
+| `1.4.1.<n>` | **the module** (architecture spelling) | the component's purpose | owns the ports below it |
+| `1.4.1.<n>.<m>` | **the port**, direction-prefixed (`P_Mot_Mov_Data`, `R_ActPosn`), or a watchdog checkpoint (`SE01_MotCtrl_Log_Start_CP`), or a called API (`Ftm_Pwm_Ip_FastUpdatePwmDuty`) | "This port sends…" / "This port receives…" + `DataType: <T>` | P-01/P-02/P-03/P-06 — one interface each |
+| `1.4.1.<n>.<m>.<k>` | **the data element** (`Data`, `Speed`, `State`) | `DataType: <T> in UserDefinedTypes`, `Range: [...]` | §5.2 |
+| `1.5` | sequence/flow entries | the flow description | usually review-only (§6) |
+
+Two traps at the `1.4` level:
+
+- The element name in `1.4.1.<n>.<m>.<k>` is the **architecture's** name for it
+  (often just `Data`) and is frequently **not** the element name in the RTE
+  symbol (`Rte_Read_R_Mot_Mov_Data_Mot_Mov_Data` — element `Mot_Mov_Data`, not
+  `Data`). Take the RTE symbol from the RTE headers or an existing test case,
+  never by concatenating the architecture's names (§9).
+- An object's `aFunctionModule` can disagree with the section it sits under
+  (a port under `FUSA_MotCtrl` carrying `aFunctionModule = FUSA_ParkLckCtrl`).
+  Use the **section** for ownership and the **attribute** for the scope filter,
+  and report every disagreement as an Open Point rather than silently picking
+  one.
+
+### 1.2 Scope filter
 
 Select architecture objects where:
 
-- `aFunctionModule` = the target module
+- `aFunctionModule` = the target module **or one of its peer modules** (§2)
 - `aTestability` ∈ `integration_test.testability_filter`
 - `aStatusOfAnalysis` ∈ `attributes.status_filter`
 - `aRequirementObjectType` = `functional requirement` or `non functional requirement`
@@ -31,18 +79,108 @@ Select architecture objects where:
 
 Report the count at each filter step — expect heavy attrition (objects with no
 text, or that are information/feature/feature-description rows, are common).
+Objects of type `information` are **not** in scope as test-case sources, but a
+`1.4.1.<n>.<m>.<k>` information child **is** read for its type/range detail,
+and so is every `1.2` type/member object the in-scope ports reference.
 
-## 2. Resolving the module name (the mapping table)
+### 1.3 `aTestCriteria` is the engineer's own stated approach
 
-The architecture export uses `aFunctionModule`. **The integration-test export
-has no `aFunctionModule` column** — only `aFeature`. Existing test cases for a
-module are located by walking the Object Heading hierarchy: a module-level
-heading opens a section, and everything until the next module-level heading
-belongs to it.
+Every in-scope object carries `aTestCriteria` — the approach the architect
+already wrote down. It is an input, not decoration: pick the pattern it names
+(§6 maps the observed wordings to patterns), and where a generated case cannot
+follow it, say so in Open Points instead of substituting your own approach. An
+empty `aTestCriteria` on an in-scope port is a Phase-1 question, not a licence
+to choose freely.
 
-The two vocabularies rarely match exactly (spelling differences, transposed
-words). **Discovery method** (generic — apply it to whatever module you're
-given):
+## 2. The module and its peers (write side / read side)
+
+An integration test case exercises **one interface across two modules**: the
+module that writes it and the module that reads it. So selecting a module
+selects more than its own objects — it selects every interface it is an end of,
+together with the module at the other end.
+
+**Direction** — the port's **name prefix** is authoritative, because it is also
+the spelling the test-spec module uses for its headings:
+
+- `P_<Element>` → **write (provide) side** — `Rte_Write_P_<port>_<element>(...)`
+  in the writing module's `.c`.
+- `R_<Element>` → **read (require) side** — `Rte_Read_R_<port>_<element>(...)`
+  in the reading module's `.c`.
+- A checkpoint name (`SE01_<Module>_Log_Start_CP`) → watchdog supervision (P-03).
+- A bare API name (`Ftm_Pwm_Ip_...`, `Aec_Ip_Spi...`) or a port whose text reads
+  *"This client port is used…"* → **client/server**, `Rte_Call_...` (P-06), not
+  a data flow.
+
+Cross-check the prefix against the text (*"This port sends…"* vs *"This port
+receives…"*). They usually agree; where they don't, the prefix wins and the
+disagreement is an Open Point. A port with **neither** a prefix nor directional
+text is a Phase-1 question.
+
+**Peer resolution** — for each port of the target module, find the port at the
+other end:
+
+1. Primary key: **the name with the prefix stripped**. `P_Mot_Mov_Data` in
+   `FUSA_MotCtrl` pairs with `R_Mot_Mov_Data` in `FUSA_CDD_MotDrv`.
+2. Confirm with the **data type** named on the port's `DataType:` line (and on
+   its `1.4.1.<n>.<m>.<k>` child). Name match + type mismatch is an Open Point,
+   not a resolved pair.
+3. Direction must be opposite: a `P_` port pairs only with an `R_` port.
+4. Casing drifts (`Mot_Mov_Data_st` vs `Mot_Mov_Data_St`) — match
+   case-insensitively, but take the spelling you emit from the RTE header or an
+   existing test case, and note the variant in Open Points.
+5. **Exactly one candidate** → resolved. **Several, or none** → a numbered
+   Phase-1 question. Never pick the closest-looking module. For "none", run a
+   near-match search first (a single transposed or extra character is common —
+   `P_Hs1_Div_a_Phy` vs `R_Hs1_Div_a_Phyn`, `unplausibel` vs `unplausible`) and
+   put the near match in the question as the proposal; never auto-accept it.
+6. One writer may have several readers (a broadcast signal). Every reader is a
+   peer, and each writer→reader pair is its own interface.
+
+Report the result as a **peer matrix** at the Phase-1 gate, and cache it in
+`ai_test_project.yaml` `integration_test.peer_modules`:
+
+| Interface | Data type | Writer module / file | `Rte_Write` symbol | Reader module / file | `Rte_Read` symbol | Existing cases |
+|---|---|---|---|---|---|---|
+
+## 3. Mirroring: the interface is authored under both modules
+
+`integration_test.peer_module_mirroring` (default **true**) reproduces the
+structure the DOORS test module already has: the same interface appears under
+the writer's section as its port heading **and** under the reader's section as
+a connection heading.
+
+- Under the module that owns the port: heading `P_<Element>` (write side) or
+  `R_<Element>` (read side).
+- Under the peer module: heading `<WriterModule> to <ReaderModule>` — spelled
+  the way the existing test-spec export spells those module names, which is
+  often neither the `aFunctionModule` spelling nor consistent
+  (`FUSA-MotCtrl to CDD_Drv`). Use the existing spelling and record the variant
+  in Open Points.
+
+Both copies test the same interface with the same breakpoints; they differ only
+in which section they sit under. Emit both, and in the Traceability sheet mark
+one as the **primary** and the other as its **mirror** so the engineer can drop
+the mirror if their project has since de-duplicated. If mirroring is off, emit
+the primary only and list the peer-side sections as Open Points.
+
+## 4. Resolving the module name (the mapping table)
+
+One module can carry **three** spellings, and they are all in play:
+
+| Where | Example |
+|---|---|
+| architecture `1.4.1.<n>` section heading | `FUSA_CDD_MotDrv` |
+| `aFunctionModule` attribute (the skill's argument) | `FUSA_MotDrv` |
+| integration-test-spec section heading | `Mot_Drv` |
+
+**The integration-test export has no `aFunctionModule` column** — only
+`aFeature`. Existing test cases for a module are located by walking the
+`Object Heading` hierarchy: a module-level heading opens a section, and
+everything until the next module-level heading belongs to it.
+
+The vocabularies rarely match exactly (spelling differences, transposed words,
+hyphen vs underscore, inserted `CDD`). **Discovery method** (generic — apply it
+to whatever module you're given):
 
 1. Search the integration-test-spec export's Object Headings for the target
    module name and close near-matches (transpositions, common misspellings).
@@ -50,91 +188,216 @@ given):
    broadly match the `aFeature` mix of the candidate section. A large mismatch
    means the wrong section was picked — stop and ask rather than proceed on a
    guess.
-3. Once resolved, **write the mapping to `ai_test_project.yaml`
-   `integration_test.module_name_mapping`** (workflow-discipline §4) so the next
-   run — this engineer's or another's — doesn't repeat the search. If the
-   module is not on the cached list and cannot be resolved by search, ask.
+3. Once resolved, **write all three spellings to `ai_test_project.yaml`
+   `integration_test.module_name_mapping`** keyed by `aFunctionModule`
+   (workflow-discipline §4) so the next run — this engineer's or another's —
+   doesn't repeat the search. If the module is not on the cached list and cannot
+   be resolved by search, ask.
 
-## 3. Interface inventory
+Do this for the peer modules too: a mirrored section needs the peer's
+test-spec spelling, not its architecture spelling.
+
+## 5. Interface inventory and the values to exercise
+
+### 5.1 Inventory
 
 The unit of an integration test case is **the interface**. Build the list from,
-in order of preference: (1) existing test-case section headings — each port
-heading and each connection heading (`<ModuleA> to <ModuleB>`); (2) the
-architecture objects' own text; (3) ARXML/RTE headers, if supplied. For each
-interface report its name, sender/receiver modules, `Rte_Write`/`Rte_Read`
-symbols, source files, and how many existing test cases it already has.
+in order of preference: (1) the architecture's `1.4` port objects for the target
+and its peers; (2) existing test-case section headings — each port heading and
+each connection heading; (3) ARXML/RTE headers, if supplied. For each interface
+report its name, writer/reader modules, `Rte_*` symbols, source files, data
+type, and how many existing test cases it already has.
 
-## 4. Coverage and gap
+Then split into: already covered, no test cases (your scope), and interfaces
+found in the architecture but not resolvable to RTE symbols. Check the standing
+obligations: does every module in scope have a `Watch Dog for <module>` group,
+a task-configuration group, and a section for every connection.
 
-Split into: already covered, no test cases (your scope), and interfaces found
-in the architecture but not resolvable to RTE symbols. Check the standing
-obligations: does every module have a `Watch Dog for <module>` group, and does
-every inter-module connection have a section.
+### 5.2 Values come from the UserDefinedTypes chapter
 
-## 5. Patterns
+For each interface, resolve its `DataType:` in the architecture's `1.2` chapter
+— the type name is a `1.2.<n>` object's **name**, its struct members are the
+`1.2.<n>.<m>` children's **names**, and each member's `Range:` is in that
+child's **text** — then generate accordingly:
+
+| Type shape | Cases |
+|---|---|
+| Scalar with a documented `Range:` | **5** — Min, Mid, Max (`positive`); Min-1, Max+1 (`negative`) |
+| Enum | **one per literal**, all `positive`; plus one out-of-range `negative` case if the type documents an invalid/reserved value |
+| Struct | the **5-case set per member**, member by member (a 5-member struct → 25 cases) |
+| Boolean | both values, `positive`; the architecture text usually states the meaning (`0 - Enabled` / `1 - Disabled`) — carry it into the case |
+
+Rules:
+
+- **Min/Max**: from the documented `Range:` in the UserDefinedTypes entry when
+  it has one; otherwise the implementation type's limits (`uint8` → 0/255).
+  Say which of the two you used, per interface, in the Traceability sheet — the
+  existing spec is inconsistent about this and the engineer needs to see the
+  choice, not discover it.
+- **Mid**: the arithmetic midpoint of whichever range you used.
+- **Min-1 / Max+1**: the *written* value is the out-of-range value; the value
+  the **reader** is expected to show is the value wrapped to the reader's type
+  width (`uint8`: Min-1 → `255`, Max+1 → `0`). Compute the wrap from the
+  reader's type. If the reader's type is unresolved, do **not** guess the wrap —
+  leave the expected value as a marked placeholder and raise an Open Point.
+- **No documented range and no resolvable implementation type** → the interface
+  gets **no** cases and an Open Point. Never invent a limit, a step size, a
+  member name or an enum literal (no-fabrication.md). Expect this to be common:
+  in a typical export only about a third of struct members carry a `Range:`.
+- **Enum literals are not in the architecture module.** An enum type
+  (`*_en`) is a single `1.2.<n>` object with no children and no literal list —
+  only a prose description ("This enum contains the mute mode types"). So a
+  literal (`MOT_MOV_ROT_FWD_E`) is copied verbatim from `docs.rte_type_headers`
+  (`Rte_Type.h`/ARXML) or from an existing test case, and an enum interface with
+  neither source resolvable gets **no** cases and an Open Point. Never
+  reconstruct a literal from the description, and never infer the literal set
+  from the number of values an existing case happens to exercise — say in the
+  Traceability sheet which source each literal came from.
+
+## 6. `aTestCriteria` → pattern
+
+| `aTestCriteria` says (observed wordings) | Pattern |
+|---|---|
+| "Check in RTE whether the RTE variables is getting updated …" | **P-01** / **P-02** |
+| "Interface Test with Min, Mid, MAx and border values." | **P-01** with the full 5-value set (§5.2) |
+| "Check for the runnables in the RTE task table … periodicity of periodic runnable" | **P-05** |
+| "Check for the alarm configuration for all the TASK …" | **P-05** |
+| "These are the client ports … check for the value in the respective server function" | **P-06** |
+| "Execute the DID and check for the server function is hit" | **P-07** |
+| "review" / "This can only be reviewed" / "Review of SW Architecture" / "The flow needs to be verified by the testing team" / "The Sequence to be checked by the Test Team" | **P-08** — no debugger test case |
+| "Can be checked by XCP only" / "using the XCP variable" | **P-08**, noting XCP as the required means |
+
+Typos and case vary between objects ("wehther", "CHnage", "ini runnable") —
+match on meaning, and never copy a misspelling into a generated case.
+
+## 7. Patterns
 
 Pick the pattern that fits; do not invent a new one without saying so.
 
-**P-01 — RTE data flow, sender to receiver.** The dominant pattern.
+**P-01 — RTE data flow, writer to reader.** The dominant pattern. Both
+breakpoints are named, and each names its own module's file.
 
 ```
+Object Heading (group):  P_<Element>            (or R_<Element>)
+Object Text (case):      Test case to verify the <Element> for <Min|Mid|Max|Min-1|Max+1> Value.
+
 atcPreconditions:
 - Reset the ECU
 - Wake up the ECU
 - Flash the ECU
 
 atcActions:
-1. Set the Breakpoint at line <Rte_Write_P_<port>_<element>(...)>; in <sender>.c
-2. Edit the variable with <value>(<meaning>).
-3. Set the Breakpoint at line <Rte_Read_R_<port>_<element>> in <receiver>.c
-4. Read the value.
+1. Set the Breakpoint at line <Rte_Write_P_<port>_<element>(<arg>);> in <writer>.c
+2. Edit the variable <writer-side variable> with <value>.
+3. Set the Breakpoint at line <if( E_OK == Rte_Read_R_<port>_<element>( &<reader-side variable> ) )> in <reader>.c
+4. Verify the value
 
 atcResult:
 1. Breakpoint should be hit.
-2. result should be updated with <value>(<meaning>).
+2. <writer-side variable> should be update to <value> value.
 3. Breakpoint Should be hit.
-4. <receiver variable> should be updated to <value>(<meaning>).
+4. <reader-side variable> should be update to <expected-at-reader> value.
 
 atcPostconditions:
 - System Shall be stable
 - Delete all Breakpoints
 ```
 
-Generate one test case per value to be exercised on that interface — each
-valid enum value, and the boundary values for a ranged signal.
+For a struct, step 2 edits the **member** and the title names the member
+(`Test case to verify the MessageTimeout_u8 for Min Value.`). For an enum, the
+title names the value (`… of Movement for 0 value.`) and the result names the
+literal (`Movement should be update with MOT_MOV_ROT_FWD_E value.`).
 
-**P-02 — inter-module connection.** Same shape; sender and receiver are
-different modules, so the two `.c` files differ. Heading form
-`<ModuleA> to <ModuleB>`.
+**P-02 — inter-module connection (the mirror).** Identical body to P-01;
+heading form `<WriterModule> to <ReaderModule>` (§3).
 
-**P-03 — watchdog supervision.** Heading `Watch Dog for <Module>`. Verifies the
-supervised entity is registered and reports correctly. One per module.
+**P-03 — watchdog supervision.** Heading `Watch Dog for <Module>`. One case per
+supervision checkpoint the module registers (start and end):
 
-**P-04 — negative / invalid value.** Same structure as P-01 with an
-out-of-range or invalid value and the error reaction as the expected result.
-`atsType = negative`. A roughly two-positive-to-one-negative ratio is a sanity
-check to report, not a quota to enforce.
+```
+Object Text:  Test case to verify the <SE0n_<Module>_Log_Start_CP>
+atcActions:   1. Set the Breakpoint at line
+              (void)Rte_Call_ApplocalSupervision_WdgM_SE<n>_<checkpoint>_CheckpointReached();
+atcResult:    1. Breakpoint should hit and Watch Dog should Reset.
+```
 
-**P-05 — OS trace / timing.** Rare. Only generate if the engineer asks for it
-explicitly in this run's instructions.
+Checkpoint names are copied from the RTE headers or existing cases — never
+constructed from the module name.
 
-## 6. Attributes specific to this skill
+**P-04 — negative / boundary value.** The Min-1 and Max+1 members of the
+5-value set, and any documented invalid enum value. `atsType = negative`. The
+positive/negative ratio is a sanity check to report, not a quota to enforce.
+
+**P-05 — task configuration & runnable timing.** From the `1.3.1.<n>.1.<m>`
+non-functional objects. Two shapes, grouped under a task-configuration section
+heading per module:
+
+```
+Object Text:  Test case to verify the Initialization of <Module>
+atcActions:   1. Set the Breakpoint at line <Module>_Init_counter++;
+              2. Add the Variable in Watch window and Verify.
+atcResult:    1. Breakpoint should be hit
+              2. <Module> counter should be update to 1.
+
+Object Text:  Testcase to verify the Runnable time for <Module> for every <n>msec.
+atcActions:   1. Set the Breakpoint at line <Module>_Cyclic_<n>msec_counter++;
+              2. Add the Variable in Watch window and Verify.
+atcResult:    1. Breakpoint should be hit
+              2. <Module> counter should be update every <n>ms.
+```
+
+The counter symbol and the period both come from an input — the period from the
+architecture object's own text ("This runnable should be called from 2msec
+Task_FUSA_2ms"), the counter from the code/RTE or an existing case. Existing
+cases in the spec contain period mismatches between action and result; do not
+copy one, and flag any you relied on.
+
+**P-06 — client/server port.** `Rte_Call_<port>_<operation>` at the caller, the
+server runnable entered at the other end. Breakpoint at the call, breakpoint in
+the server function, verify the argument passed.
+
+**P-07 — diagnostic DID / routine.** Only for the diagnostic modules
+(`DiagReadData`, `DiagWriteData`, `DiagRoutineCtrl`) and only when
+`aTestCriteria` names the DID approach:
+
+```
+atcActions:  1. Send DiagRequest DID <XX XX> from Diagnostic console.
+             2. Set the Breakpoint at line <server function signature>
+atcResult:   1. DID Should be Positive Response <SID+0x40> <XX XX> XX XX XX.
+             2. Breakpoint should be hit.
+```
+
+The DID and the server-function signature come from the DiagSpec or an existing
+case. Note that SWE.6 covers diagnostics far more thoroughly — a diagnostic
+interface here is tested only as an interface.
+
+**P-08 — not testable by the debugger → no test case.** Where `aTestCriteria`
+asks for a review, a sequence walkthrough by the test team, or XCP-only
+observation, emit **no** concrete case. Record the object in Open Points with
+the criterion verbatim and the reason. If the project's convention is to carry
+such objects as heading rows with `no testcase` attributes, emit the heading row
+only (output-format.md).
+
+**P-09 — OS trace / timing measurement.** Rare. Only generate if the engineer
+asks for it explicitly in this run's instructions.
+
+## 8. Attributes specific to this skill
 
 | Attribute | Value |
 |---|---|
-| `atcPreconditions` | The three-line P-01/P-02 block, verbatim, unless the pattern states otherwise |
+| `atcPreconditions` | The three-line P-01 block, verbatim, unless the pattern states otherwise |
 | `atcPostconditions` | `- System Shall be stable` / `- Delete all Breakpoints` |
 | `atcRemark` | `Debug SW` |
-| `aFeature` | Carried from the architecture object |
+| `aFeature` | Carried from the architecture object. On a mirrored case, carry the feature of the **object the case traces to**, not the section it sits under |
 | `atsTestKind` | `Interface test` |
 | `atsTestDesignTechnique` | `InterfaceTesting` |
-| `atsType` | `positive` or `negative` |
+| `atsType` | `positive` or `negative` (§5.2) |
 
-## 7. Symbols
+## 9. Symbols
 
-Every `Rte_` symbol, source file name and enum value must come from a supplied
-input. Prefer symbols that already appear in the existing test-spec export —
-they show real usage. Do not construct a symbol by analogy (workflow-discipline
-§4 / no-fabrication.md). Do not reproduce inconsistent casing seen in the
-architecture text — take the spelling from the RTE headers or existing test
-cases, and note the variant in Open Points.
+Every `Rte_` symbol, source file name, struct member and enum value must come
+from a supplied input. Prefer symbols that already appear in the existing
+test-spec export — they show real usage. Do not construct a symbol by analogy
+(workflow-discipline §4 / no-fabrication.md). Do not reproduce inconsistent
+casing seen in the architecture text — take the spelling from the RTE headers or
+existing test cases, and note the variant in Open Points.

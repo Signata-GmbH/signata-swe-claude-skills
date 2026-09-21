@@ -272,6 +272,46 @@ directories (`20_AI/manifests/integration-test/` /
 `20_AI/manifests/qualification-test/`) rather than sharing
 `20_AI/manifests/<MODULE>.yaml` with the SWE.3 skills.
 
+**The two skills have different test bases, and they are not interchangeable.**
+`integration-test` reads the **Functional_Architecture** DOORS export — one
+module, whose `1.4` port sections are the interface inventory, whose `1.2`
+**UserDefinedTypes** chapter resolves every `DataType: <T> in UserDefinedTypes`
+reference into struct members and ranges, and whose per-object `aTestCriteria`
+states the architect's own intended approach. It never reads the SW requirements
+export — an SWE.5 case traces to an architecture object, not to a requirement.
+`qualification-test` reads the requirements workbook. Offering one in place of
+the other is refused at the pre-flight gate.
+
+A DOORS export that opens is not necessarily usable, and the sharpest edge is
+that each object carries **two** things the run needs — its **name**
+(`Object Heading`: module, port, data-element, type and struct-member names) and
+its **text** (`Object Text`: the port-direction prose, the `DataType:` and
+`Range:` lines) — while a single-content-column DOORS view shows only one of
+them per object. A name-only export has no ranges; a text-only export has no
+port names. `_shared/testspec/workflow-discipline.md` §1.3 is an
+**export-completeness gate** that checks the column set, that both name and text
+are resolvable (one export with both columns, or two views of the same module
+joined on `ID`), and that DOORS table content survived — and **stops** for a
+re-export rather than letting the run invent a member name or a limit. One gap
+is expected rather than fatal: the architecture module names its enum types but
+lists no literals for them, so `MOT_MOV_ROT_FWD_E` comes from `Rte_Type.h` or an
+existing test case, or the interface goes to Open Points.
+
+**A module is never tested alone.** An integration test case exercises one
+interface across two modules — one writes it (`Rte_Write`, breakpoint in the
+writer's `.c`), the other reads it (`Rte_Read`, breakpoint in the reader's `.c`)
+— so naming a module also brings in the **peer modules** at the other end of its
+ports. Direction comes from the port's name prefix (`P_` writes, `R_` reads,
+cross-checked against "This port sends…" / "This port receives…"), pairing from
+the name with that prefix stripped (`P_Mot_Mov_Data` ↔ `R_Mot_Mov_Data`)
+confirmed by the data type, and an ambiguous pairing becomes a Phase-1 question
+rather than a pick. One module can carry three spellings — its architecture
+section heading, its `aFunctionModule`, and its test-spec heading
+(`FUSA_CDD_MotDrv` / `FUSA_MotDrv` / `Mot_Drv`) — all three get cached. Each interface is then
+**mirrored**: authored under the target module's section as `P_/R_<Element>` and
+under the peer's as `<Writer> to <Reader>`, matching the duplication the DOORS
+test module already carries, with primary vs mirror marked in `Traceability`.
+
 **v1 scope is Excel-only.** A real vTestStudio project folder also holds `.vtt`
 test tables and `.vtsoproj`/CAPL automation — generating or updating those is an
 explicit **v2**, not attempted here. `integration-test` is also **AUTOSAR-only

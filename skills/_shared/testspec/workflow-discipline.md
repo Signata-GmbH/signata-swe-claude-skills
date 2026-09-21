@@ -29,13 +29,21 @@
 
 | Document (config/manifest key) | integration-test (SWE.5) | qualification-test (SWE.6) |
 |---|:--:|:--:|
-| Architecture export (`docs.architecture_export`) | ✔ | – |
+| Functional_Architecture export (`docs.functional_architecture_export`) — includes its UserDefinedTypes chapter | ✔ | – |
+| Its second view (`docs.functional_architecture_export_text_view`) | only when one export cannot carry both name and text (§1.3) | – |
 | Requirements workbook (`docs.requirements_workbook`) | – | ✔ |
-| Signals & Parameters (`docs.signals_params`) | where signal values are exercised | ✔ |
+| Signals & Parameters (`docs.signals_params`) | where a signal's raw values are exercised | ✔ |
 | Existing test-spec export for this module/feature | ✔ | ✔ |
-| ARXML / `Rte_*.h` / `Rte_Type.h` | only for interfaces with no existing test cases | – |
+| ARXML / `Rte_*.h` / `Rte_Type.h` (`docs.rte_type_headers`) | for interfaces with no existing test cases, and for every enum literal | – |
 | A2L file or code variable list (`docs.a2l_or_varlist`) | – | ✔ |
 | DiagSpec (`docs.diagspec`) | – | diagnostic features only |
+
+**The two SWE.5 test-basis documents are not interchangeable with the SWE.6
+one.** `integration-test` reads the Functional_Architecture export and never
+the SW requirements export — an SWE.5 test case traces to an architecture
+object (a component, a port, a runnable), not to a software requirement. A
+requirements workbook offered in place of a missing architecture export is
+refused at this gate, and vice versa for SWE.6.
 
 ✔ = mandatory · **ask** = optional but must be **explicitly offered** at the
 gate · – = not applicable to this skill. Any document may be **`.pdf` or
@@ -56,6 +64,62 @@ provided is a **hard STOP**, reporting which one and why.
 Emit a pre-flight table: `input | required? | resolved path | present &
 readable? | acquisition outcome`. **Never emit a workbook while a mandatory
 input is unresolved.**
+
+### 1.3 Export-completeness gate (an xlsx that opens is not an xlsx that is usable)
+
+A DOORS export can be readable and still be missing the columns or the content
+the run depends on, because the view it was taken from omitted them. Check
+every supplied export **before** any analysis and report the result in the
+pre-flight table.
+
+**1. Columns present.** Every attribute the patterns file reads must exist as a
+column — for the Functional_Architecture export: `ID`, `aFunctionModule`,
+`aFeature`, `aTestCriteria`, `aTestability`, `aRequirementObjectType`,
+`aStatusOfAnalysis`, `aVariant`. A missing column is a **hard STOP**: name the
+column, say which DOORS view carries it, and ask for a re-export. Never
+reconstruct a missing attribute from another column.
+
+**2. Name *and* text available per object — the two-view trap.** Every object
+carries two things this skill needs, and a single-content-column export shows
+only one of them per object:
+
+- its **name** (`Object Heading`) — module, port, data-element, type and
+  struct-member names, and the `P_`/`R_` direction prefix;
+- its **text** (`Object Text`) — the port-direction prose, the `DataType:` line,
+  the `Range:` line.
+
+An export whose single content column concatenates the section number with the
+*heading* has no ranges; one that concatenates it with the *text* has no names.
+Neither alone supports a test case. So:
+
+- Preferred: **one export carrying both** `Object Heading` and `Object Text` as
+  separate columns.
+- Accepted fallback: **two views of the same module**, joined on `ID`
+  (`docs.functional_architecture_export` + `_text_view`). Verify the join
+  before using it — identical `ID` sets, same baseline — and report
+  `objects | with name | with text | with both`. A differing `ID` set means the
+  two views are different baselines: **hard STOP**.
+- Neither available → **hard STOP**, naming which of the two is missing and
+  what it would have supplied.
+
+**3. Table content survived.** DOORS tables are the first thing an export
+loses; the symptom is a block of rows whose content column is empty while their
+attribute columns are filled. Count those rows and report the count. If a type
+definition an in-scope interface depends on is among them, **hard STOP** and ask
+for a re-export rather than inventing a member name or a limit.
+
+**4. Known gap, not a stop: enum literals.** In the architecture module an enum
+type is a single object with no children and no literal list — the literals
+(`MOT_MOV_ROT_FWD_E`) exist only in `Rte_Type.h`/ARXML and in the existing
+test-spec export. Their absence from the architecture export is therefore
+expected and does **not** stop the run: resolve them from
+`docs.rte_type_headers`, then from existing cases, and put an enum interface
+with no resolvable literals on Open Points (integration-test-patterns §5.2).
+Report which source each literal came from.
+
+This gate is fail-closed like §1.2: only an explicit engineer decision
+downgrades a STOP, and the decision is recorded in the run summary and in Open
+Points.
 
 ## 2. Baseline pinning (the audit spine — no source code, no git SHA)
 
@@ -98,8 +162,9 @@ Both manifests **inherit** `ai_test_project.yaml` (`release`, `variants`,
   confirmation**.
 - If **present**: validate required fields; flag/repair anything malformed
   rather than proceeding on it.
-- **Scope-count gate (mandatory).** After applying the scope filter (§4 of the
-  relevant patterns file), report the resulting count and **require the
+- **Scope-count gate (mandatory).** After applying the scope filter
+  (integration-test-patterns §1.2 — target module *and* peers — /
+  qualification-test-patterns §1), report the resulting count and **require the
   engineer to confirm or enter the expected count** before proceeding — persist
   it as `expected_row_count`. Never silently learn it; a mismatch on a later run
   halts (§8).
@@ -151,6 +216,20 @@ row:
 7. `atsState` = `in work` and `ID` empty on every row.
 8. Every in-scope requirement/interface either has a test case or appears in
    Open Points with a reason.
+9. **integration-test only** — every case names **both** ends: a `Rte_Write`
+   breakpoint in the writer's file and a `Rte_Read` breakpoint in the reader's
+   file (or the `Rte_Call`/server pair), with the two files actually different
+   where the interface crosses modules.
+10. **integration-test only** — every interface appears under the target
+    module's section and under each peer's section (or mirroring is off and the
+    peer sections are listed in Open Points); every mirror row is marked as such
+    in `Traceability`.
+11. **integration-test only** — every boundary value states which range it came
+    from (documented `Range:` vs implementation type), and every Min-1/Max+1
+    expected-at-reader value states the type width the wrap was computed from.
+12. **integration-test only** — every enum literal used states its source
+    (`Rte_Type.h` / existing test case); no literal is derived from a value's
+    prose description.
 
 ## 7. Traceability & Open Points (both skills, every run)
 

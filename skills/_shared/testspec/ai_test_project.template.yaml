@@ -57,9 +57,37 @@ attributes:
 # cases for one module/feature, run-specific extras) live in the manifest.
 docs:
   root:                 20_AI/               # <-- confirm  base folder inputs live in
-  architecture_export:  <path>               # <-- fill  software architecture export (DOORS xlsx) — SWE.5 test basis
-  requirements_workbook: <path>              # <-- fill  SW requirements export (DOORS xlsx) — SWE.6 test basis
-  signals_params:       <path>               # <-- fill  Signals & Parameters export — MANDATORY (both skills)
+  # ---- SWE.5 test basis -------------------------------------------------
+  # The Functional_Architecture DOORS export is the ONLY test basis for
+  # integration-test — ONE module, which also contains the UserDefinedTypes
+  # chapter (section 1.2) that resolves its data types. The SW requirements
+  # export below is NOT an SWE.5 input — do not substitute one for the other in
+  # either direction.
+  functional_architecture_export: <path>     # <-- fill  Functional_Architecture export (DOORS xlsx) — SWE.5 test
+                                              #     basis. Must carry: ID, aFunctionModule, aFeature,
+                                              #     aTestCriteria, aTestability, aRequirementObjectType,
+                                              #     aStatusOfAnalysis, aVariant — AND, per object, BOTH its NAME
+                                              #     (Object Heading: module, port, type, struct-member names) and
+                                              #     its TEXT (port direction prose, "DataType:" and "Range:"
+                                              #     lines). See workflow-discipline §1.3.
+  functional_architecture_export_text_view: <path or N/A>
+                                              # <-- fill  ONLY when the project's DOORS view emits a single
+                                              #     content column, so names and text cannot appear in one
+                                              #     export. Then supply the SECOND view of the SAME module — the
+                                              #     one carrying the object text — and the skill joins the two on
+                                              #     the ID column (workflow-discipline §1.3). Both views must be
+                                              #     the same baseline; a differing ID set is a stop.
+  # ---- SWE.6 test basis -------------------------------------------------
+  requirements_workbook: <path>              # <-- fill  SW requirements export (DOORS xlsx) — SWE.6 test basis.
+                                              #     NOT read by integration-test.
+  # ---- shared ------------------------------------------------------------
+  signals_params:       <path>               # <-- fill  Signals & Parameters export — MANDATORY for SWE.6;
+                                              #     for SWE.5 only where a signal's raw values are exercised
+  rte_type_headers:     <path or N/A>        # <-- fill  Rte_Type.h / ARXML datatype mapping — the ONLY source of
+                                              #     enum literals: the architecture's UserDefinedTypes chapter
+                                              #     names its enum types but lists no literal for them
+                                              #     (integration-test-patterns §5.2). Absent → enum interfaces
+                                              #     fall back to the existing test-spec export, then Open Points.
   a2l_or_varlist:        <path or N/A>       # <-- fill  A2L file or code variable list — MANDATORY for SWE.6
   diagspec:               <path or N/A>      # <-- fill  UDS DiagSpec (e.g. EE0339_UDS_DiagSpec) — diagnostic features only
   integration_test_spec_export: <path or N/A> # <-- fill  existing SWE.5 test-spec export (exemplars + coverage baseline)
@@ -71,12 +99,26 @@ docs:
 integration_test:
   testability_filter:              # <-- fill   aTestability values in scope, e.g. ["test"]
     - "test"
-  # aFunctionModule (architecture) -> integration-test-spec section heading.
-  # DISCOVERED ONCE per module (walk the Object Heading hierarchy + cross-check
-  # the aFeature mix — see integration-test-patterns.md), then CACHED here so
-  # later runs / other engineers don't re-derive it. Never seed this by
-  # analogy — an unresolved module is asked about, not guessed.
-  module_name_mapping: {}          # <-- learned  e.g. { FUSA_ParkLckCtrl: "FUSA_ParkLckCntrl" }
+  # Mirror each interface into BOTH the target module's section and every peer
+  # module's section (the duplication the DOORS SW_TST module already has:
+  # `P_Mot_Mov_Data` under FUSA_MotCtrl *and* `FUSA-MotCtrl to CDD_Drv` under
+  # Mot_Drv). See integration-test-patterns.md §3.
+  peer_module_mirroring: true      # <-- confirm
+  # aFunctionModule -> the set of peer modules at the other end of its ports,
+  # DISCOVERED per module (integration-test-patterns.md §2) and CACHED here
+  # with the resolved writer/reader side per interface. Never seeded by
+  # analogy — an ambiguous pairing is asked about, not guessed.
+  peer_modules: {}                 # <-- learned  e.g. { FUSA_MotDrv: ["FUSA_MotCtrl", "CDD_MotDrv"] }
+  # One module has up to THREE spellings: its architecture section heading, its
+  # aFunctionModule attribute, and its integration-test-spec section heading
+  # (e.g. FUSA_CDD_MotDrv / FUSA_MotDrv / Mot_Drv — all one module). Keyed by
+  # aFunctionModule. DISCOVERED ONCE per module (walk the Object Heading
+  # hierarchy + cross-check the aFeature mix — see
+  # integration-test-patterns.md), then CACHED here so later runs / other
+  # engineers don't re-derive it. Never seed this by analogy — an unresolved
+  # module is asked about, not guessed.
+  module_name_mapping: {}          # <-- learned
+                                    #   e.g. FUSA_MotDrv: { architecture: "FUSA_CDD_MotDrv", test_spec: "Mot_Drv" }
 
 # ---------------------------------------------------------------------
 # QUALIFICATION TEST (SWE.6)
