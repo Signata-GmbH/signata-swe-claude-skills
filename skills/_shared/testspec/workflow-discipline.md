@@ -3,8 +3,10 @@
 > Loaded by `integration-test` (SWE.5) and `qualification-test` (SWE.6). This is
 > the shared backbone for that pair — the same role
 > [../common/workflow-discipline.md](../common/workflow-discipline.md) plays for
-> the three SWE.3 code skills, rewritten for a domain with no source code, no
-> compiler, and no git-SHA build to pin against. The two files are not merged:
+> the three SWE.3 code skills, rewritten for a domain with no compiler and no
+> build of its own: the DOORS exports are pinned by content hash, and the one
+> source-code input — the SWE.3 repo `integration-test` reads its breakpoint
+> lines from — by that repo's own git revision. The two files are not merged:
 > the pinning mechanism (§2 below) and the input matrix (§1) are genuinely
 > different here.
 
@@ -33,8 +35,9 @@
 | Its second view (`docs.functional_architecture_export_text_view`) | only when one export cannot carry both name and text (§1.3) | – |
 | Requirements workbook (`docs.requirements_workbook`) | – | ✔ |
 | Signals & Parameters (`docs.signals_params`) | where a signal's raw values are exercised | ✔ |
-| Existing test-spec export for this module/feature | ✔ | ✔ |
-| ARXML / `Rte_*.h` / `Rte_Type.h` (`docs.rte_type_headers`) | for interfaces with no existing test cases, and for every enum literal | – |
+| Existing test-spec export for this module/feature | ✔ under `integration_test.authoring_mode: extend_existing` · – under `from_scratch` (integration-test-patterns §0.1) | ✔, unless `N/A` by a recorded engineer decision (§1.2) |
+| SWE.3 C-source repo (`docs.source_repo`) — breakpoint lines and observed variables | ✔ — waivable only by a recorded engineer decision, which makes the run *degraded* (integration-test-patterns §9) | – |
+| ARXML / `Rte_*.h` / `Rte_Type.h` (`docs.rte_type_headers`, or `layout.rte_inc` inside the source repo) | ✔ — every RTE symbol and every enum literal | – |
 | A2L file or code variable list (`docs.a2l_or_varlist`) | – | ✔ |
 | DiagSpec (`docs.diagspec`) | – | diagnostic features only |
 
@@ -60,6 +63,24 @@ real, readable file → if missing/unreadable, **explicitly ask** the engineer t
 provide it (path or attach), then write the answer back (project-wide →
 `ai_test_project.yaml`; per-module/feature → the manifest) → mandatory and not
 provided is a **hard STOP**, reporting which one and why.
+
+**A recorded `N/A` is resolved, not missing.** A document the config sets to
+`N/A` by a recorded engineer decision — the reason written beside it, or an
+explicit mode such as `integration_test.authoring_mode: from_scratch` — is
+**resolved** for this gate. Do not re-open it by discovery. If a file turns up
+that looks as if it fills that role, do **not** register it, read it, or cite
+it: raise one Phase-1 question quoting the recorded decision, and proceed under
+the decision until the engineer changes the config. The one exception is a
+skill's **test basis** (the Functional_Architecture export for SWE.5, the
+requirements workbook for SWE.6): a run without it has nothing to trace to, so
+`N/A` there is still a hard STOP.
+
+**Never auto-adopt a discovered file.** Discovery (globbing under `docs.root`)
+is only for inputs whose config entry is **unset**, and what it finds is a
+**proposal** the engineer confirms at the gate — never registered on the
+strength of a filename or a matching column schema. A wrong existing-spec export
+contaminates the coverage baseline, the name mapping and every finding built on
+them.
 
 Emit a pre-flight table: `input | required? | resolved path | present &
 readable? | acquisition outcome`. **Never emit a workbook while a mandatory
@@ -113,18 +134,19 @@ type is a single object with no children and no literal list — the literals
 (`MOT_MOV_ROT_FWD_E`) exist only in `Rte_Type.h`/ARXML and in the existing
 test-spec export. Their absence from the architecture export is therefore
 expected and does **not** stop the run: resolve them from
-`docs.rte_type_headers`, then from existing cases, and put an enum interface
-with no resolvable literals on Open Points (integration-test-patterns §5.2).
+`docs.rte_type_headers`, then (in `extend_existing` mode only) from existing
+cases, and put an enum interface with no resolvable literals on Open Points
+(integration-test-patterns §5.2).
 Report which source each literal came from.
 
 This gate is fail-closed like §1.2: only an explicit engineer decision
 downgrades a STOP, and the decision is recorded in the run summary and in Open
 Points.
 
-## 2. Baseline pinning (the audit spine — no source code, no git SHA)
+## 2. Baseline pinning (the audit spine)
 
-There is no compiler and no build here, so the equivalent of revision pinning
-is:
+There is no compiler and no build here, and the DOORS exports carry no git SHA,
+so the equivalent of revision pinning is:
 
 - **`release.id` + `release.variants`** from `ai_test_project.yaml` — every test
   case's `atsRelease`/`aVariant` attribute is valid only at that baseline.
@@ -132,6 +154,15 @@ is:
   <file>` (the same primitive the SWE.3 skills use for blob hashes — it works
   on any file, tracked or not, as long as you're inside a git working tree).
   Record `{file: hash}` for every DOORS export/xlsx read this run.
+- **The SWE.3 source repo, by git revision** (`integration-test`,
+  `docs.source_repo`). It is a separate git repository, so pin it the way the
+  SWE.3 skills do (common/workflow-discipline.md §2): record `git -C <path>
+  rev-parse HEAD`, whether its worktree is dirty (`git -C <path> status
+  --porcelain`), and `git -C <path> hash-object <file>` for every `.c`/`.h`/
+  `.arxml` read. If `docs.source_repo.ref` is set and `HEAD` is not that
+  revision, **stop** and ask — a breakpoint line is valid only at the revision
+  it was read from. A dirty worktree is reported and confirmed before analysis,
+  never used silently.
 - **Per-requirement/per-interface hash** — hash each in-scope requirement's or
   interface's Object Text, so a later run can tell *new* from *changed* from
   *unchanged* (§8) without re-reading the whole export.
@@ -156,14 +187,16 @@ same way a wrong git SHA is treated in the SWE.3 skills: as invalidating.
 Both manifests **inherit** `ai_test_project.yaml` (`release`, `variants`,
 `attributes`, `docs.*`) — never duplicate those fields in the manifest.
 
-- If the manifest is **absent**: derive what you can, discover per-module/
-  per-feature documents (existing test cases for this module/feature) by
-  globbing under `docs.root`, scaffold from the template, and **present it for
-  confirmation**.
+- If the manifest is **absent**: derive what you can, discover the
+  per-module/per-feature documents **whose config entry is unset** (§1.2) —
+  existing test cases for this module/feature, but never under
+  `integration_test.authoring_mode: from_scratch` — by globbing under
+  `docs.root`, scaffold from the template, and **present it for
+  confirmation**, every discovered document marked as a proposal.
 - If **present**: validate required fields; flag/repair anything malformed
   rather than proceeding on it.
 - **Scope-count gate (mandatory).** After applying the scope filter
-  (integration-test-patterns §1.2 — target module *and* peers — /
+  (integration-test-patterns §1.2 — at the confirmed `peer_depth` — /
   qualification-test-patterns §1), report the resulting count and **require the
   engineer to confirm or enter the expected count** before proceeding — persist
   it as `expected_row_count`. Never silently learn it; a mismatch on a later run
@@ -240,19 +273,29 @@ row:
 9. **integration-test only** — every case names **both** ends: a `Rte_Write`
    breakpoint in the writer's file and a `Rte_Read` breakpoint in the reader's
    file (or the `Rte_Call`/server pair), with the two files actually different
-   where the interface crosses modules.
+   where the interface crosses modules — including where the peer is named but
+   not authored (integration-test-patterns §2, Depth).
 10. **integration-test only** — every interface appears under the target
-    module's section and under each peer's section (or mirroring is off and the
-    peer sections are listed in Open Points); every mirror row is marked as such
-    in `Traceability`.
+    module's section; a peer has a section only under `peer_depth: peer_ports`
+    or with mirroring on, and every mirror row is marked as such in
+    `Traceability`.
 11. **integration-test only** — every Min/Mid/Max states which range it came
     from (documented `Range:` vs implementation type), and every Min-1/Max+1
     states the implementation type its written value and its wrap came from —
     which must be the **type**, never the documented range, even when the
-    documented range is narrower (integration-test-patterns.md §5.2).
+    documented range is narrower (integration-test-patterns.md §5.2). Each
+    result step states the value **that end displays** — the wrapped value
+    where the entered one is not representable in that end's type, with the
+    entered value in brackets.
 12. **integration-test only** — every enum literal used states its source
-    (`Rte_Type.h` / existing test case); no literal is derived from a value's
-    prose description.
+    (`Rte_Type.h`/ARXML, or an existing test case in `extend_existing` mode);
+    no literal is derived from a value's prose description.
+13. **integration-test only** — no `atcActions` entry names a `.h` file. Every
+    breakpoint line and observed variable is quoted verbatim from a `.c` file
+    at the pinned source revision, with file and line number in `Traceability`
+    — or, in a degraded run, is a marked placeholder with an Open Point.
+14. **integration-test only, `from_scratch`** — nothing in the workbook, the
+    Traceability sheet or Open Points cites a legacy test-case workbook.
 
 ## 7. Traceability & Open Points (both skills, every run)
 

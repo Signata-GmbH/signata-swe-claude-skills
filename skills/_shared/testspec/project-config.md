@@ -6,10 +6,11 @@
 > path and one set of guards — the same shape as
 > [../common/project-config.md](../common/project-config.md), which owns the
 > *separate* `20_AI/ai_project.yaml` for the SWE.3 C-source repo. The two
-> configs are never merged: this repo (a vTestStudio project folder) typically
-> has no source code, no compiler, and no build to pin a revision against, so
-> its config and its pinning mechanism (§2 of
-> [workflow-discipline.md](workflow-discipline.md)) are both different.
+> configs are never merged: this repo (a vTestStudio project folder) has no
+> compiler and no build of its own, so its config and its pinning mechanism
+> (§2 of [workflow-discipline.md](workflow-discipline.md)) are both different.
+> `integration-test` does read the SWE.3 repo — for breakpoint lines — but as an
+> input this config points at (`docs.source_repo`), not as the repo it lives in.
 
 `20_AI/ai_test_project.yaml` is **one per repository, shared by every engineer
 running either skill**. It is created **once**, **on the repo's base branch**,
@@ -65,6 +66,14 @@ from the "most common" spelling seen:**
 - `attributes.classification_rule` (a pointer to the governing document
   section, not a value — confirm which document/section governs)
 - `integration_test.testability_filter`
+- `integration_test.authoring_mode` — `from_scratch` or `extend_existing`
+  (integration-test-patterns.md §0.1). Ask it even when an export-shaped file
+  sits in the folder: a file's presence is not the engineer's decision to use
+  it. Then set `docs.integration_test_spec_export` to match — a path iff
+  `extend_existing`, `N/A` iff `from_scratch`.
+- `integration_test.peer_depth` and `integration_test.peer_module_mirroring`
+  (integration-test-patterns.md §2–§3) — propose `target_ports` and `false`, and
+  say that the other values typically multiply the output several times over.
 
 ### 4.2 Discover, then confirm
 
@@ -78,6 +87,17 @@ from the "most common" spelling seen:**
   `functional_architecture_export` at the view with the names and
   `functional_architecture_export_text_view` at the other, rather than treating
   them as separate documents.
+- **`docs.source_repo`** — ask for the path of the SWE.3 C-source repo (it is
+  rarely under `docs.root`) and confirm it is a git working tree
+  (`git -C <path> rev-parse --show-toplevel`). If it carries
+  `20_AI/ai_project.yaml`, read `project.type`, `layout.app_root` and
+  `layout.rte_inc` from there rather than asking again, and set
+  `docs.rte_type_headers` to `N/A` where the RTE headers live under
+  `layout.rte_inc`. Ask for `ref` (the revision test cases are authored
+  against); `N/A` means "whatever is checked out", pinned per run. Declining
+  the source repo is allowed only as a recorded decision with its reason, and
+  makes every integration-test run degraded (integration-test-patterns.md §9) —
+  say so before writing it.
 - **`qualification_test.valid_features`** — derive from the distinct `aFeature`
   values in `docs.requirements_workbook` once it is available; present the list
   for confirmation (it is a **learned** field, re-validated on later runs, not
@@ -101,9 +121,14 @@ string, a path discovery missed).
 Do not rewrite the file. Emit a validation table (`field | value | valid? |
 evidence / problem`) covering: `schema_version` present; no surviving
 `<PLACEHOLDER>`; every `docs.*` path (other than `N/A`) resolves to a readable
-file; `qualification_test.valid_features` still matches the distinct `aFeature`
-values seen in the requirements workbook (a mismatch is a loud finding, not a
-silent skip). Offer to repair only the invalid fields. If everything is valid,
+file; every `N/A` carries its reason; `integration_test.authoring_mode` is set
+and agrees with `docs.integration_test_spec_export` (path ⇔ `extend_existing`,
+`N/A` ⇔ `from_scratch`); `docs.source_repo.path` is a git working tree and
+`ref`, if set, resolves in it; `integration_test.peer_depth` and
+`peer_module_mirroring` are set (absent in an older config → ask, do not
+default silently); `qualification_test.valid_features` still matches the
+distinct `aFeature` values seen in the requirements workbook (a mismatch is a
+loud finding, not a silent skip). Offer to repair only the invalid fields. If everything is valid,
 say so and stop.
 
 ## 6. Confirm → write → hand off (HARD GATE)

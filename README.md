@@ -253,14 +253,19 @@ into DOORS by hand) from DOORS xlsx exports. Two things separate them from the
 other four skills:
 
 - **They run in a vTestStudio project folder**, not the SWE.3 C-source repo —
-  no compiler, no RTE layout, no `.c`/`.h`. So they read their **own** per-repo
-  config, `20_AI/ai_test_project.yaml`, bootstrapped by
+  no compiler, no build. So they read their **own** per-repo config,
+  `20_AI/ai_test_project.yaml`, bootstrapped by
   `_shared/testspec/project-config.md` (same base-branch + duplicate guards as
   `ai_project.yaml`, just for a different file and a different repo).
-- **They have no source code to pin a git revision against.** The audit spine
-  is `release.id` + `variants` (the DOORS baseline) plus a content hash of every
-  supplied xlsx export — `_shared/testspec/workflow-discipline.md` §2 is the
-  test-spec equivalent of `common/workflow-discipline.md` §2.
+  `integration-test` still **reads** the SWE.3 repo, as an input
+  (`docs.source_repo`): a debugger breakpoint needs an executable line, and
+  only a `.c` file has one.
+- **Their own folder has no build to pin a git revision against.** The audit
+  spine is `release.id` + `variants` (the DOORS baseline) plus a content hash of
+  every supplied xlsx export, and — for `integration-test` — the SWE.3 repo's
+  `HEAD` and the blob hash of every `.c`/`.h` read.
+  `_shared/testspec/workflow-discipline.md` §2 is the test-spec equivalent of
+  `common/workflow-discipline.md` §2.
 
 Everything else about the shape is deliberately the same: a hard Phase-1→
 Phase-2 gate, fail-closed input acquisition, a scope-count confirmation gate, a
@@ -294,23 +299,33 @@ are resolvable (one export with both columns, or two views of the same module
 joined on `ID`), and that DOORS table content survived — and **stops** for a
 re-export rather than letting the run invent a member name or a limit. One gap
 is expected rather than fatal: the architecture module names its enum types but
-lists no literals for them, so `MOT_MOV_ROT_FWD_E` comes from `Rte_Type.h` or an
-existing test case, or the interface goes to Open Points.
+lists no literals for them, so `MOT_MOV_ROT_FWD_E` comes from `Rte_Type.h`/ARXML
+(or, when extending an existing spec, an existing test case), or the interface
+goes to Open Points.
 
-**A module is never tested alone.** An integration test case exercises one
-interface across two modules — one writes it (`Rte_Write`, breakpoint in the
-writer's `.c`), the other reads it (`Rte_Read`, breakpoint in the reader's `.c`)
-— so naming a module also brings in the **peer modules** at the other end of its
-ports. Direction comes from the port's name prefix (`P_` writes, `R_` reads,
-cross-checked against "This port sends…" / "This port receives…"), pairing from
-the name with that prefix stripped (`P_Mot_Mov_Data` ↔ `R_Mot_Mov_Data`)
-confirmed by the data type, and an ambiguous pairing becomes a Phase-1 question
-rather than a pick. One module can carry three spellings — its architecture
-section heading, its `aFunctionModule`, and its test-spec heading
-(`FUSA_CDD_MotDrv` / `FUSA_MotDrv` / `Mot_Drv`) — all three get cached. Each interface is then
-**mirrored**: authored under the target module's section as `P_/R_<Element>` and
-under the peer's as `<Writer> to <Reader>`, matching the duplication the DOORS
-test module already carries, with primary vs mirror marked in `Traceability`.
+**Extend, or author from scratch — decided once.** A project either extends an
+existing SWE.5 test-spec module or authors one from scratch
+(`integration_test.authoring_mode`). From scratch is a first-class mode: no
+coverage baseline, heading spellings proposed and confirmed, and a legacy
+test-case workbook sitting in the folder is never read — a recorded `N/A` is a
+resolved input, not a gap for discovery to fill.
+
+**A module is never tested alone — but it is authored alone by default.** An
+integration test case exercises one interface across two modules — one writes
+it (`Rte_Write`, breakpoint in the writer's `.c`), the other reads it
+(`Rte_Read`, breakpoint in the reader's `.c`) — so every case names the **peer
+module** at the other end of the target's port. Direction comes from the port's
+name prefix (`P_` writes, `R_` reads, cross-checked against "This port sends…"
+/ "This port receives…"), pairing from the name with that prefix stripped
+(`P_Mot_Mov_Data` ↔ `R_Mot_Mov_Data`) confirmed by the data type, and an
+ambiguous pairing becomes a Phase-1 question rather than a pick. How far the
+run reaches is explicit: `peer_depth: target_ports` (default) authors only the
+target's own interfaces, the peer being named inside each case but given no
+section; `peer_ports` also authors the direct peers' other interfaces — one
+extra hop, typically an order of magnitude more rows, so the Phase-1 gate shows
+the projected count for each. **Mirroring** (off by default) adds a second copy
+of each interface under the peer's section as `<Writer> to <Reader>`, with
+primary vs mirror marked in `Traceability`.
 
 **v1 scope is Excel-only.** A real vTestStudio project folder also holds `.vtt`
 test tables and `.vtsoproj`/CAPL automation — generating or updating those is an
@@ -336,7 +351,7 @@ for a module with no RTE symbols to work from.
 | 9 | **Scaffold → validate → confirm inputs** | Developer never copy-pastes a fill block; the skill owns the path, schema, and defaults. |
 | 10 | **Develop as project skills, then promote to a plugin repo** | Fast local iteration now; a dedicated marketplace repo for org-wide, versioned distribution later. |
 | 11 | **A dedicated `/project-init` skill** for the per-repo config | Setup was a side effect of the first module run, so it happened on whatever branch that engineer was on. Two engineers → two disagreeing configs → a merge conflict in the file every run reads. One owner, one procedure, base-branch + duplicate guards; the module skills keep a guarded fallback so they still run standalone. |
-| 12 | **A separate `_shared/testspec/` pack + `ai_test_project.yaml`** for `integration-test`/`qualification-test`, not a third `project.type` flavor | These skills run in a different repo (vTestStudio project folder) with no source code, no compiler, and no git-SHA build to pin against — the SWE.3 flavor mechanism and revision pinning genuinely don't apply. A parallel pack keeps the two domains from growing irrelevant conditionals into each other's shared files. |
+| 12 | **A separate `_shared/testspec/` pack + `ai_test_project.yaml`** for `integration-test`/`qualification-test`, not a third `project.type` flavor | These skills run in a different repo (vTestStudio project folder) with no compiler and no build of its own — the SWE.3 flavor mechanism genuinely doesn't apply. A parallel pack keeps the two domains from growing irrelevant conditionals into each other's shared files. (`integration-test` later gained the SWE.3 repo as a pinned *input*, `docs.source_repo`, for its `.c` breakpoint lines; it reuses the SWE.3 revision pin rather than a flavor.) |
 | 13 | **Excel-only v1; AUTOSAR-only `integration-test`** | The vTestStudio `.vtt`/CAPL automation-script generation the user ultimately wants is deferred to v2 rather than attempted without a validated pattern. `integration-test`'s only validated pattern is RTE-debugger breakpoint testing, so it stops on a module with no RTE symbols rather than inventing a black-box equivalent. |
 | 14 | **`code-fix` as a fifth SWE.3 skill, not a mode of `code-dev`** | The fix workflow inverts the input (evidence, not a requirement set), the allowed output (four verdicts — three of which forbid a diff), and the exit criterion (a verification plan the engineer runs, since nothing is reproducible here). Bolting a second entry path onto `code-dev` would double its branching for both workflows and leave the evidence gate nowhere to live; a separate orchestrator sharing `workflow-discipline`, `no-fabrication`, and both flavor packs keeps the guard-rails identical where they genuinely are identical. |
 

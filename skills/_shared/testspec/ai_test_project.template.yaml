@@ -5,8 +5,10 @@
 # (SWE.5) and qualification-test (SWE.6). This is a SEPARATE config from
 # 20_AI/ai_project.yaml — that file describes the SWE.3 C-source repo
 # (compiler, target, RTE layout); this one describes the vTestStudio
-# project folder these two skills run in instead, which has no source
-# code, no compiler, and no git-SHA build to pin against. Holds
+# project folder these two skills run in instead, which has no compiler
+# and no build of its own. integration-test READS the SWE.3 C-source repo
+# (docs.source_repo) for breakpoint lines, pinned at its git revision;
+# it never builds it. Holds
 # everything that varies by PROJECT (never by module/feature) for DOORS
 # test-case generation — the per-module/per-feature manifests in
 # 20_AI/manifests/{integration-test,qualification-test}/ inherit these.
@@ -27,7 +29,8 @@ project:
   name: <PROJECT_NAME>            # <-- fill   e.g. MQBST2
 
 # The DOORS baseline these test cases are authored against — this repo's
-# equivalent of a git revision pin (there is no source code / git SHA here).
+# equivalent of a git revision pin (DOORS exports carry no git SHA; the SWE.3
+# source repo integration-test reads is pinned separately — docs.source_repo).
 # Digit-zero vs letter-O and similar near-identical release strings are a
 # known trap in the source DOORS exports — quote exactly and confirm.
 release:
@@ -86,24 +89,55 @@ docs:
   rte_type_headers:     <path or N/A>        # <-- fill  Rte_Type.h / ARXML datatype mapping — the ONLY source of
                                               #     enum literals: the architecture's UserDefinedTypes chapter
                                               #     names its enum types but lists no literal for them
-                                              #     (integration-test-patterns §5.2). Absent → enum interfaces
-                                              #     fall back to the existing test-spec export, then Open Points.
+                                              #     (integration-test-patterns §5.2). N/A when they are read from
+                                              #     the source repo's layout.rte_inc instead. Absent from both →
+                                              #     enum interfaces fall back to the existing test-spec export
+                                              #     (extend_existing only), then Open Points.
+  # ---- SWE.5: the SWE.3 C-source repo -----------------------------------
+  # Breakpoint lines and observed variables come from the module's .c files
+  # — a header carries no executable line (integration-test-patterns §9).
+  # A SEPARATE git repo: pinned by its own revision (workflow-discipline §2),
+  # never built. If it carries 20_AI/ai_project.yaml, its project.type and
+  # layout.rte_inc / layout.app_root are read from there, not duplicated here.
+  source_repo:
+    path: <path or N/A>                      # <-- fill  e.g. C:\Projects\<SWE3_REPO>. MANDATORY for integration-test;
+                                              #     N/A only by a recorded engineer decision → every run is DEGRADED
+                                              #     (symbol-only breakpoints, flagged not executable). Write the reason.
+    ref:  <tag/branch/SHA or N/A>            # <-- fill  the revision test cases are authored against; a run whose
+                                              #     HEAD differs stops and asks. N/A = whatever is checked out,
+                                              #     recorded per run in the manifest ledger.
   a2l_or_varlist:        <path or N/A>       # <-- fill  A2L file or code variable list — MANDATORY for SWE.6
   diagspec:               <path or N/A>      # <-- fill  UDS DiagSpec (e.g. EE0339_UDS_DiagSpec) — diagnostic features only
-  integration_test_spec_export: <path or N/A> # <-- fill  existing SWE.5 test-spec export (exemplars + coverage baseline)
+  integration_test_spec_export: <path or N/A> # <-- fill  existing SWE.5 test-spec export (exemplars + coverage baseline).
+                                              #     A path iff integration_test.authoring_mode = extend_existing;
+                                              #     N/A iff from_scratch. A file found in the folder never fills it.
   qualification_test_spec_export: <path or N/A> # <-- fill  existing SWE.6 test-spec export (exemplars + coverage baseline)
 
 # ---------------------------------------------------------------------
 # INTEGRATION TEST (SWE.5) — AUTOSAR / RTE-debugger pattern only in v1.
 # ---------------------------------------------------------------------
 integration_test:
+  # Does this project EXTEND an existing SWE.5 test-spec module, or author one
+  # FROM SCRATCH? An engineer decision, asked once — never inferred from the
+  # files sitting in the folder. from_scratch: no coverage baseline, heading
+  # spellings proposed + confirmed, no "existing test case" fallback anywhere,
+  # and a legacy workbook in the folder is never read
+  # (integration-test-patterns.md §0.1).
+  authoring_mode: <from_scratch | extend_existing>   # <-- ask
   testability_filter:              # <-- fill   aTestability values in scope, e.g. ["test"]
     - "test"
-  # Mirror each interface into BOTH the target module's section and every peer
-  # module's section (the duplication the DOORS SW_TST module already has:
-  # `P_Mot_Mov_Data` under FUSA_MotCtrl *and* `FUSA-MotCtrl to CDD_Drv` under
-  # Mot_Drv). See integration-test-patterns.md §3.
-  peer_module_mirroring: true      # <-- confirm
+  # Which interfaces are AUTHORED (integration-test-patterns.md §2, Depth):
+  #   target_ports : only the target module's own interfaces. Peers are NAMED
+  #                  inside each case (the far-end breakpoint) but get no section.
+  #   peer_ports   : also every interface the target's direct peers are an end
+  #                  of — one extra hop, typically ~10x the rows.
+  # Per-module override: the manifest's scope.peer_depth.
+  peer_depth: target_ports         # <-- confirm
+  # Also author a MIRROR copy of each interface under the peer's section, headed
+  # `<Writer> to <Reader>` (integration-test-patterns.md §3). Doubles the output;
+  # in from_scratch mode every mirror heading is a proposal. Per-module override:
+  # the manifest's scope.peer_module_mirroring.
+  peer_module_mirroring: false     # <-- confirm
   # aFunctionModule -> the set of peer modules at the other end of its ports,
   # DISCOVERED per module (integration-test-patterns.md §2) and CACHED here
   # with the resolved writer/reader side per interface. Never seeded by

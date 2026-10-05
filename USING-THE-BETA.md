@@ -26,7 +26,7 @@ you review and enter into DOORS by hand — nothing is written to DOORS.
 
 | Command | Does | Bring |
 |---|---|---|
-| `/integration-test <MODULE>` | SWE.5 interface test cases for a module **and the peer modules its ports run to** — one side writes (`Rte_Write`), the other reads (`Rte_Read`), so both ends are named in every case. AUTOSAR/RTE-debugger only. | The **Functional_Architecture** DOORS export (its section 1.2 UserDefinedTypes chapter comes with it), the existing SWE.5 test-spec export for the module and its peers, and `Rte_Type.h`/ARXML. |
+| `/integration-test <MODULE>` | SWE.5 interface test cases for a module — one side writes (`Rte_Write`), the other reads (`Rte_Read`), so both ends are named in every case; the peer module gets a section of its own only if you ask for it. AUTOSAR/RTE-debugger only. | The **Functional_Architecture** DOORS export (its section 1.2 UserDefinedTypes chapter comes with it), the path to the **SWE.3 C-source repo** (breakpoint lines are read from its `.c` files), and `Rte_Type.h`/ARXML. Plus the existing SWE.5 test-spec export — only if your project extends one rather than authoring from scratch. |
 | `/qualification-test <FEATURE>` | SWE.6 test cases for a feature — requirements-based, boundary-value and diagnostic (UDS DID/RID). | The **SW requirements** export, Signals & Parameters, an A2L or code variable list, and the UDS DiagSpec for diagnostic features. |
 
 **Export your architecture with both `Object Heading` and `Object Text`
