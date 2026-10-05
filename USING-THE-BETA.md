@@ -19,15 +19,17 @@ Each skill **adapts automatically** to whether the repo is AUTOSAR or non-AUTOSA
 
 ### The two DOORS test-spec skills
 
-These run in the **vTestStudio project folder**, not the C-source repo, and read
-their own config (`20_AI/ai_test_project.yaml`, bootstrapped on first run). They
+Run these from the **SWE.3 project repository**, like the commands above — not
+from the vTestStudio project folder. They read their own config
+(`20_AI/ai_test_project.yaml`, bootstrapped on first run, next to
+`ai_project.yaml`). They
 produce a 3-sheet Excel workbook (Test Cases / Traceability / Open Points) that
 you review and enter into DOORS by hand — nothing is written to DOORS.
 
 | Command | Does | Bring |
 |---|---|---|
-| `/integration-test <MODULE>` | SWE.5 interface test cases for a module — one side writes (`Rte_Write`), the other reads (`Rte_Read`), so both ends are named in every case; the peer module gets a section of its own only if you ask for it. AUTOSAR/RTE-debugger only. | The **Functional_Architecture** DOORS export (its section 1.2 UserDefinedTypes chapter comes with it), the path to the **SWE.3 C-source repo** (breakpoint lines are read from its `.c` files), and `Rte_Type.h`/ARXML. Plus the existing SWE.5 test-spec export — only if your project extends one rather than authoring from scratch. |
-| `/qualification-test <FEATURE>` | SWE.6 test cases for a feature — requirements-based, boundary-value and diagnostic (UDS DID/RID). | The **SW requirements** export, Signals & Parameters, an A2L or code variable list, and the UDS DiagSpec for diagnostic features. |
+| `/integration-test <MODULE>` | SWE.5 interface test cases for a module — one side writes (`Rte_Write`), the other reads (`Rte_Read`), so both ends are named in every case; the peer module gets a section of its own only if you ask for it. AUTOSAR/RTE-debugger only. | The **Functional_Architecture** DOORS export (its section 1.2 UserDefinedTypes chapter comes with it), and `Rte_Type.h`/ARXML; breakpoint lines are read from the repository's own `.c` files. Optionally, a description of your test bench. Plus the existing SWE.5 test-spec export — only if your project extends one rather than authoring from scratch. |
+| `/qualification-test <FEATURE>` | SWE.6 test cases for a feature — requirements-based, boundary-value and diagnostic (UDS DID/RID). | The **SW requirements** export (the one `ai_project.yaml` already names), Signals & Parameters, an A2L or code variable list, and the UDS DiagSpec for diagnostic features. Recommended: the bus database (DBC/LDF/ARXML), the Test Plan, and a description of your test bench. It never reads the source code — qualification testing is black-box. |
 
 **Export your architecture with both the names and the text.**
 `/integration-test` needs each object's name (module, port, type, struct

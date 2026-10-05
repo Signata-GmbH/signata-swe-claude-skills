@@ -2,8 +2,7 @@
 
 A Claude Code **plugin** that turns SIGNATA's engineering AI prompts —
 **Code Development**, **Defect Analysis & Fix**, **Code Review**,
-**Unit-Test Generation**, and (for a vTestStudio project folder)
-**Integration-Test** and **Qualification-Test
+**Unit-Test Generation**, **Integration-Test** and **Qualification-Test
 Generation** — into reusable **skills** developers invoke by name, instead of
 copy-pasting a large prompt and hand-filling inputs every time. Two setup
 skills, **Project Init** and (inline, per §3.10) the test-spec config bootstrap,
@@ -86,11 +85,12 @@ This project makes the prompts **first-class, versioned, invokable tooling**:
 └── qualification-test/ SKILL.md  # orchestrator — SWE.6 DOORS test-case generation
 ```
 
-`integration-test` and `qualification-test` run in a **different repo** — a
-vTestStudio project folder, not the SWE.3 C-source repo — so they read a
-**separate** `_shared/testspec/` pack (own config template, own bootstrap
-procedure, own discipline/no-fabrication/output-format files, own manifest
-templates) instead of `common/`/`autosar/`/`generic/`. See §3.10.
+`integration-test` and `qualification-test` run in the **same** SWE.3 project
+repository as the code skills, but read a **separate** `_shared/testspec/` pack
+(own config template, own bootstrap procedure, own
+discipline/no-fabrication/output-format files, own manifest templates) instead
+of `common/`/`autosar/`/`generic/`: their test basis, inputs and output are
+DOORS test specifications, not code. See §3.10.
 
 ### 3.2 Four *adaptive* module skills, not eight
 
@@ -249,23 +249,38 @@ auditable defect history and a re-run updates its issue in place.
 
 `integration-test` (SWE.5) and `qualification-test` (SWE.6) generate draft
 DOORS test-case rows (a 3-sheet Excel workbook an engineer reviews and enters
-into DOORS by hand) from DOORS xlsx exports. Two things separate them from the
-other four skills:
+into DOORS by hand) from DOORS xlsx exports. They run where the other skills
+run — the SWE.3 project repository — but differ from them in three ways:
 
-- **They run in a vTestStudio project folder**, not the SWE.3 C-source repo —
-  no compiler, no build. So they read their **own** per-repo config,
-  `20_AI/ai_test_project.yaml`, bootstrapped by
-  `_shared/testspec/project-config.md` (same base-branch + duplicate guards as
-  `ai_project.yaml`, just for a different file and a different repo).
-  `integration-test` still **reads** the SWE.3 repo, as an input
-  (`docs.source_repo`): a debugger breakpoint needs an executable line, and
-  only a `.c` file has one.
-- **Their own folder has no build to pin a git revision against.** The audit
-  spine is `release.id` + `variants` (the DOORS baseline) plus a content hash of
-  every supplied xlsx export, and — for `integration-test` — the SWE.3 repo's
-  `HEAD` and the blob hash of every `.c`/`.h` read.
+- **Their own config.** `20_AI/ai_test_project.yaml` sits beside
+  `ai_project.yaml`, bootstrapped by `_shared/testspec/project-config.md` (same
+  base-branch + duplicate guards). It holds test-spec facts the code skills
+  never read — the DOORS baseline, attribute values, test documents — and reads
+  what `ai_project.yaml` already holds (`project.type`, the RTE layout, the
+  requirements workbook) instead of copying it.
+- **They read the code but never build it — and SWE.6 does not read it at
+  all.** `integration-test` takes its breakpoint lines from the `.c` files: a
+  debugger breakpoint needs an executable line, and only a `.c` file has one.
+  `qualification-test` is black-box: an expected result taken from the code
+  would test the code against itself.
+- **Their audit spine** is `release.id` + `variants` (the DOORS baseline), a
+  content hash of every supplied export, and — for `integration-test` — the
+  repository's `HEAD` and the blob hash of every `.c`/`.h` read.
   `_shared/testspec/workflow-discipline.md` §2 is the test-spec equivalent of
   `common/workflow-discipline.md` §2.
+
+**Why the SWE.3 repository, not the vTestStudio project folder.** The
+vTestStudio folder is usually outside version control, and everything the
+skills guarantee — one shared config, an append-only run history, in-place
+updates with the previous version recoverable — rests on Git. In the SWE.3
+repository the code `integration-test` needs is local, and the requirements
+export, A2L and ARXML are shared with the code skills as one copy each. The
+vTestStudio folder becomes an external path (`vteststudio.project`), reserved
+for v2 script generation: scripts will be written into this repository first,
+as the versioned master copy, and copied across only on confirmation. A team
+whose QA engineers cannot commit to the SWE.3 repo uses a separate Git
+repository for test artefacts instead, pointing `docs.source_repo` at the SWE.3
+repo; a folder outside Git is not supported.
 
 Everything else about the shape is deliberately the same: a hard Phase-1→
 Phase-2 gate, fail-closed input acquisition, a row-count confirmation gate at the end of Phase 1, a
@@ -338,7 +353,10 @@ primary vs mirror marked in `Traceability`.
 
 **v1 scope is Excel-only.** A real vTestStudio project folder also holds `.vtt`
 test tables and `.vtsoproj`/CAPL automation — generating or updating those is an
-explicit **v2**, not attempted here. `integration-test` is also **AUTOSAR-only
+explicit **v2**, not attempted here. Two v1 inputs exist mainly to prepare for
+it: the test environment description (what the bench can stimulate and
+observe) and, for SWE.6, the communication database — a script needs exact
+signal and channel names where a spreadsheet case can paraphrase. `integration-test` is also **AUTOSAR-only
 for v1**: its only validated pattern is RTE-debugger breakpoint testing
 (`Rte_Write`/`Rte_Read`), so it stops rather than inventing a black-box pattern
 for a module with no RTE symbols to work from.
@@ -360,9 +378,10 @@ for a module with no RTE symbols to work from.
 | 9 | **Scaffold → validate → confirm inputs** | Developer never copy-pastes a fill block; the skill owns the path, schema, and defaults. |
 | 10 | **Develop as project skills, then promote to a plugin repo** | Fast local iteration now; a dedicated marketplace repo for org-wide, versioned distribution later. |
 | 11 | **A dedicated `/project-init` skill** for the per-repo config | Setup was a side effect of the first module run, so it happened on whatever branch that engineer was on. Two engineers → two disagreeing configs → a merge conflict in the file every run reads. One owner, one procedure, base-branch + duplicate guards; the module skills keep a guarded fallback so they still run standalone. |
-| 12 | **A separate `_shared/testspec/` pack + `ai_test_project.yaml`** for `integration-test`/`qualification-test`, not a third `project.type` flavor | These skills run in a different repo (vTestStudio project folder) with no compiler and no build of its own — the SWE.3 flavor mechanism genuinely doesn't apply. A parallel pack keeps the two domains from growing irrelevant conditionals into each other's shared files. (`integration-test` later gained the SWE.3 repo as a pinned *input*, `docs.source_repo`, for its `.c` breakpoint lines; it reuses the SWE.3 revision pin rather than a flavor.) |
+| 12 | **A separate `_shared/testspec/` pack + `ai_test_project.yaml`** for `integration-test`/`qualification-test`, not a third `project.type` flavor | Their test basis, inputs and output are DOORS test specifications, not code, so the SWE.3 flavor mechanism genuinely doesn't apply. A parallel pack keeps the two domains from growing irrelevant conditionals into each other's shared files. (Originally they were also meant to run in a different repo, the vTestStudio project folder; decision 15 moved them into the SWE.3 repository.) |
 | 13 | **Excel-only v1; AUTOSAR-only `integration-test`** | The vTestStudio `.vtt`/CAPL automation-script generation the user ultimately wants is deferred to v2 rather than attempted without a validated pattern. `integration-test`'s only validated pattern is RTE-debugger breakpoint testing, so it stops on a module with no RTE symbols rather than inventing a black-box equivalent. |
 | 14 | **`code-fix` as a fifth SWE.3 skill, not a mode of `code-dev`** | The fix workflow inverts the input (evidence, not a requirement set), the allowed output (four verdicts — three of which forbid a diff), and the exit criterion (a verification plan the engineer runs, since nothing is reproducible here). Bolting a second entry path onto `code-dev` would double its branching for both workflows and leave the evidence gate nowhere to live; a separate orchestrator sharing `workflow-discipline`, `no-fabrication`, and both flavor packs keeps the guard-rails identical where they genuinely are identical. |
+| 15 | **Run `integration-test`/`qualification-test` from the SWE.3 project repository**, not the vTestStudio project folder | The vTestStudio folder is usually outside version control, and the skills' guarantees — one shared config, an append-only run history, recoverable in-place updates — rest on Git. In the SWE.3 repository the code `integration-test` reads is local and the requirements export, A2L and ARXML are one shared copy. The vTestStudio folder becomes an external path reserved for v2 script generation. `qualification-test` stays black-box: it never reads the code that now sits beside it. |
 
 ---
 

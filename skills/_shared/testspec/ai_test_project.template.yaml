@@ -1,15 +1,27 @@
 # =====================================================================
-# AI TEST-SPEC PROJECT CONFIG  —  ONE per vTestStudio project folder.
+# AI TEST-SPEC PROJECT CONFIG  —  ONE per SWE.3 project repository.
 # ---------------------------------------------------------------------
 # Read by the two DOORS test-case-generation skills: integration-test
-# (SWE.5) and qualification-test (SWE.6). This is a SEPARATE config from
-# 20_AI/ai_project.yaml — that file describes the SWE.3 C-source repo
-# (compiler, target, RTE layout); this one describes the vTestStudio
-# project folder these two skills run in instead, which has no compiler
-# and no build of its own. integration-test READS the SWE.3 C-source repo
-# (docs.source_repo) for breakpoint lines, pinned at its git revision;
-# it never builds it. Holds
-# everything that varies by PROJECT (never by module/feature) for DOORS
+# (SWE.5) and qualification-test (SWE.6). They run in the SWE.3 project
+# repository — the same repo as code-dev, code-review and unit-test — and
+# this file sits beside 20_AI/ai_project.yaml there. It stays a SEPARATE
+# file: it holds test-spec facts (DOORS baseline, attribute values, test
+# documents) the code skills never read. Facts ai_project.yaml already holds
+# (project.type, layout.rte_inc, layout.app_root, requirements.workbook) are
+# READ from it at run time, never copied here (testspec/project-config.md
+# §4.3).
+#
+# The skills read the code but never build it. integration-test takes its
+# breakpoint lines from the .c files (docs.source_repo — this repo by
+# default); qualification-test never reads code at all: it tests black-box.
+# The vTestStudio project (vteststudio: below) is an EXTERNAL folder, usually
+# outside version control — the skills never run in it.
+#
+# Fallback setup, only where QA engineers cannot commit to the SWE.3 repo: a
+# separate Git repository for the test artefacts, with docs.source_repo.path
+# pointing at the SWE.3 repo. A folder outside Git is not supported.
+#
+# Holds everything that varies by PROJECT (never by module/feature) for DOORS
 # test-case generation — the per-module/per-feature manifests in
 # 20_AI/manifests/{integration-test,qualification-test}/ inherit these.
 #
@@ -28,9 +40,9 @@ schema_version: 1
 project:
   name: <PROJECT_NAME>            # <-- fill   e.g. MQBST2
 
-# The DOORS baseline these test cases are authored against — this repo's
-# equivalent of a git revision pin (DOORS exports carry no git SHA; the SWE.3
-# source repo integration-test reads is pinned separately — docs.source_repo).
+# The DOORS baseline these test cases are authored against — the DOORS
+# equivalent of a git revision pin (DOORS exports carry no git SHA; the code
+# is pinned by the repository's own revision — workflow-discipline §2).
 # Digit-zero vs letter-O and similar near-identical release strings are a
 # known trap in the source DOORS exports — quote exactly and confirm.
 release:
@@ -96,8 +108,11 @@ docs:
                                               #     (workflow-discipline §1.3). Both views must be the same
                                               #     baseline; a differing ID set is a stop.
   # ---- SWE.6 test basis -------------------------------------------------
-  requirements_workbook: <path>              # <-- fill  SW requirements export (DOORS xlsx) — SWE.6 test basis.
-                                              #     NOT read by integration-test.
+  requirements_workbook: <path or ai_project>  # <-- fill  SW requirements export (DOORS xlsx) — SWE.6 test basis.
+                                              #     NOT read by integration-test. `ai_project` = use the workbook
+                                              #     ai_project.yaml names (requirements.workbook) — one copy,
+                                              #     shared with the code skills. Must carry aTestCriteria, the
+                                              #     requirement's verification criterion (qualification-test-patterns §1.1).
   # ---- shared ------------------------------------------------------------
   signals_params:       <path>               # <-- fill  Signals & Parameters export — MANDATORY for SWE.6;
                                               #     for SWE.5 only where a signal's raw values are exercised
@@ -105,28 +120,54 @@ docs:
                                               #     enum literals: the architecture's UserDefinedTypes chapter
                                               #     names its enum types but lists no literal for them
                                               #     (integration-test-patterns §5.2). N/A when they are read from
-                                              #     the source repo's layout.rte_inc instead. Absent from both →
+                                              #     layout.rte_inc (ai_project.yaml) instead. Absent from both →
                                               #     enum interfaces fall back to the existing test-spec export
                                               #     (extend_existing only), then Open Points.
-  # ---- SWE.5: the SWE.3 C-source repo -----------------------------------
+  # ---- SWE.5: the code ---------------------------------------------------
   # Breakpoint lines and observed variables come from the module's .c files
   # — a header carries no executable line (integration-test-patterns §9).
-  # A SEPARATE git repo: pinned by its own revision (workflow-discipline §2),
-  # never built. If it carries 20_AI/ai_project.yaml, its project.type and
-  # layout.rte_inc / layout.app_root are read from there, not duplicated here.
+  # Pinned by git revision (workflow-discipline §2), never built. NOT read by
+  # qualification-test, which is black-box.
   source_repo:
-    path: <path or N/A>                      # <-- fill  e.g. C:\Projects\<SWE3_REPO>. MANDATORY for integration-test;
-                                              #     N/A only by a recorded engineer decision → every run is DEGRADED
-                                              #     (symbol-only breakpoints, flagged not executable). Write the reason.
+    path: .                                  # <-- confirm  `.` = this repository (the default setup). A path to the
+                                              #     SWE.3 repo only in the fallback setup (a separate test repo).
+                                              #     N/A only by a recorded engineer decision → every integration-test
+                                              #     run is DEGRADED (symbol-only breakpoints, flagged not executable).
     ref:  <tag/branch/SHA or N/A>            # <-- fill  the revision test cases are authored against; a run whose
                                               #     HEAD differs stops and asks. N/A = whatever is checked out,
                                               #     recorded per run in the manifest ledger.
+  # ---- SWE.6: communication and test-plan inputs --------------------------
+  comm_database:        <path or N/A>        # <-- ask  DBC / LDF / ARXML system extract — every bus signal's message,
+                                              #     encoding (length, factor, offset, min/max), cycle time and timeout
+                                              #     (qualification-test-patterns §3). Without it, those values in a case
+                                              #     are Open Points. Not read by integration-test (RTE level).
+  test_plan:            <path or N/A>        # <-- ask  the Test Plan — per feature, whether it is tested on Series SW
+                                              #     or Debug SW (qualification-test atcRemark). Without it, asked once
+                                              #     per feature and recorded in the manifest.
+  # ---- both: the test bench -------------------------------------------------
+  test_environment:     <path or N/A>        # <-- ask  what the bench can STIMULATE and OBSERVE: debugger, XCP, bus
+                                              #     access / rest-bus simulation, diagnostic tester, HIL I/O channels
+                                              #     (workflow-discipline §4). Without it, the means each case assumes are
+                                              #     listed once in Open Points. Mandatory once scripts are generated (v2).
   a2l_or_varlist:        <path or N/A>       # <-- fill  A2L file or code variable list — MANDATORY for SWE.6
-  diagspec:               <path or N/A>      # <-- fill  UDS DiagSpec (e.g. EE0339_UDS_DiagSpec) — diagnostic features only
+  diagspec:               <path or N/A>      # <-- fill  UDS DiagSpec (e.g. EE0339_UDS_DiagSpec) — SWE.6 diagnostic features;
+                                              #     SWE.5 diagnostic interfaces (pattern P-07) only
   integration_test_spec_export: <path or N/A> # <-- fill  existing SWE.5 test-spec export (exemplars + coverage baseline).
                                               #     A path iff integration_test.authoring_mode = extend_existing;
                                               #     N/A iff from_scratch. A file found in the folder never fills it.
   qualification_test_spec_export: <path or N/A> # <-- fill  existing SWE.6 test-spec export (exemplars + coverage baseline)
+
+# ---------------------------------------------------------------------
+# vTestStudio PROJECT — reserved for v2 (automation-script generation).
+# v1 neither reads nor writes it. The folder is usually OUTSIDE version
+# control, so it is treated as external: read-only by default; generated
+# scripts will be written first to 20_AI/vTestStudio/ in THIS repository (the
+# versioned master copy) and copied into the project only on confirmation,
+# backing up every file they replace.
+# ---------------------------------------------------------------------
+vteststudio:
+  project: <path or N/A>           # <-- fill when known  the vTestStudio project folder
+  write_access: false              # v2 only: true lets a CONFIRMED run copy scripts into the project
 
 # ---------------------------------------------------------------------
 # INTEGRATION TEST (SWE.5) — AUTOSAR / RTE-debugger pattern only in v1.

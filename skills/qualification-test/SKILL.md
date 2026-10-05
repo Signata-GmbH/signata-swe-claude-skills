@@ -3,9 +3,10 @@ name: qualification-test
 description: >-
   Generate draft software qualification test cases (ASPICE SWE.6) for one
   feature, as a 3-sheet Excel workbook (Test Cases / Traceability / Open
-  Points) an engineer reviews and enters into DOORS by hand. Runs against a
-  vTestStudio project folder's own per-repo config (20_AI/ai_test_project.yaml),
-  not the SWE.3 code repo's ai_project.yaml. v1 is Excel-only (no .vtt /
+  Points) an engineer reviews and enters into DOORS by hand. Runs in the SWE.3
+  project repository like the code skills, with its own test-spec config
+  (20_AI/ai_test_project.yaml) beside ai_project.yaml — but tests black-box and
+  never reads the source code. v1 is Excel-only (no .vtt /
   vTestStudio automation-script generation). Handles requirements-based,
   boundary-value, and diagnostic (UDS DID/RID) test cases. Author by
   inspection only — never claims a DOORS write or a test execution. Use when
@@ -24,14 +25,23 @@ instead (an existing manifest, a previous run, a file name). Check it against
 `qualification_test.valid_features` once the config is loaded; a module name
 (an `aFunctionModule` value) is recognised as one and refused as a feature.
 
+**Run it from the SWE.3 project repository**, like the code skills — never from
+a vTestStudio project folder, which is usually outside Git (project-config §1).
+The code is within reach there, and **must not be read**: qualification testing
+is black-box, and an expected result taken from the code would test the code
+against itself (qualification-test-patterns §0).
+
 Follow these steps in order. Detailed rules live in the linked shared files —
 load them as you reach each step (progressive disclosure).
 
 ## Step 1 — Resolve the test-spec project config
 
-Read `20_AI/ai_test_project.yaml`. This is a **separate** config from
-`20_AI/ai_project.yaml` — this skill runs in the vTestStudio project folder, not
-the SWE.3 C-source repo. If **absent**, follow
+Read `20_AI/ai_test_project.yaml`, and `20_AI/ai_project.yaml` beside it: with
+`docs.requirements_workbook: ai_project`, the SW requirements export is the one
+`ai_project.yaml` names — one copy, shared with the code skills
+(project-config §4.3). Not in a Git repository → stop, and say to run from the
+SWE.3 repository (project-config §1). If the test-spec config is **absent**,
+follow
 [../_shared/testspec/project-config.md](../_shared/testspec/project-config.md)
 §7 (missing-config path): **stop** if it already exists on the base branch or
 is in flight elsewhere (merge it, never duplicate it); otherwise bootstrap it
@@ -50,9 +60,12 @@ Always load:
 Per workflow-discipline §3: compute `FEATURE_SLUG`, read
 `20_AI/manifests/qualification-test/<FEATURE_SLUG>.yaml` (scaffold from
 [../_shared/testspec/qualification-test-manifest-template.yaml](../_shared/testspec/qualification-test-manifest-template.yaml)
-if absent), discover the per-feature input docs (existing test cases for this
-feature), and **confirm the resolved inputs** — including whether the target
-is a diagnostic feature (routes to §9 of the patterns file). **Stop and wait**
+if absent), discover the per-feature input docs whose config entry is unset
+(existing test cases for this feature; workflow-discipline §1.2), offer the
+communication database, the Test Plan and the test environment description if
+they are not configured (workflow-discipline §1.1), and **confirm the resolved
+inputs** — including whether the target is a diagnostic feature (routes to §9
+of the patterns file). **Stop and wait**
 for confirmation. Remember workflow-discipline §0 — this may be the first
 skill ever run against this feature in this project.
 
@@ -63,10 +76,14 @@ Per qualification-test-patterns §1–§3 and workflow-discipline §1/§2/§4:
    baseline** — `release.id`/`variants` + a content hash of every supplied
    export (§2).
 2. **Scope** — apply the filter, report attrition at each step; confirm the
-   feature name against `qualification_test.valid_features`.
+   feature name against `qualification_test.valid_features`. Report each
+   in-scope requirement's verification criterion (`aTestCriteria`,
+   qualification-test-patterns §1.1): followed, ruling the level out, or empty.
 3. **Existing coverage** split (covered / not covered / partially covered).
 4. **Vocabulary resolution** — every signal/variable/parameter/state/error
-   name, with its source.
+   name, with its source; bus signals with their encoding, cycle time and
+   timeout from the communication database (qualification-test-patterns §3) —
+   never from the source code.
 5. **Proposed test cases** — one line each, no steps yet.
 6. **Row-count gate** (workflow-discipline §5) — the number of rows that table
    produces, heading and logical-parent rows included, as the last question.

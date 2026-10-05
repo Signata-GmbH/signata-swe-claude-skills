@@ -20,10 +20,13 @@ inherits: 20_AI/ai_test_project.yaml
 feature:
   name: <FEATURE_NAME>             # <-- fill   the exact aFeature value, e.g. "Actuator Data"
   slug: <FEATURE_SLUG>             # derived    e.g. actuator_data
+  test_software: null              # "Series SW" | "Debug SW" — from docs.test_plan; asked once (Phase-1) when
+                                    #   the Test Plan is absent or does not list the feature (patterns §8, atcRemark)
 
 # PER-FEATURE documents (extend the project-wide docs.* in ai_test_project.yaml).
 docs:
-  existing_qualification_test_cases: <path>  # <-- fill  MANDATORY — this feature's slice of the existing
+  existing_qualification_test_cases: <path or N/A>  # <-- fill  MANDATORY unless N/A by a recorded engineer decision
+                                              #     (workflow-discipline §1.2) — this feature's slice of the existing
                                               #     qualification-test-spec export (exemplars + coverage baseline)
   extra: []                        # optional additional documents for a run
   run_instructions: ""             # optional free-text custom instructions for a run

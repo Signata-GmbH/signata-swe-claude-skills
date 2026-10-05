@@ -3,17 +3,21 @@
 > Loaded by `integration-test` (SWE.5) and `qualification-test` (SWE.6). This is
 > the shared backbone for that pair — the same role
 > [../common/workflow-discipline.md](../common/workflow-discipline.md) plays for
-> the three SWE.3 code skills, rewritten for a domain with no compiler and no
-> build of its own: the DOORS exports are pinned by content hash, and the one
-> source-code input — the SWE.3 repo `integration-test` reads its breakpoint
-> lines from — by that repo's own git revision. The two files are not merged:
-> the pinning mechanism (§2 below) and the input matrix (§1) are genuinely
-> different here.
+> the three SWE.3 code skills. Both skills run in the SWE.3 project repository
+> (project-config.md §1) but never build it: the DOORS exports are pinned by
+> content hash, the code by the repository's revision. The two files are not
+> merged: the pinning mechanism (§2 below) and the input matrix (§1) are
+> genuinely different here.
 
 ## 0. Standalone & idempotent — NO pipeline assumption
 
-- Either skill may be the first (and only) one ever run in this vTestStudio
-  project folder. Never assume the other one ran first.
+- Either skill may be the first (and only) test-spec skill ever run in this
+  repository. Never assume the other one ran first, and never assume a code
+  skill ran first either.
+- **`qualification-test` is black-box.** It never reads the source code, even
+  though the code sits in the same repository: an expected result derived from
+  the code would test the code against itself (qualification-test-patterns
+  §0).
 - On every run, ensure `20_AI/ai_test_project.yaml` and the module/feature
   manifest exist. The **project config** is per-repo and belongs on the base
   branch — a missing one goes through
@@ -36,10 +40,13 @@
 | Requirements workbook (`docs.requirements_workbook`) | – | ✔ |
 | Signals & Parameters (`docs.signals_params`) | where a signal's raw values are exercised | ✔ |
 | Existing test-spec export for this module/feature | ✔ under `integration_test.authoring_mode: extend_existing` · – under `from_scratch` (integration-test-patterns §0.1) | ✔, unless `N/A` by a recorded engineer decision (§1.2) |
-| SWE.3 C-source repo (`docs.source_repo`) — breakpoint lines and observed variables | ✔ — waivable only by a recorded engineer decision, which makes the run *degraded* (integration-test-patterns §9) | – |
-| ARXML / `Rte_*.h` / `Rte_Type.h` (`docs.rte_type_headers`, or `layout.rte_inc` inside the source repo) | ✔ — every RTE symbol and every enum literal | – |
+| The code (`docs.source_repo` — this repository by default) — breakpoint lines and observed variables | ✔ — waivable only by a recorded engineer decision, which makes the run *degraded* (integration-test-patterns §9) | – never read: black-box (§0) |
+| ARXML / `Rte_*.h` / `Rte_Type.h` (`docs.rte_type_headers`, or `layout.rte_inc` in `ai_project.yaml`) | ✔ — every RTE symbol and every enum literal | – |
 | A2L file or code variable list (`docs.a2l_or_varlist`) | – | ✔ |
-| DiagSpec (`docs.diagspec`) | – | diagnostic features only |
+| DiagSpec (`docs.diagspec`) | diagnostic interfaces (pattern P-07) only | diagnostic features only |
+| Communication database — DBC / LDF / ARXML system extract (`docs.comm_database`) | – (tests at RTE level) | **ask** — every bus signal's encoding, cycle time and timeout; without it those values are Open Points |
+| Test Plan (`docs.test_plan`) | – | **ask** — Series SW or Debug SW per feature (`atcRemark`); without it, asked once per feature |
+| Test environment description (`docs.test_environment`) | **ask** | **ask** — what the bench can stimulate and observe (§4); without it, the means each case assumes are listed once in Open Points |
 
 **The two SWE.5 test-basis documents are not interchangeable with the SWE.6
 one.** `integration-test` reads the Functional_Architecture export and never
@@ -95,6 +102,8 @@ pre-flight table.
 
 **1. Columns present.** Every attribute the patterns file reads must exist as a
 column — for the Functional_Architecture export: `ID`, `aFunctionModule`,
+`aFeature`, `aTestCriteria`, `aTestability`, `aRequirementObjectType`,
+`aStatusOfAnalysis`, `aVariant`; for the requirements workbook: `ID`,
 `aFeature`, `aTestCriteria`, `aTestability`, `aRequirementObjectType`,
 `aStatusOfAnalysis`, `aVariant`. A missing column is a **hard STOP**: name the
 column, say which DOORS view carries it, and ask for a re-export. Never
@@ -193,17 +202,20 @@ so the equivalent of revision pinning is:
   case's `atsRelease`/`aVariant` attribute is valid only at that baseline.
 - **A content hash of every supplied input file**, via `git hash-object
   <file>` (the same primitive the SWE.3 skills use for blob hashes — it works
-  on any file, tracked or not, as long as you're inside a git working tree).
-  Record `{file: hash}` for every DOORS export/xlsx read this run.
-- **The SWE.3 source repo, by git revision** (`integration-test`,
-  `docs.source_repo`). It is a separate git repository, so pin it the way the
-  SWE.3 skills do (common/workflow-discipline.md §2): record `git -C <path>
-  rev-parse HEAD`, whether its worktree is dirty (`git -C <path> status
-  --porcelain`), and `git -C <path> hash-object <file>` for every `.c`/`.h`/
-  `.arxml` read. If `docs.source_repo.ref` is set and `HEAD` is not that
-  revision, **stop** and ask — a breakpoint line is valid only at the revision
-  it was read from. A dirty worktree is reported and confirmed before analysis,
-  never used silently.
+  on any file, tracked or untracked, inside a repository or outside one, so a
+  document kept outside Git is pinned the same way). Record `{file: hash}` for
+  every DOORS export/xlsx read this run.
+- **The code, by git revision** (`integration-test`, `docs.source_repo` —
+  `.`, this repository, in the default setup; the SWE.3 repo's path in the
+  fallback setup). Pin it the way the SWE.3 skills do
+  (common/workflow-discipline.md §2): record `git -C <path> rev-parse HEAD`,
+  whether its worktree is dirty (`git -C <path> status --porcelain`), and
+  `git -C <path> hash-object <file>` for every `.c`/`.h`/`.arxml` read. If
+  `docs.source_repo.ref` is set and `HEAD` is not that revision, **stop** and
+  ask — a breakpoint line is valid only at the revision it was read from. A
+  dirty worktree is reported and confirmed before analysis, never used
+  silently: in the default setup the skill's own `20_AI/` files make the
+  worktree dirty too, so judge dirtiness on the code only, outside `20_AI/`.
 - **Per-requirement/per-interface hash** — hash each in-scope requirement's or
   interface's Object Text, so a later run can tell *new* from *changed* from
   *unchanged* (§8) without re-reading the whole export.
@@ -287,6 +299,16 @@ Both manifests **inherit** `ai_test_project.yaml` (`release`, `variants`,
   [project-config.md](project-config.md)).
 - **No silent assumptions.** Every ambiguity, mismatch, or gap becomes a
   numbered Phase-1 question **or** an Open Points row — never a silent guess.
+- **Executable on the bench.** Every case stimulates something and observes
+  something — a debugger breakpoint and variable, an XCP measurement, a bus
+  signal, a diagnostic request, a HIL I/O channel. With
+  `docs.test_environment` supplied, check each case's means against it: a case
+  that needs a means the bench does not have is listed in Open Points and, where
+  the validity columns are configured, marked `isValid = No`
+  (no-fabrication.md) — it cannot be run as written. Without it, list once in
+  Open Points which means the run assumed, so the engineer can check them in
+  one place. This matters more once scripts are generated (v2): a script that
+  names a signal or channel the bench lacks fails on the first line.
 
 ## 5. Phase-1 questions → workbook (offline-answerable)
 
@@ -388,6 +410,14 @@ row:
     sit contiguous and in schema order between them; no `isValid` cell says
     `Yes`; every `No` names the missing item and its Open Point; the run
     summary states the `No` count and the import note (output-format.md).
+17. **Both skills** — every case's stimulus and observation means is available
+    on the bench described by `docs.test_environment`, or is listed in Open
+    Points (§4).
+18. **qualification-test only** — every case's pass/fail result implements its
+    requirement's `aTestCriteria`, or an Open Point says why not; nothing in
+    the workbook was derived from source code; every bus-signal value, cycle
+    time and timeout cites `docs.comm_database` (qualification-test-patterns
+    §0, §1.1, §3).
 
 ## 7. Traceability & Open Points (both skills, every run)
 

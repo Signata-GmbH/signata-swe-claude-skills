@@ -4,13 +4,12 @@
 > the per-repo test-spec project config. Loaded by `integration-test` /
 > `qualification-test` when the config is missing, so there is exactly one code
 > path and one set of guards — the same shape as
-> [../common/project-config.md](../common/project-config.md), which owns the
-> *separate* `20_AI/ai_project.yaml` for the SWE.3 C-source repo. The two
-> configs are never merged: this repo (a vTestStudio project folder) has no
-> compiler and no build of its own, so its config and its pinning mechanism
-> (§2 of [workflow-discipline.md](workflow-discipline.md)) are both different.
-> `integration-test` does read the SWE.3 repo — for breakpoint lines — but as an
-> input this config points at (`docs.source_repo`), not as the repo it lives in.
+> [../common/project-config.md](../common/project-config.md), which owns
+> `20_AI/ai_project.yaml`. Both files live in the **same** repository — the
+> SWE.3 project repository, where every skill runs — but they stay two files:
+> this one holds test-spec facts (the DOORS baseline, attribute values, test
+> documents) the code skills never read. Where `ai_project.yaml` already holds
+> a fact, this config **reads** it rather than copying it (§4.3).
 
 `20_AI/ai_test_project.yaml` is **one per repository, shared by every engineer
 running either skill**. It is created **once**, **on the repo's base branch**,
@@ -27,6 +26,17 @@ Identical to `common/project-config.md` §1: confirm the repo root
 the base branch (`git symbolic-ref refs/remotes/origin/HEAD`, else
 `develop`/`main`/`master`, else **ask**), and record the current branch + worktree
 cleanliness.
+
+**Where the skills run.** The default is the **SWE.3 project repository** —
+the same repo `code-dev`, `code-review` and `unit-test` run in. The one
+fallback, for a team whose QA engineers cannot commit there, is a **separate
+Git repository** for the test artefacts, with `docs.source_repo.path` pointing
+at the SWE.3 repo. A folder outside Git is neither — typically a vTestStudio
+project folder, which is often not under version control. Stop there and say
+why: the one-config guard, the run history and the in-place updates all depend
+on Git. Tell the engineer to run the skill from the SWE.3 repository; the
+vTestStudio folder is configured as an external path (`vteststudio.project`),
+never used as the place to run.
 
 ## 2. Has someone already created it? (check BEFORE writing anything)
 
@@ -102,17 +112,20 @@ table.
   `functional_architecture_export` at the view with the names and
   `functional_architecture_export_text_view` at the other, rather than treating
   them as separate documents.
-- **`docs.source_repo`** — ask for the path of the SWE.3 C-source repo (it is
-  rarely under `docs.root`) and confirm it is a git working tree
-  (`git -C <path> rev-parse --show-toplevel`). If it carries
-  `20_AI/ai_project.yaml`, read `project.type`, `layout.app_root` and
-  `layout.rte_inc` from there rather than asking again, and set
-  `docs.rte_type_headers` to `N/A` where the RTE headers live under
-  `layout.rte_inc`. Ask for `ref` (the revision test cases are authored
-  against); `N/A` means "whatever is checked out", pinned per run. Declining
-  the source repo is allowed only as a recorded decision with its reason, and
-  makes every integration-test run degraded (integration-test-patterns.md §9) —
-  say so before writing it.
+- **`docs.source_repo`** — `path: .` (this repository) in the default setup;
+  in the fallback setup, ask for the SWE.3 repo's path and confirm it is a git
+  working tree (`git -C <path> rev-parse --show-toplevel`). Ask for `ref` (the
+  revision test cases are authored against); `N/A` means "whatever is checked
+  out", pinned per run. Declining the code is allowed only as a recorded
+  decision with its reason, and makes every integration-test run degraded
+  (integration-test-patterns.md §9) — say so before writing it.
+- **`docs.comm_database`, `docs.test_plan`, `docs.test_environment`** —
+  discover like any other document, then **offer** each explicitly, saying what
+  is lost without it (workflow-discipline.md §1.1). In the SWE.3 repo the bus
+  database (DBC/LDF/ARXML system extract) is often already under version
+  control; propose that copy before asking for another.
+- **`vteststudio.project`** — reserved for v2. Ask for the path only if the
+  engineer knows it; otherwise `N/A`. Keep `write_access: false`.
 - **`qualification_test.valid_features`** — derive from the distinct `aFeature`
   values in `docs.requirements_workbook` once it is available; present the list
   for confirmation (it is a **learned** field, re-validated on later runs, not
@@ -131,6 +144,26 @@ Use `AskUserQuestion` popups for the categorical choices and pick-one document
 choices; typed input only for genuinely free text (release id, environment
 string, a path discovery missed).
 
+### 4.3 Read from `ai_project.yaml`, never copy
+
+When `20_AI/ai_project.yaml` exists in the repository whose code is read (this
+one, or the SWE.3 repo in the fallback setup), these facts come from it **at
+run time** and are not written into this config, so the two files cannot drift
+apart:
+
+| Fact | From `ai_project.yaml` | Used for |
+|---|---|---|
+| AUTOSAR or not | `project.type` | integration-test's AUTOSAR-only guard |
+| Application source root | `layout.app_root` | finding the module's `.c` files |
+| RTE headers | `layout.rte_inc` | RTE symbols and enum literals — set `docs.rte_type_headers: N/A` |
+| SW requirements export | `requirements.workbook` | SWE.6 test basis — write `docs.requirements_workbook: ai_project` |
+
+`release.variants` is **proposed** from `requirements.variants` and then
+confirmed, never copied silently: the test-spec variant strings must match the
+values in the DOORS test module, which is not guaranteed. Without an
+`ai_project.yaml`, ask for each of these as before — suggest running
+`/project-init` first, since the code skills will need it anyway.
+
 ## 5. If the config already exists — validate, never overwrite
 
 Do not rewrite the file. Emit a validation table (`field | value | valid? |
@@ -138,8 +171,11 @@ evidence / problem`) covering: `schema_version` present; no surviving
 `<PLACEHOLDER>`; every `docs.*` path (other than `N/A`) resolves to a readable
 file; every `N/A` carries its reason; `integration_test.authoring_mode` is set
 and agrees with `docs.integration_test_spec_export` (path ⇔ `extend_existing`,
-`N/A` ⇔ `from_scratch`); `docs.source_repo.path` is a git working tree and
-`ref`, if set, resolves in it; `integration_test.peer_depth` and
+`N/A` ⇔ `from_scratch`); `docs.source_repo.path` is a git working tree (`.`
+in the default setup) and `ref`, if set, resolves in it; no fact that §4.3
+reads from `ai_project.yaml` is duplicated here with a different value;
+`vteststudio.write_access` is `false` while v1 is the running version;
+`integration_test.peer_depth` and
 `peer_module_mirroring` are set (absent in an older config → ask, do not
 default silently); `attributes.classification_attribute_rules` is present
 (absent → never asked: ask once, record `[]` for "none"); every rule in it has a

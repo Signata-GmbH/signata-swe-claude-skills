@@ -7,9 +7,9 @@ description: >-
   Traceability / Open Points) an engineer reviews and enters into DOORS by
   hand. Test basis is the Functional_Architecture DOORS export, including its
   UserDefinedTypes chapter — never the SW requirements export, which is SWE.6's.
-  Breakpoint lines are read from the SWE.3 C-source repo at a pinned revision.
-  Runs against a vTestStudio project folder's own per-repo config
-  (20_AI/ai_test_project.yaml), not the SWE.3 code repo's ai_project.yaml. v1 is
+  Runs in the SWE.3 project repository like the code skills, reading breakpoint
+  lines from its .c files at a pinned revision, with its own test-spec config
+  (20_AI/ai_test_project.yaml) beside ai_project.yaml. v1 is
   Excel-only (no .vtt / vTestStudio automation-script generation) and
   RTE-debugger-based (AUTOSAR only) — it stops rather than inventing a black-box
   pattern for a module with no RTE symbols. Author by inspection only — never
@@ -38,19 +38,24 @@ line, in its own `.c` file. By default the peer gets no section of its own:
 The test basis is the **Functional_Architecture** export — one DOORS module,
 whose section 1.2 is the **UserDefinedTypes** chapter that resolves its data
 types. The SW requirements export is SWE.6's basis and is not read here.
-Breakpoint lines and observed variables come from the **SWE.3 C-source repo**
-(`docs.source_repo`), read at a pinned revision: a header carries no executable
-line (integration-test-patterns §9).
+Breakpoint lines and observed variables come from the module's **`.c` files** —
+this repository's own code by default (`docs.source_repo`) — read at a pinned
+revision: a header carries no executable line (integration-test-patterns §9).
+
+**Run it from the SWE.3 project repository**, like `code-dev`, `code-review` and
+`unit-test` — never from a vTestStudio project folder, which is usually outside
+Git (project-config §1).
 
 Follow these steps in order. Detailed rules live in the linked shared files —
 load them as you reach each step (progressive disclosure).
 
 ## Step 1 — Resolve the test-spec project config
 
-Read `20_AI/ai_test_project.yaml`. This is a **separate** config from
-`20_AI/ai_project.yaml` — this skill runs in the vTestStudio project folder, not
-the SWE.3 C-source repo, and has no compiler/target/RTE-layout facts to read.
-If **absent**, follow
+Read `20_AI/ai_test_project.yaml`, and `20_AI/ai_project.yaml` beside it: the
+test-spec config takes `project.type`, `layout.app_root` and `layout.rte_inc`
+from there rather than holding copies (project-config §4.3). Not in a Git
+repository → stop, and say to run from the SWE.3 repository (project-config §1).
+If the test-spec config is **absent**, follow
 [../_shared/testspec/project-config.md](../_shared/testspec/project-config.md)
 §7 (missing-config path): **stop** if it already exists on the base branch or
 is in flight elsewhere (merge it, never duplicate it); otherwise bootstrap it
@@ -82,7 +87,8 @@ Per workflow-discipline §3, in this order:
    `extend_existing`, never under `from_scratch`; the module's `.c` files in
    `docs.source_repo`, found from its `Rte_` call sites; RTE headers if needed.
    A discovered file is a proposal, never registered on its own, and a recorded
-   `N/A` is never re-opened.
+   `N/A` is never re-opened. Offer the test environment description if it is
+   not configured (workflow-discipline §1.1).
 5. **Resolve and pin the source repo** (workflow-discipline §2) — no source
    repo and no recorded waiver is a stop; a recorded waiver makes the run
    degraded (integration-test-patterns §9).

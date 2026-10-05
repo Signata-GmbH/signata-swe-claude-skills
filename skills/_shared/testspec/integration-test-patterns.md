@@ -740,10 +740,11 @@ symbol sets**, not their bytes. Identical sets → use the copy inside
 the others once. Differing sets → a Phase-1 question naming the symbols that
 differ.
 
-**Without the source repo — a degraded run.** `docs.source_repo` is mandatory
-for this skill; only a recorded engineer decision waives it (workflow-discipline
-§1.1), and a waived run is **degraded** — say so on the first line of the run
-summary. In a degraded run every breakpoint names the RTE symbol only, marked as
+**Without the code — a degraded run.** `docs.source_repo` is `.` — the
+repository the skill runs in — by default, and a path to the SWE.3 repo in the
+fallback setup (project-config.md §1). Only a recorded engineer decision sets
+it to `N/A` (workflow-discipline §1.1), and such a run is **degraded** — say so
+on the first line of the run summary. In a degraded run every breakpoint names the RTE symbol only, marked as
 a placeholder (`<line in <file>.c — not resolved: no source repo>`), the P-05
 observables stay unresolved, and every such case is flagged as not executable as
 written (output-format.md, validity columns) with an Open Point. Never derive a
