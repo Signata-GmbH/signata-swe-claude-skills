@@ -73,13 +73,17 @@ workflow-discipline §5). **STOP.**
 
 ## Step 5 — Phase 2 — Generation
 
-Only after acknowledgement. Apply the structure, title convention, boundary-
+Only after acknowledgement. First **re-hash every input** (workflow-discipline
+§2) — anything changed since pre-flight is a stop, not a mixed baseline. Apply
+the structure, title convention, boundary-
 value rule, and (for diagnostic features) the DID/RID templates from
 [qualification-test-patterns.md](../_shared/testspec/qualification-test-patterns.md)
 §4–§9. Every symbol/value traced to a supplied input (workflow-discipline §4);
-an unresolved one goes to Open Points, never a guess. For a re-run, apply the
-in-place diff (workflow-discipline §8): new → add, changed → update the mapped
-case in place, removed → flag.
+an unresolved one goes to Open Points, never a guess. For a re-run, run the
+three checks of workflow-discipline §8 first — previous output gone or edited
+since, scope changed (→ regeneration, not a delta), layout-only (→ re-render,
+no analysis) — then apply the in-place diff: new → add, changed → update the
+mapped case in place, removed → flag.
 
 ## Step 6 — Self-check & output
 
@@ -92,6 +96,7 @@ workbook summary in chat plus the no-fabrication disclaimer.
 
 ## Step 7 — Ledger & history
 
-Overwrite `last_run` in the manifest (workflow-discipline §8) and **append**
-one record to
+Overwrite `last_run` in the manifest (workflow-discipline §8) — including the
+scope, the output path + hash, and the inputs supplied but not read — through a
+comment-preserving YAML writer, and **append** one record to
 `20_AI/manifests/qualification-test/history/<FEATURE_SLUG>.jsonl`.

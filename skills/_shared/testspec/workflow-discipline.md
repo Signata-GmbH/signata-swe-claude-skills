@@ -100,6 +100,16 @@ column — for the Functional_Architecture export: `ID`, `aFunctionModule`,
 column, say which DOORS view carries it, and ask for a re-export. Never
 reconstruct a missing attribute from another column.
 
+The `aC_SAF`/`aC_SEC`/`aC_REG` columns are **not** on that list. A configured
+classification rule (`attributes.classification_attribute_rules`) needs only
+the one column its condition reads, and only in the running skill's test-basis
+export. If that column is missing there, the rules that read it are **skipped
+for this skill**: the cases they would have classified are classified by
+judgement, as without rules, and one Open Point names the missing column and
+the skipped rules. Classification can always be done by hand, so a missing
+classification column never stops the run. *(Known: the SW requirements export
+carries `aC_SAF`; nothing yet shows that it carries `aC_SEC` or `aC_REG`.)*
+
 **2. Name *and* text available per object — the two-view trap.** Every object
 carries two things this skill needs:
 
@@ -121,8 +131,8 @@ with both` whichever it is:
   it reads `<section number> <name>`, the remainder is the text. Expect
   heading-only and text-only objects as well (DOORS numbers text-only objects
   `<n>.0-<k>`); count them, never drop them. The signal is unmistakable: the
-  text markers (`This port`, `DataType:`, `Range`) appear in hundreds of cells
-  of a shape-(b) export and in none of a heading-only one.
+  text markers (`This port`, `DataType:`, `Range`) appear throughout a
+  shape-(b) export and in no cell of a heading-only one.
 - **(c) Two views of the same module**, each a single content column — one
   carrying the headings, one the text — joined on `ID`
   (`docs.functional_architecture_export` + `_text_view`). Verify the join
@@ -197,6 +207,13 @@ so the equivalent of revision pinning is:
 - **Per-requirement/per-interface hash** — hash each in-scope requirement's or
   interface's Object Text, so a later run can tell *new* from *changed* from
   *unchanged* (§8) without re-reading the whole export.
+- **Re-hash immediately before generation**, not only at pre-flight. An input
+  can change mid-session — a new export dropped into the folder between Phase 1
+  and Phase 2 is common — and the analysis the engineer approved is valid only
+  for the files it was made from. Re-run `git hash-object` on every input (and
+  `rev-parse HEAD` in the source repo) right before Phase 2; any difference from
+  the pre-flight pin is a **STOP**: name the file, and redo the affected part of
+  Phase 1 rather than generate from a mixed baseline.
 
 Carry all of this into the ledger (§8). A wrong release/variant produces test
 cases that look plausible but assert the wrong baseline — treat a mismatch the
@@ -226,6 +243,14 @@ Both manifests **inherit** `ai_test_project.yaml` (`release`, `variants`,
   confirmation**, every discovered document marked as a proposal.
 - If **present**: validate required fields; flag/repair anything malformed
   rather than proceeding on it.
+- **Classification rules in an older config.** If `ai_test_project.yaml` has no
+  `attributes.classification_attribute_rules` key at all, it was created before
+  the setting existed and the question has never been asked. Ask it once, at
+  this gate (project-config.md §4.1), and write the answer back — `[]` when the
+  answer is "none" — so no run asks it again. The key missing means *not asked
+  yet*; `[]` means *asked, no rules*. Until it is answered, classify by
+  judgement as before. It is a project-wide answer: say that the config change
+  must reach the base branch, like any other config change.
 - The **row-count gate** is not part of this gate: it closes Phase 1 (§5),
   because a count only means something once the scope analysis is on the table.
 - **STOP and wait for confirmation** before doing any work.
@@ -253,10 +278,17 @@ Identical mechanism to `common/workflow-discipline.md` §5: write numbered
 questions to `20_AI/<MODULE_or_FEATURE_SLUG>_Phase1_Questions_<Skill>.xlsx`
 (`<Skill>` = `IntegrationTest` / `QualificationTest`), one row each:
 `QID | Requirement or Interface | Question | AI Proposal | Answer(blank) |
-Status(open)`. If the workbook already exists, read it back first — rows with a
-non-empty `Answer` (or `Status` = `answered`/`deferred`) are resolved; re-emit
-only still-`open` rows under their existing `QID`s. Every question cites the
-source document + row/section it rests on.
+Status(open) | Note`. If the workbook already exists, read it back first — rows
+with a non-empty `Answer` (or `Status` = `answered`/`deferred`/`withdrawn`) are
+resolved; re-emit only still-`open` rows under their existing `QID`s. Every
+question cites the source document + row/section it rests on.
+
+**`withdrawn`** — a question a later ruling made moot (a scope change, an input
+ruled out) is **withdrawn**, never deleted: set `Status = withdrawn`, write in
+`Note` which answer or decision withdrew it, and grey the row out. Deleting it
+would erase the record of why the analysis changed. A withdrawn question is not
+re-emitted, and a finding that rested on it is withdrawn with it (and says so in
+Open Points).
 
 **One question per QID.** A question containing a "SECOND ISSUE", an "also", or
 any two things a reader could answer separately must be split into two QIDs.
@@ -350,22 +382,79 @@ so it must be complete and readable on its own), `Open Points` (every
 unresolved symbol/value, every classification judgement, every requirement/
 interface you could not cover and why, every spelling variant normalized).
 
+**Input hygiene — a standing block in Open Points.** Defects in the inputs
+themselves are among the most useful things a run finds, and two of them
+silently change the scope. Check every run, and report under the Open Points
+category `Input hygiene`:
+
+- **Filter values that match nothing.** For each configured filter value
+  (`attributes.status_filter`, `integration_test.testability_filter`), the
+  number of objects it matches in this baseline. A value that matches **zero**
+  — typically one that matched objects in the last run — means the export's
+  vocabulary changed under the config: a quietly narrower scope. Report it even
+  when the scope is otherwise non-empty.
+- **Unclassified duplicate chapters.** Any chapter where more than 20 objects
+  were dropped for carrying **no** classification attribute at all
+  (`aFunctionModule`, `aTestability`, `aStatusOfAnalysis`,
+  `aRequirementObjectType` all empty) — usually a freshly imported or
+  untriaged copy of real sections. Name the sections it duplicates and ask
+  whether it is being retired or is about to become authoritative, rather than
+  only dropping it.
+- **Lost table content** — the §1.3(3) count of rows whose content cell is
+  empty while their attributes are filled.
+- **integration-test** — name disagreements between the architecture and the
+  code/RTE/ARXML (integration-test-patterns.md §9), mislabelled definitions (a
+  `COMPU-METHOD` holding another type's literals, §5.2), and range-text variants
+  a strict `Range:` match would have missed (§5.2).
+
 ## 8. Ledger & run history (audit)
 
 Same two-record shape as `common/workflow-discipline.md` §9, adapted to this
 domain's pin:
 
 - **`last_run:` in the manifest — working state, overwritten each run.** Holds
-  `timestamp`, `skill_version`, `release_id`, `variants`, `input_hashes` (§2),
-  the requirement/interface snapshot (`ID -> {hash, cases: [...]}`), and the
-  delta. Drives re-runs; not history.
+  `timestamp`, `skill_version`, `release_id`, `variants`, `input_hashes` (§2)
+  — for integration-test also the `source_repo` pin —, the **`scope`** the run
+  was made at, the **`output`** it wrote (path + hash), the inputs
+  **`supplied_but_not_read`**, the requirement/interface snapshot
+  (`ID -> {hash, cases: [...]}`), and the delta. Drives re-runs; not history.
 - **`20_AI/manifests/{integration-test,qualification-test}/history/<KEY>.jsonl`
   — append-only audit trail.** After each run, **append** one immutable record
   (never edit prior lines): `{ts, skill, skill_v, release_id, variants,
-  input_hashes, reqs_delta:{added,updated,removed}, notes}`.
+  input_hashes, scope, output, supplied_but_not_read,
+  reqs_delta:{added,updated,removed}, notes}`.
 
-**In-place re-run**: recompute each in-scope requirement's/interface's hash and
-compare to `last_run`:
+**Supplied but not read.** Record every input that was supplied (configured or
+attached) but not opened this run, each with a one-line reason (`not needed: no
+diagnostic interface in scope`). A later run can then tell "not needed" from
+"forgot to look".
+
+**Before planning a re-run, check three things, in this order:**
+
+1. **Does the previous output still exist?** If `last_run.output.path` is gone,
+   the re-run is a **regeneration**, not an in-place update — say so. If it
+   exists but its hash differs from `last_run.output.hash`, someone edited it
+   after the run (a reviewer's copy, a validated version): say so, and ask
+   before writing over it.
+2. **Has the scope changed?** Compare `last_run.scope` with this run's —
+   integration-test: the modules authored, `peer_depth`,
+   `peer_module_mirroring`, `authoring_mode`, `scope.interfaces`;
+   qualification-test: the feature and `requirement_ids`. If it differs, the
+   per-item delta below is **not comparable**: a narrowed scope would surface
+   every case that left it as "removed" and flag each one. Say plainly that the
+   scope changed, show the old and the new scope side by side, list once what
+   left the scope by that decision, treat the run as a regeneration, and
+   re-confirm `expected_row_count` (§5).
+3. **Is it layout only?** If every input hash and the scope are unchanged and
+   only the output layout differs (reference columns, column order —
+   output-format.md), **re-render** the existing workbook into the new layout:
+   copy every content cell verbatim, run no analysis, ask no Phase-1 questions.
+   Show the old→new column map, confirm, and append a history record with
+   `notes: layout-only`. No test-case content is generated, so this does not
+   skip the Phase-1 gate (no-fabrication.md).
+
+**In-place re-run** (output present, scope unchanged): recompute each in-scope
+requirement's/interface's hash and compare to `last_run`:
 - **new** (ID absent) → author the test case(s), append.
 - **changed** (hash differs) → **update the mapped test case(s) in place**
   (keep title/history stable), tag revised.
@@ -373,6 +462,17 @@ compare to `last_run`:
   surface the orphaned case for the engineer to decide.
 - **unchanged** → leave untouched.
 Show the delta and **confirm before writing**.
+
+**Writing the config and the manifest.** Both are commented YAML, and the
+comments are their documentation. Write them through a **round-trip** YAML
+library that keeps comments and key order (`ruamel.yaml` in round-trip mode) —
+never by splicing text, and never through a plain loader/dumper such as PyYAML,
+which drops every comment. Re-load the file after writing and check that the
+keys you meant to change are the only ones that changed. Where no round-trip
+library is available, edit only at an anchor that is unique in the file and not
+inside a comment, then re-load and check the same way. *(Observed: a manifest
+corrupted by splicing at `last_run:` — a string that also appeared in one of
+its comments.)*
 
 ## 9. No fabrication
 

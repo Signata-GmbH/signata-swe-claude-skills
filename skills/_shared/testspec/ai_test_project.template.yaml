@@ -55,6 +55,20 @@ attributes:
                                                 #     (e.g. "HowTo Creating the Test Specification in DOORS, §4.6").
                                                 #     This is a REFERENCE, never a fixed classification value — the
                                                 #     skill applies the matrix per test case and shows its reasoning.
+  # OPTIONAL — the purely attribute-driven tiers of that matrix, TRANSCRIBED by
+  # the engineer from the governing document (never inferred by the skill).
+  # Applied mechanically, first match in list order, and cited per case in
+  # Traceability; any tier that needs judgement about failure consequences
+  # stays a judgement, justified in Open Points. `when` compares one attribute
+  # of the traced object: aC_SAF on the order QM < ASIL A < ASIL B < ASIL C <
+  # ASIL D, or "<attr> non-empty". Asked ONCE per project, not per module, and
+  # read by BOTH skills (the architecture object for SWE.5, the requirement for
+  # SWE.6). A rule whose column one skill's export lacks is skipped for that
+  # skill, never a stop (workflow-discipline §1.3).
+  #   [] = asked, no rules: every classification is a judgement.
+  #   key absent = never asked: the next run asks once and writes the answer.
+  classification_attribute_rules: []   # <-- ask once  e.g.
+                                        #   - { tier: A1, rule: "R1", when: "aC_SAF > QM" }
 
 # PROJECT-WIDE documents. Per-module/per-feature documents (existing test
 # cases for one module/feature, run-specific extras) live in the manifest.

@@ -65,31 +65,38 @@ Always load:
 
 ## Step 3 — Manifest: scaffold → validate → confirm (HARD GATE)
 
-Per workflow-discipline §3: compute derivable values, **resolve the module
-argument** against all four axes (integration-test-patterns §4.1 — the
-manifest is keyed by the resolved `aFunctionModule`, and a resolved value whose
-scope holds zero ports is a stop), read
-`20_AI/manifests/integration-test/<MODULE>.yaml` (scaffold from
-[../_shared/testspec/integration-test-manifest-template.yaml](../_shared/testspec/integration-test-manifest-template.yaml)
-if absent). **Settle `integration_test.authoring_mode` before any discovery**
-(integration-test-patterns §0.1) — ask it if the config lacks it. Then discover
-the per-module input docs **whose config entry is unset** (workflow-discipline
-§1.2): existing test cases for this module only under `extend_existing`, never
-under `from_scratch`; the module's `.c` files in `docs.source_repo` (found from
-its `Rte_` call sites); RTE headers if needed. A discovered file is a proposal,
-never registered on its own, and a recorded `N/A` is never re-opened.
-**Resolve and pin the source repo** (workflow-discipline §2) — no source repo
-and no recorded waiver is a stop; a recorded waiver makes the run degraded
-(integration-test-patterns §9). **Confirm the resolved inputs**. Run the
-**export-completeness gate** (workflow-discipline §1.3) — the
-run needs each object's **name** *and* its **text**: two columns, one column
-carrying both (split on the first newline), or two views of the module joined
-on `ID`. Text missing is a stop — but first check what the ARXML and the source
-repo already resolve, and offer the names-only downgrade as the AI proposal for
-the engineer to accept or refuse. Apply the **AUTOSAR-only guard** (integration-test-patterns §0) before
-going further — if the module shows no RTE symbols to work from, stop here and
-say so. **Stop and wait** for confirmation. Remember workflow-discipline §0 — this may be the
-first skill ever run against this module in this project.
+Per workflow-discipline §3, in this order:
+
+1. **Resolve the module argument** against all four axes
+   (integration-test-patterns §4.1). The manifest is keyed by the resolved
+   `aFunctionModule`; a resolved value whose scope holds zero ports is a stop.
+2. **Read the manifest** `20_AI/manifests/integration-test/<MODULE>.yaml`
+   (scaffold from
+   [../_shared/testspec/integration-test-manifest-template.yaml](../_shared/testspec/integration-test-manifest-template.yaml)
+   if absent) and compute the derivable values.
+3. **Settle `integration_test.authoring_mode` before any discovery**
+   (integration-test-patterns §0.1) — ask it if the config lacks it.
+4. **Discover only the inputs whose config entry is unset**
+   (workflow-discipline §1.2): existing test cases for this module only under
+   `extend_existing`, never under `from_scratch`; the module's `.c` files in
+   `docs.source_repo`, found from its `Rte_` call sites; RTE headers if needed.
+   A discovered file is a proposal, never registered on its own, and a recorded
+   `N/A` is never re-opened.
+5. **Resolve and pin the source repo** (workflow-discipline §2) — no source
+   repo and no recorded waiver is a stop; a recorded waiver makes the run
+   degraded (integration-test-patterns §9).
+6. **Run the export-completeness gate** (workflow-discipline §1.3) — the run
+   needs each object's **name** *and* its **text**: two columns, one column
+   carrying both (split on the first newline), or two views of the module
+   joined on `ID`. Text missing is a stop — but first check what the ARXML and
+   the source repo already resolve, and offer the names-only downgrade as the
+   AI proposal for the engineer to accept or refuse.
+7. **Apply the AUTOSAR-only guard** (integration-test-patterns §0) — if the
+   module shows no RTE symbols to work from, stop here and say so.
+8. **Confirm the resolved inputs**, then **stop and wait** for confirmation.
+
+Remember workflow-discipline §0 — this may be the first skill ever run against
+this module in this project.
 
 ## Step 4 — Phase 1 — Analysis → phase gate (STOP)
 
@@ -133,15 +140,19 @@ proposed-cases table, and numbered questions (written to
 
 ## Step 5 — Phase 2 — Generation
 
-Only after acknowledgement. Apply the patterns (P-01…P-09) and attributes from
+Only after acknowledgement. First **re-hash every input and re-check the
+source repo's `HEAD`** (workflow-discipline §2) — anything changed since
+pre-flight is a stop, not a mixed baseline. Apply the patterns (P-01…P-09) and attributes from
 [integration-test-patterns.md](../_shared/testspec/integration-test-patterns.md)
 §7–§8, and — only where mirroring is on — mirror each interface into its
 peer's section per §3. Every symbol, struct member, enum literal and boundary
 value traced to a supplied input, and every breakpoint line quoted from a `.c`
 file at the pinned revision (workflow-discipline §4, integration-test-patterns
 §9); an unresolved one goes to Open Points, never a guess.
-For a re-run, apply the in-place diff (workflow-discipline §8): new → add,
-changed → update the mapped case in place, removed → flag.
+For a re-run, run the three checks of workflow-discipline §8 first — previous
+output gone or edited since, scope changed (→ regeneration, not a delta),
+layout-only (→ re-render, no analysis) — then apply the in-place diff: new →
+add, changed → update the mapped case in place, removed → flag.
 
 ## Step 6 — Self-check & output
 
@@ -154,6 +165,7 @@ summary in chat plus the no-fabrication disclaimer.
 
 ## Step 7 — Ledger & history
 
-Overwrite `last_run` in the manifest (workflow-discipline §8) and **append**
-one record to
-`20_AI/manifests/integration-test/history/<MODULE>.jsonl`.
+Overwrite `last_run` in the manifest (workflow-discipline §8) — including the
+source-repo pin, the scope, the output path + hash, and the inputs supplied but
+not read — through a comment-preserving YAML writer, and **append** one record
+to `20_AI/manifests/integration-test/history/<MODULE>.jsonl`.

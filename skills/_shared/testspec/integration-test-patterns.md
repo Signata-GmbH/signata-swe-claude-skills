@@ -112,8 +112,9 @@ Two traps at the `1.4` level:
 ### 1.2 Scope filter
 
 Two different sets come out of this step, and they must not be confused: the
-objects test cases are **authored from** (each gets a section, a heading row
-and its cases), and the objects that are only **read** to ground those cases.
+objects test cases are **authored from** (they get heading rows and cases, in
+their module's section), and the objects that are only **read** to ground those
+cases.
 
 **Authored from** — architecture objects where:
 
@@ -133,7 +134,10 @@ information children (type/range detail). Objects of type `information` are
 never test-case sources.
 
 Report the count at each filter step — expect heavy attrition (objects with no
-text, or that are information/feature/feature-description rows, are common).
+text, or that are information/feature/feature-description rows, are common) —
+together with the match count of each configured filter value and any
+unclassified chapter the filter dropped wholesale (the input-hygiene checks,
+workflow-discipline §7).
 
 **Section ownership beats `aFunctionModule` for nested service objects.** Some
 ports sit under a module's own section but are owned by a *service* module —
@@ -384,7 +388,8 @@ cases it already has.
 Then split into: already covered, no test cases (your scope), and interfaces
 found in the architecture but not resolvable to RTE symbols. Check the standing
 obligations: does every module authored from have a `Watch Dog for <module>`
-group, a task-configuration group, and a section for every connection.
+group, a task-configuration group, and a heading for every interface it is an
+end of (plus a connection heading per mirror, when mirroring is on).
 
 In `from_scratch` mode (§0.1) source (2) does not exist: the coverage baseline
 is empty and every interface is "no test cases". Never substitute a legacy
@@ -624,7 +629,9 @@ Break on the **last** statement of the Init runnable — the line where the
 module marks itself initialised (`<Module>_IsInitialized_… = TRUE;`), if it has
 one — so that a hit means the whole runnable ran. Do not add a step checking
 that flag's value at the breakpoint: a breakpoint stops *before* its line
-executes, so the flag still shows its old value there.
+executes, so the flag still shows its old value there. The Init runnable often
+has no `1.3.1.<n>.1.<m>` object of its own; trace the case to the nearest
+ancestor (output-format.md, a case with no object of its own).
 
 *Cyclic runnable* — the runnable is called at its period:
 
@@ -668,8 +675,9 @@ atcResult:   1. DID Should be Positive Response <SID+0x40> <XX XX> XX XX XX.
 ```
 
 The DID comes from the DiagSpec and the server-function line from the `.c`
-(§9) — or, in `extend_existing` mode, from an existing case. Note that SWE.6 covers diagnostics far more thoroughly — a diagnostic
-interface here is tested only as an interface.
+(§9) — or, in `extend_existing` mode, from an existing case. Note that SWE.6
+covers diagnostics far more thoroughly — a diagnostic interface here is tested
+only as an interface.
 
 **P-08 — not testable by the debugger → no test case.** Where `aTestCriteria`
 asks for a review, a sequence walkthrough by the test team, or XCP-only
@@ -722,6 +730,15 @@ Do not construct a symbol by analogy (workflow-discipline §4 /
 no-fabrication.md). Do not reproduce inconsistent casing seen in the
 architecture text — take the spelling from the RTE headers and the code, and
 note the variant in Open Points.
+
+**Several copies of a generated header.** A project folder often holds more
+than one `Rte_*.h` of the same name (a copy under `20_AI/`, the BSW tree, a
+generator output folder) with different hashes, because generators stamp
+timestamps, copyright years and input-file lists. Compare their **exported
+symbol sets**, not their bytes. Identical sets → use the copy inside
+`docs.source_repo` at the pinned revision (else the configured one) and note
+the others once. Differing sets → a Phase-1 question naming the symbols that
+differ.
 
 **Without the source repo — a degraded run.** `docs.source_repo` is mandatory
 for this skill; only a recorded engineer decision waives it (workflow-discipline

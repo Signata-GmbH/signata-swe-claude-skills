@@ -64,6 +64,17 @@ last_run:                          # SKILL-OWNED ledger
     dirty:  null                   # worktree had uncommitted changes (confirmed by the engineer)
     files:  {}                     # .c/.h/.arxml read -> git hash-object result
     degraded: false                # true = run without a source repo by engineer waiver (patterns §9)
+  scope:                           # the scope this run was made at — if the next run's differs, it is a
+                                    #   regeneration, not a per-interface delta (workflow-discipline §8)
+    modules_authored:      []
+    authoring_mode:        null
+    peer_depth:            null
+    peer_module_mirroring: null
+    interfaces:            []
+  output:                          # the workbook this run wrote — checked before any in-place re-run
+    path: null
+    hash: null                     # git hash-object at write time; a different hash later = edited since
+  supplied_but_not_read: {}        # input -> one-line reason it was not opened this run
   interfaces:       {}             # interface name -> { hash, writer, reader, data_type, cases: [titles],
                                     #                     mirrored_into: [module, ...] }
   peers:            []             # peer modules the run resolved (mirrors the confirmed module.peers)

@@ -65,6 +65,13 @@ from the "most common" spelling seen:**
 - `attributes.status_filter`
 - `attributes.classification_rule` (a pointer to the governing document
   section, not a value — confirm which document/section governs)
+- `attributes.classification_attribute_rules` — whether any tiers of that
+  document are decided purely by `aC_SAF`/`aC_SEC`/`aC_REG`. If so, the
+  engineer transcribes those rules (tier, rule number, condition); never derive
+  them from the document yourself, and never add a tier that needs judgement.
+  Write `[]` for "none" — never leave the key out, because a missing key means
+  "not asked yet" and is asked again (workflow-discipline.md §3). One answer
+  serves the whole project and both skills; it is not asked per module.
 - `integration_test.testability_filter`
 - `integration_test.authoring_mode` — `from_scratch` or `extend_existing`
   (integration-test-patterns.md §0.1). Ask it even when an export-shaped file
@@ -134,7 +141,10 @@ and agrees with `docs.integration_test_spec_export` (path ⇔ `extend_existing`,
 `N/A` ⇔ `from_scratch`); `docs.source_repo.path` is a git working tree and
 `ref`, if set, resolves in it; `integration_test.peer_depth` and
 `peer_module_mirroring` are set (absent in an older config → ask, do not
-default silently); `qualification_test.valid_features` still matches the
+default silently); `attributes.classification_attribute_rules` is present
+(absent → never asked: ask once, record `[]` for "none"); every rule in it has a
+tier, a rule number and a condition on one `aC_*` attribute;
+`qualification_test.valid_features` still matches the
 distinct `aFeature` values seen in the requirements workbook (a mismatch is a
 loud finding, not a silent skip). Offer to repair only the invalid fields. If everything is valid,
 say so and stop.

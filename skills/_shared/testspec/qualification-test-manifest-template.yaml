@@ -39,5 +39,13 @@ last_run:                          # SKILL-OWNED ledger
   release_id:       null           # release.id the run was authored against (baseline pinning)
   variants:         []
   input_hashes:     {}             # supplied file -> git hash-object result
+  scope:                           # the scope this run was made at — if the next run's differs, it is a
+                                    #   regeneration, not a per-requirement delta (workflow-discipline §8)
+    feature:         null
+    requirement_ids: []
+  output:                          # the workbook this run wrote — checked before any in-place re-run
+    path: null
+    hash: null                     # git hash-object at write time; a different hash later = edited since
+  supplied_but_not_read: {}        # input -> one-line reason it was not opened this run
   requirements:     {}             # requirement ID -> { hash, cases: [proposed titles] }
   open_points:      []

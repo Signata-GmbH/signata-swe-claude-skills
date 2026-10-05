@@ -61,7 +61,7 @@ parameterised parent).
 | `aVariant` | From `ai_test_project.yaml` `release.variants`. |
 | `atsRelease` | From `ai_test_project.yaml` `release.id`. |
 | `atsRegression` | `new`. |
-| `atsClassification` | Per `attributes.classification_rule` — **not** a constant; justify every choice in Open Points. |
+| `atsClassification` | Per `attributes.classification_rule` — **not** a constant. A tier decided by a configured `attributes.classification_attribute_rules` entry is applied mechanically and cited in `Traceability` (rule + the attribute value it matched); every other choice is a judgement, justified in Open Points. An empty attribute cell matches no rule, and a rule whose column is missing from this skill's export is skipped (workflow-discipline.md §1.3) — both leave the case to judgement. |
 | `atsTestExecution` | `automated` unless the case genuinely cannot be automated. |
 | `atsTestEnvironment` | From `ai_test_project.yaml` `attributes.environment`. |
 | `atsState` | `in work`. **Never `agreed`.** |
@@ -87,6 +87,14 @@ Min/Mid/Max values came from — the documented `Range:` or the implementation
 type's limits (§5.2). The engineer creates the DOORS links by hand from this
 sheet — it must be complete and readable on its own.
 
+**A case with no object of its own.** A pattern sometimes requires a case that
+has no architecture or requirement object to trace to — the standing example is
+a P-05 Init case where the runnables group lists only the cyclic runnable. Link
+it to the **nearest ancestor** object (there, the runnables group), mark the
+link as `ancestor` in `Traceability`, and raise an `Input hygiene` Open Point
+recommending that the source document gain the missing object. Never leave the
+link empty, and never link to a sibling that merely looks related.
+
 The integration-test and qualification-test DOORS modules share the `SW_TST-`
 prefix and their ID numbers **collide** — a reference to an *existing* test
 case (in Open Points, in a "already covered" note, anywhere) must always name
@@ -94,7 +102,11 @@ the module (SWE.5 or SWE.6) alongside the ID, never the bare ID alone.
 
 **Sheet 3 — `Open Points`.** Every unresolved symbol/value, every
 classification judgement, every requirement/interface you could not cover and
-why, every assumption made, every spelling variant normalized.
+why, every assumption made, every spelling variant normalized. Every row
+carries a `Category` — `Unresolved`, `Not covered`, `Classification`,
+`Spelling variant`, `Decision`, or `Input hygiene` (workflow-discipline.md §7)
+— so the input defects, which belong to other owners (the architect, the code
+owner, the DOORS admin), can be filtered out and passed on.
 
 **Formula-prone cells.** Any cell whose text begins with `-`, `=`, `+` or `@` —
 which is every `atcPreconditions` and `atcPostconditions` block, since both
