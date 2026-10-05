@@ -20,16 +20,20 @@ inherits: 20_AI/ai_test_project.yaml
 feature:
   name: <FEATURE_NAME>             # <-- fill   the exact aFeature value, e.g. "Actuator Data"
   slug: <FEATURE_SLUG>             # derived    e.g. actuator_data
+  test_software: null              # "Series SW" | "Debug SW" — from docs.test_plan; asked once (Phase-1) when
+                                    #   the Test Plan is absent or does not list the feature (patterns §8, atcRemark)
 
 # PER-FEATURE documents (extend the project-wide docs.* in ai_test_project.yaml).
 docs:
-  existing_qualification_test_cases: <path>  # <-- fill  MANDATORY — this feature's slice of the existing
+  existing_qualification_test_cases: <path or N/A>  # <-- fill  MANDATORY unless N/A by a recorded engineer decision
+                                              #     (workflow-discipline §1.2) — this feature's slice of the existing
                                               #     qualification-test-spec export (exemplars + coverage baseline)
   extra: []                        # optional additional documents for a run
   run_instructions: ""             # optional free-text custom instructions for a run
 
 scope:
-  expected_row_count: "?"          # count gate — confirmed by the engineer on first run, never silently learned
+  expected_row_count: "?"          # row-count gate — rows of the Test Cases sheet, confirmed as the last
+                                    #   Phase-1 question (workflow-discipline §5), never silently learned
   requirement_ids: []              # optional — restrict this run to a subset; [] = all in-scope requirements
 
 last_run:                          # SKILL-OWNED ledger
@@ -38,5 +42,13 @@ last_run:                          # SKILL-OWNED ledger
   release_id:       null           # release.id the run was authored against (baseline pinning)
   variants:         []
   input_hashes:     {}             # supplied file -> git hash-object result
-  requirements:     {}             # requirement ID -> { hash, cases: [proposed titles] }
+  scope:                           # the scope this run was made at — if the next run's differs, it is a
+                                    #   regeneration, not a per-requirement delta (workflow-discipline §8)
+    feature:         null
+    requirement_ids: []
+  output:                          # the workbook this run wrote — checked before any in-place re-run
+    path: null
+    hash: null                     # git hash-object at write time; a different hash later = edited since
+  supplied_but_not_read: {}        # input -> one-line reason it was not opened this run
+  requirements:     {}             # requirement ID -> { hash, change_request: aChangeRequID, cases: [proposed titles] }
   open_points:      []

@@ -17,10 +17,19 @@
 - Assign a `SW_TST` ID, or any DOORS object ID — `ID` stays empty; DOORS assigns
   it.
 - Set `atsState` to `agreed` — that is a post-review value only a human sets.
+- Write `Yes` in a validity column (below) — nothing was built, flashed or
+  executed, so nothing is known to work.
 - Report a test case as executed, passed, failed, or covered by execution — you
   have authored a draft by inspection, nothing has run.
 - Write to DOORS. The output is a workbook for an engineer to review and enter
   by hand.
+- State a property of the code — a missing `default:` branch, an absent
+  counter, an unreachable path, "no caller" — without having read the lines
+  that prove it. Cite file and line, or do not make the claim. Such a claim is
+  **never** carried into a Phase-1 question, where it would steer the
+  engineer's answer: in FUSA_MotDrv Q-06 a wrong "and no default branch" was
+  offered as an argument for generating a case, and the switch in question had
+  a `default:` on the line after the one cited.
 - Copy a misspelling or inconsistent casing forward from a source export
   (near-duplicate environment strings, inconsistent signal-name casing) without
   normalizing to the dominant form and noting the variant in Open Points.
@@ -35,6 +44,25 @@ Every generated workbook includes a line stating plainly:
 
 > *"Draft test cases by inspection only — not entered into DOORS, not executed,
 > no coverage claimed."*
+
+## The validity column (`isValid`, when configured)
+
+Where the config declares the validity columns (output-format.md, reference
+columns), `isValid` says whether a case can be executed **as written** — and
+authoring by inspection can only ever establish that it **cannot**:
+
+- **`No`** — only where you *know* the case cannot run as written: a symbol,
+  breakpoint line, observed variable or expected value is still a placeholder.
+  `Reason for Invalid` names the missing item, the file that would resolve it,
+  and the Open Point number.
+- **blank** — every other case. That is the reviewer's verdict to give.
+- **`Yes`** — **never**.
+
+State the number of `No` rows in the run summary, and say that blank means
+"for the reviewer", not "not checked": a fully grounded run has an all-blank
+column, which otherwise reads as a broken feature. Read across runs, the count
+is a grounding score — a run with unresolved far ends marks most of its cases
+`No`; a run with every symbol and line resolved marks none.
 
 ## Deferral is preferred over a guess
 

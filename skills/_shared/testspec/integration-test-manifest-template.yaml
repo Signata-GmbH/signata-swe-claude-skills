@@ -17,32 +17,40 @@ schema_version: 1
 inherits: 20_AI/ai_test_project.yaml
 
 module:
-  name: <MODULE_NAME>              # <-- fill   e.g. FUSA_ParkLckCtrl (an aFunctionModule value)
+  name: <MODULE_NAME>              # <-- fill   e.g. FUSA_ParkLckCtrl — the RESOLVED aFunctionModule value,
+                                    #     whichever of its four spellings the skill was invoked with (patterns §4.1)
   # Modules at the other end of this module's ports. DISCOVERED at the Phase-1
   # gate (integration-test-patterns.md §2) and confirmed by the engineer — an
-  # ambiguous or unresolvable pairing is asked about, never guessed. Their
-  # objects come into scope, and each interface is mirrored into their sections
-  # (§3) unless integration_test.peer_module_mirroring is false.
+  # ambiguous or unresolvable pairing is asked about, never guessed. Every case
+  # NAMES its peer (the far-end breakpoint); a peer gets a SECTION of its own
+  # only under peer_depth: peer_ports or with mirroring on (§2–§3).
   peers: []                        # <-- confirm  e.g. ["FUSA_MotCtrl", "CDD_MotDrv"]
 
 # PER-MODULE documents (extend the project-wide docs.* in ai_test_project.yaml).
 docs:
-  existing_integration_test_cases: <path>  # <-- fill  MANDATORY — this module's slice of the existing
-                                            #     integration-test-spec export (exemplars + coverage baseline).
-                                            #     Include the PEER modules' slices too — a mirrored section needs
-                                            #     the peer's test-spec spelling and its existing coverage.
-  rte_headers: <path or N/A>       # <-- fill  this module's Rte_<Module>.h / ARXML slice — needed for
-                                    #     interfaces with no existing test cases (the Rte_Write/Rte_Read
-                                    #     symbol and the element name, which the architecture does not give)
-                                    #     and for any reader type whose width the Min-1/Max+1 wrap depends
-                                    #     on. PROJECT-WIDE datatype/enum definitions are NOT here — they
-                                    #     live in docs.rte_type_headers in ai_test_project.yaml (patterns §5.2)
+  existing_integration_test_cases: <path or N/A>  # <-- fill  MANDATORY only under authoring_mode: extend_existing —
+                                            #     this module's slice of the existing integration-test-spec export
+                                            #     (exemplars + coverage baseline), plus the slice of every peer that
+                                            #     gets a section. N/A under from_scratch (patterns §0.1) — never
+                                            #     filled by a file discovered in the folder.
+  rte_headers: <path or N/A>       # <-- fill  this module's Rte_<Module>.h / ARXML slice — the Rte_Write/Rte_Read
+                                    #     symbol and the element name, which the architecture does not give, and
+                                    #     every type whose width the Min-1/Max+1 wrap depends on. N/A when read
+                                    #     from the source repo's layout.rte_inc. PROJECT-WIDE datatype/enum
+                                    #     definitions are NOT here — they live in docs.rte_type_headers (patterns §5.2)
+  source_files: []                 # <-- confirm  the .c files breakpoint lines are read from, relative to
+                                    #     docs.source_repo.path — the target's and each named peer's
+                                    #     (patterns §9). Discovered from the Rte_ call sites, then confirmed.
   extra: []                        # optional additional documents for a run
   run_instructions: ""             # optional free-text custom instructions for a run
 
 scope:
-  expected_row_count: "?"          # count gate — confirmed by the engineer on first run, never silently learned
+  expected_row_count: "?"          # row-count gate — rows of the Test Cases sheet, confirmed as the last
+                                    #   Phase-1 question (workflow-discipline §5), never silently learned
   interfaces: []                   # optional — restrict this run to a subset; [] = all interfaces in scope
+                                    #   (also records a fan-out answer: which writer→reader pairs to author)
+  peer_depth: null                 # optional override of integration_test.peer_depth (target_ports | peer_ports)
+  peer_module_mirroring: null      # optional override of integration_test.peer_module_mirroring
 
 last_run:                          # SKILL-OWNED ledger
   timestamp:        null
@@ -50,7 +58,26 @@ last_run:                          # SKILL-OWNED ledger
   release_id:       null           # release.id the run was authored against (baseline pinning)
   variants:         []
   input_hashes:     {}             # supplied file -> git hash-object result
-  interfaces:       {}             # interface name -> { hash, writer, reader, data_type, cases: [titles],
+  source_repo:                     # the SWE.3 repo as read this run (workflow-discipline §2)
+    path:   null
+    sha:    null                   # git -C <path> rev-parse HEAD
+    dirty:  null                   # worktree had uncommitted changes (confirmed by the engineer)
+    files:  {}                     # .c/.h/.arxml read -> git hash-object result
+    degraded: false                # true = run without a source repo by engineer waiver (patterns §9)
+  scope:                           # the scope this run was made at — if the next run's differs, it is a
+                                    #   regeneration, not a per-interface delta (workflow-discipline §8)
+    modules_authored:      []
+    authoring_mode:        null
+    peer_depth:            null
+    peer_module_mirroring: null
+    interfaces:            []
+  output:                          # the workbook this run wrote — checked before any in-place re-run
+    path: null
+    hash: null                     # git hash-object at write time; a different hash later = edited since
+  supplied_but_not_read: {}        # input -> one-line reason it was not opened this run
+  interfaces:       {}             # interface name -> { hash (port + element + 1.2 type/member objects),
+                                    #                     change_requests: {object ID: aChangeRequID},
+                                    #                     writer, reader, data_type, cases: [titles],
                                     #                     mirrored_into: [module, ...] }
   peers:            []             # peer modules the run resolved (mirrors the confirmed module.peers)
   open_points:      []

@@ -1,13 +1,27 @@
 # =====================================================================
-# AI TEST-SPEC PROJECT CONFIG  —  ONE per vTestStudio project folder.
+# AI TEST-SPEC PROJECT CONFIG  —  ONE per SWE.3 project repository.
 # ---------------------------------------------------------------------
 # Read by the two DOORS test-case-generation skills: integration-test
-# (SWE.5) and qualification-test (SWE.6). This is a SEPARATE config from
-# 20_AI/ai_project.yaml — that file describes the SWE.3 C-source repo
-# (compiler, target, RTE layout); this one describes the vTestStudio
-# project folder these two skills run in instead, which has no source
-# code, no compiler, and no git-SHA build to pin against. Holds
-# everything that varies by PROJECT (never by module/feature) for DOORS
+# (SWE.5) and qualification-test (SWE.6). They run in the SWE.3 project
+# repository — the same repo as code-dev, code-review and unit-test — and
+# this file sits beside 20_AI/ai_project.yaml there. It stays a SEPARATE
+# file: it holds test-spec facts (DOORS baseline, attribute values, test
+# documents) the code skills never read. Facts ai_project.yaml already holds
+# (project.type, layout.rte_inc, layout.app_root, requirements.workbook) are
+# READ from it at run time, never copied here (testspec/project-config.md
+# §4.3).
+#
+# The skills read the code but never build it. integration-test takes its
+# breakpoint lines from the .c files (docs.source_repo — this repo by
+# default); qualification-test never reads code at all: it tests black-box.
+# The vTestStudio project (vteststudio: below) is an EXTERNAL folder, usually
+# outside version control — the skills never run in it.
+#
+# Fallback setup, only where QA engineers cannot commit to the SWE.3 repo: a
+# separate Git repository for the test artefacts, with docs.source_repo.path
+# pointing at the SWE.3 repo. A folder outside Git is not supported.
+#
+# Holds everything that varies by PROJECT (never by module/feature) for DOORS
 # test-case generation — the per-module/per-feature manifests in
 # 20_AI/manifests/{integration-test,qualification-test}/ inherit these.
 #
@@ -26,8 +40,9 @@ schema_version: 1
 project:
   name: <PROJECT_NAME>            # <-- fill   e.g. MQBST2
 
-# The DOORS baseline these test cases are authored against — this repo's
-# equivalent of a git revision pin (there is no source code / git SHA here).
+# The DOORS baseline these test cases are authored against — the DOORS
+# equivalent of a git revision pin (DOORS exports carry no git SHA; the code
+# is pinned by the repository's own revision — workflow-discipline §2).
 # Digit-zero vs letter-O and similar near-identical release strings are a
 # known trap in the source DOORS exports — quote exactly and confirm.
 release:
@@ -52,6 +67,20 @@ attributes:
                                                 #     (e.g. "HowTo Creating the Test Specification in DOORS, §4.6").
                                                 #     This is a REFERENCE, never a fixed classification value — the
                                                 #     skill applies the matrix per test case and shows its reasoning.
+  # OPTIONAL — the purely attribute-driven tiers of that matrix, TRANSCRIBED by
+  # the engineer from the governing document (never inferred by the skill).
+  # Applied mechanically, first match in list order, and cited per case in
+  # Traceability; any tier that needs judgement about failure consequences
+  # stays a judgement, justified in Open Points. `when` compares one attribute
+  # of the traced object: aC_SAF on the order QM < ASIL A < ASIL B < ASIL C <
+  # ASIL D, or "<attr> non-empty". Asked ONCE per project, not per module, and
+  # read by BOTH skills (the architecture object for SWE.5, the requirement for
+  # SWE.6). A rule whose column one skill's export lacks is skipped for that
+  # skill, never a stop (workflow-discipline §1.3).
+  #   [] = asked, no rules: every classification is a judgement.
+  #   key absent = never asked: the next run asks once and writes the answer.
+  classification_attribute_rules: []   # <-- ask once  e.g.
+                                        #   - { tier: A1, rule: "R1", when: "aC_SAF > QM" }
 
 # PROJECT-WIDE documents. Per-module/per-feature documents (existing test
 # cases for one module/feature, run-specific extras) live in the manifest.
@@ -69,56 +98,142 @@ docs:
                                               #     aStatusOfAnalysis, aVariant — AND, per object, BOTH its NAME
                                               #     (Object Heading: module, port, type, struct-member names) and
                                               #     its TEXT (port direction prose, "DataType:" and "Range:"
-                                              #     lines). See workflow-discipline §1.3.
+                                              #     lines) — as two columns, or as ONE column holding
+                                              #     "<section> <heading>\n<text>". See workflow-discipline §1.3.
   functional_architecture_export_text_view: <path or N/A>
                                               # <-- fill  ONLY when the project's DOORS view emits a single
-                                              #     content column, so names and text cannot appear in one
-                                              #     export. Then supply the SECOND view of the SAME module — the
-                                              #     one carrying the object text — and the skill joins the two on
-                                              #     the ID column (workflow-discipline §1.3). Both views must be
-                                              #     the same baseline; a differing ID set is a stop.
+                                              #     content column holding the heading ALONE. Then supply the
+                                              #     SECOND view of the SAME module — the one carrying the object
+                                              #     text — and the skill joins the two on the ID column
+                                              #     (workflow-discipline §1.3). Both views must be the same
+                                              #     baseline; a differing ID set is a stop.
   # ---- SWE.6 test basis -------------------------------------------------
-  requirements_workbook: <path>              # <-- fill  SW requirements export (DOORS xlsx) — SWE.6 test basis.
-                                              #     NOT read by integration-test.
+  requirements_workbook: <path or ai_project>  # <-- fill  SW requirements export (DOORS xlsx) — SWE.6 test basis.
+                                              #     NOT read by integration-test. `ai_project` = use the workbook
+                                              #     ai_project.yaml names (requirements.workbook) — one copy,
+                                              #     shared with the code skills. Must carry aTestCriteria, the
+                                              #     requirement's verification criterion (qualification-test-patterns §1.1).
   # ---- shared ------------------------------------------------------------
   signals_params:       <path>               # <-- fill  Signals & Parameters export — MANDATORY for SWE.6;
                                               #     for SWE.5 only where a signal's raw values are exercised
   rte_type_headers:     <path or N/A>        # <-- fill  Rte_Type.h / ARXML datatype mapping — the ONLY source of
                                               #     enum literals: the architecture's UserDefinedTypes chapter
                                               #     names its enum types but lists no literal for them
-                                              #     (integration-test-patterns §5.2). Absent → enum interfaces
-                                              #     fall back to the existing test-spec export, then Open Points.
+                                              #     (integration-test-patterns §5.2). N/A when they are read from
+                                              #     layout.rte_inc (ai_project.yaml) instead. Absent from both →
+                                              #     enum interfaces fall back to the existing test-spec export
+                                              #     (extend_existing only), then Open Points.
+  # ---- SWE.5: the code ---------------------------------------------------
+  # Breakpoint lines and observed variables come from the module's .c files
+  # — a header carries no executable line (integration-test-patterns §9).
+  # Pinned by git revision (workflow-discipline §2), never built. NOT read by
+  # qualification-test, which is black-box.
+  source_repo:
+    path: .                                  # <-- confirm  `.` = this repository (the default setup). A path to the
+                                              #     SWE.3 repo only in the fallback setup (a separate test repo).
+                                              #     N/A only by a recorded engineer decision → every integration-test
+                                              #     run is DEGRADED (symbol-only breakpoints, flagged not executable).
+    ref:  <tag/branch/SHA or N/A>            # <-- fill  the revision test cases are authored against; a run whose
+                                              #     HEAD differs stops and asks. N/A = whatever is checked out,
+                                              #     recorded per run in the manifest ledger.
+  os_config:            <path or N/A>        # <-- ask  SWE.5: the OS and RTE configuration — the ECUC ARXML (tasks,
+                                              #     alarms/schedule tables, counters, event-to-task mapping) or the
+                                              #     generated OS/RTE code. P-05 checks each runnable's task and period
+                                              #     against it (integration-test-patterns §7). Usually already in this repo.
+  debug_build:          <path or N/A>        # <-- ask  SWE.5: the Debug SW's ELF (with symbols) and/or linker map file —
+                                              #     every variable a case edits or watches is looked up in it
+                                              #     (integration-test-patterns §9). Usually a build output outside Git:
+                                              #     give its usual location; it is pinned by hash per run.
+  # ---- SWE.6: communication and test-plan inputs --------------------------
+  comm_database:        <path or N/A>        # <-- ask  DBC / LDF / ARXML system extract — every bus signal's message,
+                                              #     encoding (length, factor, offset, min/max), cycle time and timeout
+                                              #     (qualification-test-patterns §3). Without it, those values in a case
+                                              #     are Open Points. Not read by integration-test (RTE level).
+  test_plan:            <path or N/A>        # <-- ask  the Test Plan — per feature, whether it is tested on Series SW
+                                              #     or Debug SW (qualification-test atcRemark). Without it, asked once
+                                              #     per feature and recorded in the manifest.
+  # ---- both: the test bench -------------------------------------------------
+  test_environment:     <path or N/A>        # <-- ask  what the bench can STIMULATE and OBSERVE: debugger, XCP, bus
+                                              #     access / rest-bus simulation, diagnostic tester, HIL I/O channels
+                                              #     (workflow-discipline §4). Without it, the means each case assumes are
+                                              #     listed once in Open Points. Mandatory once scripts are generated (v2).
   a2l_or_varlist:        <path or N/A>       # <-- fill  A2L file or code variable list — MANDATORY for SWE.6
-  diagspec:               <path or N/A>      # <-- fill  UDS DiagSpec (e.g. EE0339_UDS_DiagSpec) — diagnostic features only
-  integration_test_spec_export: <path or N/A> # <-- fill  existing SWE.5 test-spec export (exemplars + coverage baseline)
+  diagspec:               <path or N/A>      # <-- fill  UDS DiagSpec (e.g. EE0339_UDS_DiagSpec) — SWE.6 diagnostic features;
+                                              #     SWE.5 diagnostic interfaces (pattern P-07) only
+  integration_test_spec_export: <path or N/A> # <-- fill  existing SWE.5 test-spec export (exemplars + coverage baseline).
+                                              #     A path iff integration_test.authoring_mode = extend_existing;
+                                              #     N/A iff from_scratch. A file found in the folder never fills it.
   qualification_test_spec_export: <path or N/A> # <-- fill  existing SWE.6 test-spec export (exemplars + coverage baseline)
+
+# ---------------------------------------------------------------------
+# vTestStudio PROJECT — reserved for v2 (automation-script generation).
+# v1 neither reads nor writes it. The folder is usually OUTSIDE version
+# control, so it is treated as external: read-only by default; generated
+# scripts will be written first to 20_AI/vTestStudio/ in THIS repository (the
+# versioned master copy) and copied into the project only on confirmation,
+# backing up every file they replace.
+# ---------------------------------------------------------------------
+vteststudio:
+  project: <path or N/A>           # <-- fill when known  the vTestStudio project folder
+  write_access: false              # v2 only: true lets a CONFIRMED run copy scripts into the project
 
 # ---------------------------------------------------------------------
 # INTEGRATION TEST (SWE.5) — AUTOSAR / RTE-debugger pattern only in v1.
 # ---------------------------------------------------------------------
 integration_test:
+  # Does this project EXTEND an existing SWE.5 test-spec module, or author one
+  # FROM SCRATCH? An engineer decision, asked once — never inferred from the
+  # files sitting in the folder. from_scratch: no coverage baseline, heading
+  # spellings proposed + confirmed, no "existing test case" fallback anywhere,
+  # and a legacy workbook in the folder is never read
+  # (integration-test-patterns.md §0.1).
+  authoring_mode: <from_scratch | extend_existing>   # <-- ask
   testability_filter:              # <-- fill   aTestability values in scope, e.g. ["test"]
     - "test"
-  # Mirror each interface into BOTH the target module's section and every peer
-  # module's section (the duplication the DOORS SW_TST module already has:
-  # `P_Mot_Mov_Data` under FUSA_MotCtrl *and* `FUSA-MotCtrl to CDD_Drv` under
-  # Mot_Drv). See integration-test-patterns.md §3.
-  peer_module_mirroring: true      # <-- confirm
+  # Which interfaces are AUTHORED (integration-test-patterns.md §2, Depth):
+  #   target_ports : only the target module's own interfaces. Peers are NAMED
+  #                  inside each case (the far-end breakpoint) but get no section.
+  #   peer_ports   : also every interface the target's direct peers are an end
+  #                  of — one extra hop, typically ~10x the rows.
+  # Per-module override: the manifest's scope.peer_depth.
+  peer_depth: target_ports         # <-- confirm
+  # Also author a MIRROR copy of each interface under the peer's section, headed
+  # `<Writer> to <Reader>` (integration-test-patterns.md §3). Doubles the output;
+  # in from_scratch mode every mirror heading is a proposal. Per-module override:
+  # the manifest's scope.peer_module_mirroring.
+  peer_module_mirroring: false     # <-- confirm
+  # What a NAMES-ONLY architecture export (no text view) does — set ONLY by an
+  # engineer decision at the workflow-discipline §1.3 gate, never by default:
+  #   stop : wait for an export that carries the object text.
+  #   arxml: proceed — direction and DataType from the ARXML, ranges from ARXML
+  #          DATA-CONSTR, else the type limits; every affected Min/Mid/Max is
+  #          flagged. Ignored as soon as an export carries the text.
+  architecture_text_fallback: stop # <-- engineer decision
+  # Columns beside the 21 DOORS attributes, never imported — declared once here
+  # instead of being re-requested every run (output-format.md, reference columns).
+  # A position-based DOORS import filter must skip them; a name-based one is
+  # unaffected.
+  reference_columns:
+    arch_requirement_id: false     # <-- confirm  column A: the traced architecture object's ID
+    validity_review:     false     # <-- confirm  trailing isValid + Reason for Invalid (no-fabrication.md)
   # aFunctionModule -> the set of peer modules at the other end of its ports,
   # DISCOVERED per module (integration-test-patterns.md §2) and CACHED here
   # with the resolved writer/reader side per interface. Never seeded by
   # analogy — an ambiguous pairing is asked about, not guessed.
   peer_modules: {}                 # <-- learned  e.g. { FUSA_MotDrv: ["FUSA_MotCtrl", "CDD_MotDrv"] }
-  # One module has up to THREE spellings: its architecture section heading, its
-  # aFunctionModule attribute, and its integration-test-spec section heading
-  # (e.g. FUSA_CDD_MotDrv / FUSA_MotDrv / Mot_Drv — all one module). Keyed by
-  # aFunctionModule. DISCOVERED ONCE per module (walk the Object Heading
-  # hierarchy + cross-check the aFeature mix — see
-  # integration-test-patterns.md), then CACHED here so later runs / other
-  # engineers don't re-derive it. Never seed this by analogy — an unresolved
-  # module is asked about, not guessed.
+  # One module has up to FOUR spellings: its aFunctionModule attribute, its
+  # architecture section heading, its ARXML software-component name (the RTE
+  # symbol prefix — and the spelling engineers most often type), and its
+  # integration-test-spec section heading (e.g. FUSA_MotDrv / FUSA_CDD_MotDrv /
+  # CDD_MotDrv / Mot_Drv — all one module). Keyed by aFunctionModule; any of
+  # the four is accepted as the skill argument (integration-test-patterns.md
+  # §4.1). The test_spec spelling is DISCOVERED in an existing spec
+  # (extend_existing) or PROPOSED + confirmed (from_scratch), then CACHED here
+  # so later runs / other engineers don't re-derive it. Never seed this by
+  # analogy — an unresolved module is asked about, not guessed.
   module_name_mapping: {}          # <-- learned
-                                    #   e.g. FUSA_MotDrv: { architecture: "FUSA_CDD_MotDrv", test_spec: "Mot_Drv" }
+                                    #   e.g. FUSA_MotDrv: { architecture: "FUSA_CDD_MotDrv",
+                                    #                       arxml_swc: "CDD_MotDrv", test_spec: "Mot_Drv" }
 
 # ---------------------------------------------------------------------
 # QUALIFICATION TEST (SWE.6)

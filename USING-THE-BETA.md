@@ -19,23 +19,27 @@ Each skill **adapts automatically** to whether the repo is AUTOSAR or non-AUTOSA
 
 ### The two DOORS test-spec skills
 
-These run in the **vTestStudio project folder**, not the C-source repo, and read
-their own config (`20_AI/ai_test_project.yaml`, bootstrapped on first run). They
+Run these from the **SWE.3 project repository**, like the commands above — not
+from the vTestStudio project folder. They read their own config
+(`20_AI/ai_test_project.yaml`, bootstrapped on first run, next to
+`ai_project.yaml`). They
 produce a 3-sheet Excel workbook (Test Cases / Traceability / Open Points) that
 you review and enter into DOORS by hand — nothing is written to DOORS.
 
 | Command | Does | Bring |
 |---|---|---|
-| `/integration-test <MODULE>` | SWE.5 interface test cases for a module **and the peer modules its ports run to** — one side writes (`Rte_Write`), the other reads (`Rte_Read`), so both ends are named in every case. AUTOSAR/RTE-debugger only. | The **Functional_Architecture** DOORS export (its section 1.2 UserDefinedTypes chapter comes with it), the existing SWE.5 test-spec export for the module and its peers, and `Rte_Type.h`/ARXML. |
-| `/qualification-test <FEATURE>` | SWE.6 test cases for a feature — requirements-based, boundary-value and diagnostic (UDS DID/RID). | The **SW requirements** export, Signals & Parameters, an A2L or code variable list, and the UDS DiagSpec for diagnostic features. |
+| `/integration-test <MODULE>` | SWE.5 interface test cases for a module — one side writes (`Rte_Write`), the other reads (`Rte_Read`), so both ends are named in every case; the peer module gets a section of its own only if you ask for it. AUTOSAR/RTE-debugger only. | The **Functional_Architecture** DOORS export (its section 1.2 UserDefinedTypes chapter comes with it), and `Rte_Type.h`/ARXML; breakpoint lines are read from the repository's own `.c` files. Optionally, a description of your test bench. Plus the existing SWE.5 test-spec export — only if your project extends one rather than authoring from scratch. |
+| `/qualification-test <FEATURE>` | SWE.6 test cases for a feature — requirements-based, boundary-value and diagnostic (UDS DID/RID). | The **SW requirements** export (the one `ai_project.yaml` already names), Signals & Parameters, an A2L or code variable list, and the UDS DiagSpec for diagnostic features. Recommended: the bus database (DBC/LDF/ARXML), the Test Plan, and a description of your test bench. It never reads the source code — qualification testing is black-box. |
 
-**Export your architecture with both `Object Heading` and `Object Text`
-columns.** A DOORS view that emits one content column gives you either the
-names (module, port, type, struct member) or the text (the `DataType:` and
-`Range:` lines) — never both, and `/integration-test` needs both. If your view
-can only do one at a time, hand it **two exports of the same module** (one of
-each) and it will join them on the `ID` column. It checks this before doing any
-work and stops rather than guessing.
+**Export your architecture with both the names and the text.**
+`/integration-test` needs each object's name (module, port, type, struct
+member) *and* its text (the `DataType:` and `Range:` lines). Any of these
+works: separate `Object Heading` and `Object Text` columns; one content column
+that holds the heading on its first line and the text below it; or, if your
+view can only show one at a time, **two exports of the same module** (one of
+each), which it joins on the `ID` column. It checks this before doing any work.
+Given names only, it tells you what the ARXML can stand in for and what would
+be lost (the documented ranges), and lets you decide — it does not guess.
 
 Both skills **stop and ask** rather than invent a symbol, a limit or an enum
 value; whatever they can't resolve lands on the Open Points sheet.

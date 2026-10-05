@@ -13,11 +13,52 @@ variables are edited, and the value is observed at the receiving end. This
 only makes sense where the module has `Rte_Write`/`Rte_Read`/`Rte_Call`
 symbols to hang a breakpoint on.
 
-If the target module's architecture entry and existing test cases show **no**
-RTE symbols (no ARXML/`Rte_*.h`, no existing RTE-pattern test cases, no
-`Rte_Write`/`Rte_Read` calls in the Signals & Parameters export) — **stop** and
-say plainly that this skill only supports RTE-based integration testing in its
-current version, rather than inventing a black-box equivalent.
+If the target module shows **no** RTE symbols to work from — no
+`Rte_Write`/`Rte_Read`/`Rte_Call` call in its `.c` files in `docs.source_repo`
+(§9), no ARXML/`Rte_*.h` entry for it, no `Rte_Write`/`Rte_Read` calls in the
+Signals & Parameters export, and (in `extend_existing` mode only, §0.1) no
+existing RTE-pattern test case — **stop** and say plainly that this skill only
+supports RTE-based integration testing in its current version, rather than
+inventing a black-box equivalent. Where the source repo carries its own
+`20_AI/ai_project.yaml`, its `project.type: nonautosar` settles it: stop.
+
+## 0.1 Authoring mode — decided once, before any discovery
+
+`integration_test.authoring_mode` in `ai_test_project.yaml` says whether this
+project **extends** an existing SWE.5 test-spec module or **authors one from
+scratch**. It is an engineer decision recorded once (project-config.md §4.1),
+never inferred from which files happen to sit in the project folder. If an
+existing config does not carry it yet, ask it at the Step-3 gate — before any
+document discovery — quoting `docs.integration_test_spec_export` as evidence.
+
+- **`extend_existing`** — `docs.integration_test_spec_export` points at the
+  project's SWE.5 export. It is the coverage baseline (§5.1), the source of
+  heading spellings (§3, §4), and a secondary source of symbols and enum
+  literals behind the RTE headers and the code.
+- **`from_scratch`** — `docs.integration_test_spec_export` is `N/A`. This is a
+  first-class mode, not a degraded one:
+  - the coverage baseline is empty — every interface is "no test cases", every
+    row is new, every `ID` empty;
+  - module and connection heading spellings are **proposed and confirmed** at
+    the Phase-1 gate, never invented silently; the proposal is the
+    architecture `1.4.1.<n>` spelling (§4);
+  - group headings that follow a pattern form (`Watch Dog for <Module>`, the
+    task-configuration heading) are marked as derived in Traceability;
+  - symbols, breakpoint lines, checkpoint names and enum literals come from
+    `docs.rte_type_headers`, the ARXML and `docs.source_repo` only (§9).
+    **Wherever this file names "an existing test case" as a source, that source
+    does not exist in this mode** — an item with no other source is an Open
+    Point;
+  - a legacy or manual test-case workbook found in the project folder is **not**
+    a substitute input. Do not open it, register it, mine it for spellings, or
+    cite it as evidence. Raise one Phase-1 question quoting the recorded
+    decision, and proceed under the decision until the engineer changes the
+    config (workflow-discipline §1.2).
+
+*(Observed: in a from-scratch project a run registered a discovered legacy
+export as "the existing spec", reasoning that a mandatory input should be
+resolved, then built a coverage baseline, a name mapping and four "defects in
+the existing spec" on it — all withdrawn once the engineer saw it.)*
 
 ## 1. The test basis: Functional_Architecture, not SW requirements
 
@@ -32,9 +73,10 @@ read by this skill**; do not accept one in place of the other
 
 Every object carries a **name** (`Object Heading`) and a **text**
 (`Object Text`), and this skill needs both — the names give the ports, types
-and members, the text gives the ranges and the `DataType:` lines. A
-single-content-column export shows only one of the two, so the export may
-arrive as two views joined on `ID`; workflow-discipline §1.3 gates that.
+and members, the text gives the ranges and the `DataType:` lines. The export
+may carry them as two columns, as one column holding both, or as two views
+joined on `ID`; workflow-discipline §1.3 detects which, and decides what a
+names-only export can still support.
 
 ### 1.1 How the architecture module is laid out
 
@@ -59,8 +101,8 @@ Two traps at the `1.4` level:
 - The element name in `1.4.1.<n>.<m>.<k>` is the **architecture's** name for it
   (often just `Data`) and is frequently **not** the element name in the RTE
   symbol (`Rte_Read_R_Mot_Mov_Data_Mot_Mov_Data` — element `Mot_Mov_Data`, not
-  `Data`). Take the RTE symbol from the RTE headers or an existing test case,
-  never by concatenating the architecture's names (§9).
+  `Data`). Take the RTE symbol from the RTE headers and the code (§9), never
+  by concatenating the architecture's names.
 - An object's `aFunctionModule` can disagree with the section it sits under
   (a port under `FUSA_MotCtrl` carrying `aFunctionModule = FUSA_ParkLckCtrl`).
   Use the **section** for ownership and the **attribute** for the scope filter,
@@ -69,19 +111,57 @@ Two traps at the `1.4` level:
 
 ### 1.2 Scope filter
 
-Select architecture objects where:
+Two different sets come out of this step, and they must not be confused: the
+objects test cases are **authored from** (they get heading rows and cases, in
+their module's section), and the objects that are only **read** to ground those
+cases.
 
-- `aFunctionModule` = the target module **or one of its peer modules** (§2)
+**Authored from** — architecture objects where:
+
+- `aFunctionModule` = the target module, **or** the object is a direct child of
+  the target module's own architecture section while carrying a different
+  `aFunctionModule` (see below), **or** — only under `peer_depth: peer_ports`
+  (§2) — `aFunctionModule` = one of the target's direct peers
 - `aTestability` ∈ `integration_test.testability_filter`
 - `aStatusOfAnalysis` ∈ `attributes.status_filter`
 - `aRequirementObjectType` = `functional requirement` or `non functional requirement`
 - Object text is non-empty
 
+**Read for grounding, never authored from** — the port at the far end of each
+in-scope interface (direction and type cross-check, §2), every `1.2`
+type/member object the in-scope ports reference, and the `1.4.1.<n>.<m>.<k>`
+information children (type/range detail). Objects of type `information` are
+never test-case sources.
+
 Report the count at each filter step — expect heavy attrition (objects with no
-text, or that are information/feature/feature-description rows, are common).
-Objects of type `information` are **not** in scope as test-case sources, but a
-`1.4.1.<n>.<m>.<k>` information child **is** read for its type/range detail,
-and so is every `1.2` type/member object the in-scope ports reference.
+text, or that are information/feature/feature-description rows, are common) —
+together with the match count of each configured filter value and any
+unclassified chapter the filter dropped wholesale (the input-hygiene checks,
+workflow-discipline §7).
+
+**Section ownership beats `aFunctionModule` for nested service objects.** Some
+ports sit under a module's own section but are owned by a *service* module —
+watchdog supervision checkpoints are the standing case (`aFunctionModule =
+WdgM` under `1.4.1.<n>.<m>`), and `Os`, `Dem`, `NvM` and `Dcm` behave the same
+way where a project uses them. An object like this belongs to the run **when
+its section number is a child of the target module's own section**, because
+that is the only module whose code calls it.
+
+Scope it by **section prefix, not by a blanket allowance on the
+`aFunctionModule` value**. Allowing `WdgM` globally would pull every module's
+checkpoints into every run — in the MQBST2 baseline that is 15 checkpoint
+objects across 8 different modules, of which a run for `FUSA_MotDrv`
+(section `1.4.1.1`) must select exactly two: `1.4.1.1.2` and `1.4.1.1.3`.
+
+Such an object sits under the **target module's** section heading and keeps
+**its own** `aFeature` on the generated case, never the section's (§8) —
+both engineer-confirmed for the watchdog checkpoints on 2026-10-05. Do not
+filter on `aFeature` either: it is not uniform even within one service, as the
+MQBST2 checkpoints carry `Watchdog` on 13 objects and `System Faults` on 2.
+
+Report these objects separately in the scope count and name them in Open
+Points, so the engineer can see which objects came in by section rather than by
+`aFunctionModule`.
 
 ### 1.3 `aTestCriteria` is the engineer's own stated approach
 
@@ -96,8 +176,9 @@ to choose freely.
 
 An integration test case exercises **one interface across two modules**: the
 module that writes it and the module that reads it. So selecting a module
-selects more than its own objects — it selects every interface it is an end of,
-together with the module at the other end.
+selects every interface it is an end of, and every case names the module at the
+other end — but whether that peer also gets a section of its own is a separate,
+explicit decision (**Depth**, below, and §3).
 
 **Direction** — the port's **name prefix** is authoritative, because it is also
 the spelling the test-spec module uses for its headings:
@@ -126,61 +207,153 @@ other end:
    not a resolved pair.
 3. Direction must be opposite: a `P_` port pairs only with an `R_` port.
 4. Casing drifts (`Mot_Mov_Data_st` vs `Mot_Mov_Data_St`) — match
-   case-insensitively, but take the spelling you emit from the RTE header or an
-   existing test case, and note the variant in Open Points.
+   case-insensitively, but take the spelling you emit from the RTE header and
+   the code (§9), and note the variant in Open Points.
 5. **Exactly one candidate** → resolved. **Several, or none** → a numbered
    Phase-1 question. Never pick the closest-looking module. For "none", run a
    near-match search first (a single transposed or extra character is common —
    `P_Hs1_Div_a_Phy` vs `R_Hs1_Div_a_Phyn`, `unplausibel` vs `unplausible`) and
    put the near match in the question as the proposal; never auto-accept it.
 6. One writer may have several readers (a broadcast signal). Every reader is a
-   peer, and each writer→reader pair is its own interface.
+   peer, and each writer→reader pair is its own interface (but see **Fan-out**).
 
-Report the result as a **peer matrix** at the Phase-1 gate, and cache it in
-`ai_test_project.yaml` `integration_test.peer_modules`:
+**Depth — which interfaces are authored.** `integration_test.peer_depth`
+(project default in `ai_test_project.yaml`; per-module override in the
+manifest's `scope.peer_depth`):
 
-| Interface | Data type | Writer module / file | `Rte_Write` symbol | Reader module / file | `Rte_Read` symbol | Existing cases |
-|---|---|---|---|---|---|---|
+- **`target_ports`** (default) — only the interfaces the **target** module is
+  an end of. Each peer is **named, not authored**: it appears inside every case
+  as the far end — a P-01 case must name the `Rte_Write` line in the writer's
+  `.c` and the `Rte_Read` line in the reader's — but it gets no section, no
+  heading row, and no case sourced from its own objects.
+- **`peer_ports`** — also every interface the target's **direct** peers are an
+  end of. Their own far ends (peers of peers) are in turn named, not authored.
+  This is one extra hop, not a transitive closure, and it is typically an order
+  of magnitude larger. An interface between the target and a peer is still
+  authored once, under the target.
 
-## 3. Mirroring: the interface is authored under both modules
+Whether a peer *also* carries a mirrored copy of the target's interfaces is a
+separate setting (§3). If `peer_depth` is unset, it is a Phase-1 question, and
+the question states the **projected row count for each depth, with mirroring on
+and off**, from the interface inventory — marked as an estimate where a type is
+still unresolved. *(Observed: the two depths gave 142 and 12 cases for the same
+module; the engineer wanted 12, and the run had chosen 142 without asking.)*
 
-`integration_test.peer_module_mirroring` (default **true**) reproduces the
-structure the DOORS test module already has: the same interface appears under
-the writer's section as its port heading **and** under the reader's section as
-a connection heading.
+When confirming a narrowed scope, say explicitly that an excluded peer still
+appears in the body of each case as the far end. Read literally, "not in scope"
+would remove it from the cases too, and no data-flow case could then be
+written.
 
-- Under the module that owns the port: heading `P_<Element>` (write side) or
-  `R_<Element>` (read side).
-- Under the peer module: heading `<WriterModule> to <ReaderModule>` — spelled
-  the way the existing test-spec export spells those module names, which is
-  often neither the `aFunctionModule` spelling nor consistent
-  (`FUSA-MotCtrl to CDD_Drv`). Use the existing spelling and record the variant
-  in Open Points.
+**Fan-out.** Step 6 gives each writer→reader pair its own case set, so a target
+port with several far ends multiplies output fast. Show the fan-out per target
+port in the peer matrix and, wherever a target port has more than one far end,
+ask whether to author every pair or a named subset — recording the answer in
+the manifest's `scope.interfaces`. Never multiply silently.
+
+Report the result as a **peer matrix** at the Phase-1 gate, and cache the
+pairings in `ai_test_project.yaml` `integration_test.peer_modules`:
+
+| Interface | Data type | Writer module / `.c` | `Rte_Write` line | Reader module / `.c` | `Rte_Read` line | Far ends of this target port | Projected cases | Existing cases (`extend_existing` only) |
+|---|---|---|---|---|---|---|---|---|
+
+## 3. Mirroring: a second copy under the peer's section (off by default)
+
+`integration_test.peer_module_mirroring` (default **false**; per-module
+override in the manifest's `scope.peer_module_mirroring`) reproduces a
+structure some DOORS test modules carry: the same interface authored a second
+time, under the peer module's section.
+
+- **Primary** — always under the **target** module's section, headed by the
+  target's own port: `P_<Element>` where the target writes it, `R_<Element>`
+  where it reads it.
+- **Mirror** — only when mirroring is on — under the **peer's** section, headed
+  by the connection `<WriterModule> to <ReaderModule>`.
 
 Both copies test the same interface with the same breakpoints; they differ only
-in which section they sit under. Emit both, and in the Traceability sheet mark
-one as the **primary** and the other as its **mirror** so the engineer can drop
-the mirror if their project has since de-duplicated. If mirroring is off, emit
-the primary only and list the peer-side sections as Open Points.
+in which section they sit under. Mark every row primary or mirror in the
+Traceability sheet so the engineer can drop the mirrors.
 
-## 4. Resolving the module name (the mapping table)
+The connection-heading spelling is a project convention, never an inference:
 
-One module can carry **three** spellings, and they are all in play:
+- `extend_existing` (§0.1) — copy the spelling the existing export uses for
+  that pair, which is often neither the `aFunctionModule` spelling nor
+  consistent (`FUSA-MotCtrl to CDD_Drv`), and record the variant in Open
+  Points.
+- `from_scratch` — there is no observed spelling to copy, so every mirror
+  heading would be invented. Propose `<WriterModule> to <ReaderModule>` in the
+  confirmed test-spec spellings (§4) and confirm it once at the Phase-1 gate.
+  This is why mirroring is off by default: it doubles the output, and in a
+  from-scratch project every heading it adds is a proposal.
 
-| Where | Example |
-|---|---|
-| architecture `1.4.1.<n>` section heading | `FUSA_CDD_MotDrv` |
-| `aFunctionModule` attribute (the skill's argument) | `FUSA_MotDrv` |
-| integration-test-spec section heading | `Mot_Drv` |
+Do not infer a placement rule from a legacy spec either: the one this skill was
+first built against put the connection heading mostly, but not consistently,
+under the reader's section.
+
+If mirroring is off, emit the primary only, and say once in the run summary
+that mirroring is off — not as an Open Point per peer section.
+
+## 4. Resolving the module name
+
+### 4.1 Resolve the argument before filtering
+
+The argument is meant to be an `aFunctionModule` value, but engineers type
+whichever spelling they know — the ARXML component name, the architecture
+heading, a feature name — and sometimes two of them at once. Before any scope
+filtering, resolve every argument against **all four axes** and report which
+one matched:
+
+| Axis | Found in | Example |
+|---|---|---|
+| `aFunctionModule` — the scope filter's key | the attribute column | `FUSA_MotDrv` |
+| architecture section heading | the `1.4.1.<n>` object's name | `FUSA_CDD_MotDrv` |
+| ARXML component | `APPLICATION-SW-COMPONENT-TYPE` short-name (also the `Rte_<Swc>.h` name and the RTE symbol prefix) | `CDD_MotDrv` |
+| `aFeature` — a **different axis**, never a module | the attribute column | `Motor Control` |
+
+- **Exactly one module on the three module axes** → proceed, saying which axis
+  matched and which `aFunctionModule` it resolved to. The manifest is keyed by
+  that resolved value.
+- **An `aFeature` value** → say so; list the modules whose objects carry that
+  feature, with their object counts, and ask which one is meant. Never run a
+  feature as a module.
+- **Several arguments that collapse to one module** (two spellings of the same
+  component) → say so and confirm that it is one run, not two.
+- **One argument matching several modules, or none** → run the near-match
+  search (§2 step 5) and ask.
+
+Then dry-run the resolved value through the scope filter (§1.2) before going
+further: one spelling, used as an `aFunctionModule`, can select a handful of
+non-port objects while the module's ports carry another. **A scope that yields
+zero `1.4.1.<n>.<m>` port objects is a hard STOP**, reported with the attrition
+per filter step — never an empty workbook reported as success.
+
+*(Observed on one module across two runs: first an argument that was an
+`aFeature` value; then the ARXML component spelling, which as an
+`aFunctionModule` selected two objects, neither of them a port.)*
+
+### 4.2 The mapping table
+
+One module can carry **four** spellings, and they are all in play:
+
+| Key in `module_name_mapping` | Where | Example |
+|---|---|---|
+| *(the key itself)* | `aFunctionModule` attribute | `FUSA_MotDrv` |
+| `architecture` | architecture `1.4.1.<n>` section heading | `FUSA_CDD_MotDrv` |
+| `arxml_swc` | ARXML `APPLICATION-SW-COMPONENT-TYPE` | `CDD_MotDrv` |
+| `test_spec` | integration-test-spec section heading | `Mot_Drv` (found in an existing spec) or the confirmed proposal (from scratch) |
 
 **The integration-test export has no `aFunctionModule` column** — only
 `aFeature`. Existing test cases for a module are located by walking the
 `Object Heading` hierarchy: a module-level heading opens a section, and
 everything until the next module-level heading belongs to it.
 
+In `from_scratch` mode (§0.1) there is no test-spec export to search: skip the
+discovery below, propose the architecture `1.4.1.<n>` spelling as the
+test-spec heading, confirm it as a Phase-1 question, and cache the confirmed
+answer like any other mapping.
+
 The vocabularies rarely match exactly (spelling differences, transposed words,
-hyphen vs underscore, inserted `CDD`). **Discovery method** (generic — apply it
-to whatever module you're given):
+hyphen vs underscore, inserted `CDD`). **Discovery method** (`extend_existing`
+only — apply it to whatever module you're given):
 
 1. Search the integration-test-spec export's Object Headings for the target
    module name and close near-matches (transpositions, common misspellings).
@@ -188,30 +361,39 @@ to whatever module you're given):
    broadly match the `aFeature` mix of the candidate section. A large mismatch
    means the wrong section was picked — stop and ask rather than proceed on a
    guess.
-3. Once resolved, **write all three spellings to `ai_test_project.yaml`
+3. Once resolved, **write all four spellings to `ai_test_project.yaml`
    `integration_test.module_name_mapping`** keyed by `aFunctionModule`
    (workflow-discipline §4) so the next run — this engineer's or another's —
    doesn't repeat the search. If the module is not on the cached list and cannot
    be resolved by search, ask.
 
-Do this for the peer modules too: a mirrored section needs the peer's
-test-spec spelling, not its architecture spelling.
+Do this for a peer module only when it gets a section of its own
+(`peer_depth: peer_ports`, or mirroring on): a peer section needs the peer's
+test-spec spelling, not its architecture spelling. A peer that is only named
+inside cases needs no test-spec spelling.
 
 ## 5. Interface inventory and the values to exercise
 
 ### 5.1 Inventory
 
 The unit of an integration test case is **the interface**. Build the list from,
-in order of preference: (1) the architecture's `1.4` port objects for the target
-and its peers; (2) existing test-case section headings — each port heading and
-each connection heading; (3) ARXML/RTE headers, if supplied. For each interface
-report its name, writer/reader modules, `Rte_*` symbols, source files, data
-type, and how many existing test cases it already has.
+in order of preference: (1) the architecture's `1.4` port objects of every
+module authored from (§1.2, §2 Depth); (2) in `extend_existing` mode only, the
+existing test-case section headings — each port heading and each connection
+heading; (3) ARXML/RTE headers and the `.c` call sites in `docs.source_repo`.
+For each interface report its name, writer/reader modules, `Rte_*` symbols,
+`.c` files, data type, and — in `extend_existing` mode — how many existing test
+cases it already has.
 
 Then split into: already covered, no test cases (your scope), and interfaces
 found in the architecture but not resolvable to RTE symbols. Check the standing
-obligations: does every module in scope have a `Watch Dog for <module>` group,
-a task-configuration group, and a section for every connection.
+obligations: does every module authored from have a `Watch Dog for <module>`
+group, a task-configuration group, and a heading for every interface it is an
+end of (plus a connection heading per mirror, when mirroring is on).
+
+In `from_scratch` mode (§0.1) source (2) does not exist: the coverage baseline
+is empty and every interface is "no test cases". Never substitute a legacy
+workbook found in the folder for it.
 
 ### 5.2 Values come from the UserDefinedTypes chapter
 
@@ -223,23 +405,69 @@ child's **text** — then generate accordingly:
 | Type shape | Cases |
 |---|---|
 | Scalar with a documented `Range:` | **5** — Min, Mid, Max (`positive`); Min-1, Max+1 (`negative`) |
-| Enum | **one per literal**, all `positive`; plus one out-of-range `negative` case if the type documents an invalid/reserved value |
+| Enum | **one per literal**, all `positive`; plus **one** `negative` case by default (rules below) |
 | Struct | the **5-case set per member**, member by member (a 5-member struct → 25 cases) |
 | Boolean | both values, `positive`; the architecture text usually states the meaning (`0 - Enabled` / `1 - Disabled`) — carry it into the case |
 
+**Reading the range from the text.** Match the label loosely: `Range` followed
+by any separator (`:`, `-`, `=`, or none) and a bracketed pair, tolerating
+stray spaces inside the bracket and a unit after it — `Range: [0-100]`,
+`Range - [0- 100]%` and `Range [0 - 100]` are one and the same range. A strict
+`Range:` match misses the variants and silently falls back to the type limits:
+a quiet wrong answer. Report every variant that is not `Range: [<min>-<max>]`
+in Open Points as an architecture-text finding. Where a bound cannot be read
+unambiguously — a negative bound whose minus sign could be the separator, a
+factor or offset inside the bracket — ask; never guess which hyphen is which.
+
 Rules:
 
-- **Min/Max**: from the documented `Range:` in the UserDefinedTypes entry when
-  it has one; otherwise the implementation type's limits (`uint8` → 0/255).
-  Say which of the two you used, per interface, in the Traceability sheet — the
-  existing spec is inconsistent about this and the engineer needs to see the
-  choice, not discover it.
-- **Mid**: the arithmetic midpoint of whichever range you used.
-- **Min-1 / Max+1**: the *written* value is the out-of-range value; the value
-  the **reader** is expected to show is the value wrapped to the reader's type
-  width (`uint8`: Min-1 → `255`, Max+1 → `0`). Compute the wrap from the
-  reader's type. If the reader's type is unresolved, do **not** guess the wrap —
-  leave the expected value as a marked placeholder and raise an Open Point.
+The in-range triple and the out-of-range pair come from **different sources**.
+Do not derive all five from one range.
+
+- **Min / Mid / Max — the documented `Range:`** in the UserDefinedTypes entry
+  when it has one; otherwise the implementation type's limits (`uint8` → 0/255).
+  In a names-only run (workflow-discipline §1.3) the ARXML `DATA-CONSTR` takes
+  the documented range's place where the type has one. **Mid** is the
+  arithmetic midpoint of whichever range you used, rounded **toward zero** when
+  that is not a whole number on an integer type (`0..255` → `127`,
+  `-32768..32767` → `0`); a floating-point type takes the exact midpoint. Say
+  which range you used, per interface, in the Traceability sheet — the engineer
+  needs to see the choice, not discover it. A constant in the source code
+  (`<MODULE>_..._MIN/MAX`) may **confirm** a range but never supplies one on its
+  own: testing the code against its own constant proves nothing.
+- **Min-1 / Max+1 — always the IMPLEMENTATION TYPE's limits**, never the
+  documented range, even when the documented range is narrower. These two cases
+  exist to exercise what the type does at its edges, so for a `uint8` member
+  they are *always* written `-1` → reader shows `255`, and written `256` →
+  reader shows `0`, whatever the documented `Range:` says.
+
+  A `[0-100]%` `uint8` member therefore gives **Max = 100 and Max+1 = 256**: the
+  two are deliberately not arithmetically adjacent, and a run that "corrects"
+  Max+1 to 101 for adjacency is wrong.
+
+  **Compute the wrap at both ends, each from its own type.** The writer-side
+  variable cannot hold a value its type cannot represent any more than the
+  reader can: on a `uint8` member the writer-side variable *displays* `255`
+  after `-1` is entered and `0` after `256` is entered, exactly as the reader
+  does. P-01's result step 2 therefore states the value the writer displays,
+  with the entered value in brackets (§7). Because Min-1 and Max+1 are both
+  taken from the type, this applies to **both** negative cases of every member
+  — not only to Min-1 on an unsigned type. Only where the writer's and the
+  reader's types differ in width do the two ends legitimately display different
+  values. If either end's type is unresolved, do **not** guess its wrap — leave
+  that expected value as a marked placeholder and raise an Open Point.
+
+  *(Engineer ruling, FUSA_MotDrv SWE.5 validation 2026-10-05: a generated
+  Max+1 = 101 was rejected with "If its uint8 max value is 255 so max+1 value
+  should b 256 and thes result should be 0." Min = 0 / Mid = 50 / Max = 100 from
+  the documented `[0- 100]%` range were accepted in the same review, which is
+  what fixes the split between the two sources.)*
+- A value **out of the documented range but inside the type** (`101` on a
+  `[0-100]%` `uint8`) gets **no case**. It was put to the engineer on
+  2026-10-05 and declined — "Not required, we need only for 256" — so the
+  five-case set stands as defined above. Do not generate a sixth case and do
+  **not** re-raise it as a Phase-1 question on later runs; this answer is
+  settled project policy, not a per-run judgement.
 - **No documented range and no resolvable implementation type** → the interface
   gets **no** cases and an Open Point. Never invent a limit, a step size, a
   member name or an enum literal (no-fabrication.md). Expect this to be common:
@@ -248,11 +476,28 @@ Rules:
   (`*_en`) is a single `1.2.<n>` object with no children and no literal list —
   only a prose description ("This enum contains the mute mode types"). So a
   literal (`MOT_MOV_ROT_FWD_E`) is copied verbatim from `docs.rte_type_headers`
-  (`Rte_Type.h`/ARXML) or from an existing test case, and an enum interface with
-  neither source resolvable gets **no** cases and an Open Point. Never
+  (`Rte_Type.h`/ARXML) or — in `extend_existing` mode only — from an existing
+  test case, and an enum interface with no resolvable source gets **no** cases
+  and an Open Point. Never
   reconstruct a literal from the description, and never infer the literal set
   from the number of values an existing case happens to exercise — say in the
   Traceability sheet which source each literal came from.
+
+  Reach the literals through the type's **own reference** to its
+  `COMPU-METHOD`, never by matching a `COMPU-METHOD`'s name: an ECU extract can
+  carry a `COMPU-METHOD` named after one type that holds another type's
+  literals. A name-matched `COMPU-METHOD` whose literals do not belong to the
+  type is an Open Point, never a source.
+- **Enum negative case — one, by default.** Engineers expect a negative case on
+  every enum interface, so author one at the first value outside the valid set,
+  taken (in order) from: a literal the type documents as invalid/reserved; else
+  the ARXML `DATA-CONSTR` upper limit + 1 — the constraint documents the valid
+  range even where no literal is marked invalid. State in Traceability which of
+  the two it came from. Neither available → no negative case, and an Open Point.
+  The number is entered as-is; if it is not representable in the enum's base
+  type, the wrap rule above applies. Never support the case with a claim about
+  the reader's code (a missing `default:`) that you have not read
+  (no-fabrication.md).
 
 ## 6. `aTestCriteria` → pattern
 
@@ -269,6 +514,24 @@ Rules:
 
 Typos and case vary between objects ("wehther", "CHnage", "ini runnable") —
 match on meaning, and never copy a misspelling into a generated case.
+
+**P-08 is never applied silently.** A `review`-type `aTestCriteria` suppresses
+a whole object, so before emitting P-08, check whether the object nevertheless
+has a concrete, observable symbol in a supplied input — an `Rte_Call_*`,
+`Rte_Write_*` or `Rte_Read_*` in the code, or a driver API the module actually
+calls. If it does, the criterion and the code disagree, and that is a
+**Phase-1 question**, not a decision to take alone. The default proposal in
+that question is **author the case**: `aTestCriteria` is often older than the
+code. An object that maps to P-08 *and* has no resolvable symbol needs no
+question — Open Points is enough.
+
+Observed failure (FUSA_MotDrv, 2026-10-05): `Ftm_Pwm_Ip_FastUpdatePwmDuty`
+(6227), `Ftm_Pwm_Ip_UnMaskOutputChannels` (6230) and the two WdgM checkpoint
+ports (5847 / 5904) were all suppressed to heading rows on `aTestCriteria =
+"review"` / `"1. Review the flow"`. All four are called directly from
+`CDD_MotDrv.c` — the symbols were in hand and nothing was unresolved. The QA
+engineer rejected all three heading rows at validation with "TestCases need to
+Design for this interfaces".
 
 ## 7. Patterns
 
@@ -287,21 +550,37 @@ atcPreconditions:
 - Flash the ECU
 
 atcActions:
-1. Set the Breakpoint at line <Rte_Write_P_<port>_<element>(<arg>);> in <writer>.c
+1. Set the Breakpoint at line <the Rte_Write call, verbatim from <writer>.c> in <writer>.c
 2. Edit the variable <writer-side variable> with <value>.
-3. Set the Breakpoint at line <if( E_OK == Rte_Read_R_<port>_<element>( &<reader-side variable> ) )> in <reader>.c
+3. Set the Breakpoint at line <the Rte_Read call, verbatim from <reader>.c> in <reader>.c
 4. Verify the value
 
 atcResult:
 1. Breakpoint should be hit.
-2. <writer-side variable> should be update to <value> value.
+2. <writer-side variable> should be update to <displayed-at-writer> value.
 3. Breakpoint Should be hit.
-4. <reader-side variable> should be update to <expected-at-reader> value.
+4. <reader-side variable> should be update to <displayed-at-reader> value.
 
 atcPostconditions:
 - System Shall be stable
 - Delete all Breakpoints
 ```
+
+Both breakpoint lines are quoted **verbatim from the `.c` file** at the pinned
+source revision, argument expression included — e.g.
+`Rte_Write_P_<port>_<element>(<arg>);` and
+`if( E_OK == Rte_Read_R_<port>_<element>( &<reader-side variable> ) )` are the
+*shapes* to look for, not text to fill in (§9). The writer-side and reader-side
+variables are the ones those lines name: the argument of `Rte_Write`, the
+out-parameter of `Rte_Read`. The line **number** goes in Traceability with the
+source revision, not into `atcActions` — it goes stale with the next edit to
+the file, while the quoted line stays findable.
+
+`<displayed-at-…>` is the value that end's variable shows (§5.2). For an
+in-range value it equals `<value>`. Where `<value>` is not representable in
+that end's type — both negative cases of every member — write the displayed
+value and put the entered one in brackets:
+`<writer-side variable> should be update to 255 value (entered: -1).`
 
 For a struct, step 2 edits the **member** and the title names the member
 (`Test case to verify the MessageTimeout_u8 for Min Value.`). For an enum, the
@@ -309,7 +588,8 @@ title names the value (`… of Movement for 0 value.`) and the result names the
 literal (`Movement should be update with MOT_MOV_ROT_FWD_E value.`).
 
 **P-02 — inter-module connection (the mirror).** Identical body to P-01;
-heading form `<WriterModule> to <ReaderModule>` (§3).
+heading form `<WriterModule> to <ReaderModule>` (§3). Only emitted when
+mirroring is on.
 
 **P-03 — watchdog supervision.** Heading `Watch Dog for <Module>`. One case per
 supervision checkpoint the module registers (start and end):
@@ -321,36 +601,87 @@ atcActions:   1. Set the Breakpoint at line
 atcResult:    1. Breakpoint should hit and Watch Dog should Reset.
 ```
 
-Checkpoint names are copied from the RTE headers or existing cases — never
+Checkpoint names come from the RTE headers, and the breakpoint line is the
+`Rte_Call_…_CheckpointReached` call quoted from the module's `.c` (§9) — never
 constructed from the module name.
 
 **P-04 — negative / boundary value.** The Min-1 and Max+1 members of the
-5-value set, and any documented invalid enum value. `atsType = negative`. The
+5-value set, and the enum negative case (§5.2). `atsType = negative`. The
 positive/negative ratio is a sanity check to report, not a quota to enforce.
 
 **P-05 — task configuration & runnable timing.** From the `1.3.1.<n>.1.<m>`
 non-functional objects. Two shapes, grouped under a task-configuration section
-heading per module:
+heading per module.
+
+*Initialization* — the test is that the Init runnable runs at start-up: break
+inside it, restart the debugger, see the breakpoint hit. That is the shape
+whatever the runnable does, counter, flag or neither (the engineer's stated
+convention, FUSA_MotDrv Q-19):
 
 ```
 Object Text:  Test case to verify the Initialization of <Module>
-atcActions:   1. Set the Breakpoint at line <Module>_Init_counter++;
-              2. Add the Variable in Watch window and Verify.
-atcResult:    1. Breakpoint should be hit
-              2. <Module> counter should be update to 1.
-
-Object Text:  Testcase to verify the Runnable time for <Module> for every <n>msec.
-atcActions:   1. Set the Breakpoint at line <Module>_Cyclic_<n>msec_counter++;
-              2. Add the Variable in Watch window and Verify.
-atcResult:    1. Breakpoint should be hit
-              2. <Module> counter should be update every <n>ms.
+atcActions:   1. Set the Breakpoint at line <the last statement of the Init runnable, verbatim from <module>.c> in <module>.c
+              2. Restart the debugger.
+atcResult:    1. Breakpoint should be hit in the Init condition, confirming the initialization of <Module> is executed.
 ```
 
-The counter symbol and the period both come from an input — the period from the
-architecture object's own text ("This runnable should be called from 2msec
-Task_FUSA_2ms"), the counter from the code/RTE or an existing case. Existing
-cases in the spec contain period mismatches between action and result; do not
-copy one, and flag any you relied on.
+Break on the **last** statement of the Init runnable — the line where the
+module marks itself initialised (`<Module>_IsInitialized_… = TRUE;`), if it has
+one — so that a hit means the whole runnable ran. Do not add a step checking
+that flag's value at the breakpoint: a breakpoint stops *before* its line
+executes, so the flag still shows its old value there. The Init runnable often
+has no `1.3.1.<n>.1.<m>` object of its own; trace the case to the nearest
+ancestor (output-format.md, a case with no object of its own).
+
+*Cyclic runnable* — the runnable is called at its period:
+
+```
+Object Text:  Testcase to verify the Runnable time for <Module> for every <n>msec.
+atcActions:   1. Set the Breakpoint at line <the cyclic observable's update, verbatim from <module>.c> in <module>.c
+              2. Add the Variable <cyclic observable> in Watch window and Verify.
+atcResult:    1. Breakpoint should be hit
+              2. <cyclic observable> should be update every <n>ms.
+```
+
+The cyclic observable is whatever the runnable updates on every call — usually
+a counter — and it is **found in the `.c` file, never constructed** from the
+module name and the period: real names follow no single convention (`_2ms_` vs
+`_2msec_`, `_ctr_u32` vs `_counter`). The `<Module>_Init_counter` /
+`<Module>_Cyclic_<n>msec_counter` names of earlier versions of this pattern
+belonged to one legacy stub and exist in no current module; using them is a
+fabrication (no-fabrication.md). If the cyclic runnable updates nothing
+observable, the case is a Phase-1 question, not an invented counter.
+
+The period comes from the architecture object's own text ("This runnable should
+be called from 2msec Task_FUSA_2ms"). An identifier or trace id in the code that
+contradicts it (a `…_1msec…` name inside a 2 ms runnable) never overrides the
+architecture text — use the architecture period and raise the mismatch in Open
+Points. In `extend_existing` mode, existing cases contain period mismatches
+between action and result; do not copy one, and flag any you relied on.
+
+**Check the task and the period against the OS configuration.** The
+architecture text states the intent; the OS and RTE configuration
+(`docs.os_config`) states what was built. Before writing a P-05 case, find
+there:
+
+- **which task runs the runnable** — the RTE's event-to-task mapping (e.g.
+  `RteEventToTaskMapping` in the ECUC configuration), or the generated task body
+  that calls the runnable;
+- **how often that task runs** — the runnable's `TIMING-EVENT` period in its
+  SWC description, and the alarm or schedule table that activates the task,
+  converted to time with the counter's own tick length. Never assume one tick
+  is one millisecond; a tick length you cannot resolve is an Open Point;
+- **for the Init runnable**, that it is triggered by an init event and called
+  at start-up.
+
+Cite what you found in Traceability. Where the configuration agrees with the
+architecture, the case stands as written. Where it disagrees — another task or
+another period — write the case to the **architecture**, which is the test
+basis (the case should then fail on the bench, and that is the point), and
+raise the mismatch as an `Input hygiene` Open Point for both the architect and
+the integrator. Without `docs.os_config`, write the case from the architecture
+text alone and say once in Open Points that no task or period was checked
+against the configuration.
 
 **P-06 — client/server port.** `Rte_Call_<port>_<operation>` at the caller, the
 server runnable entered at the other end. Breakpoint at the call, breakpoint in
@@ -367,9 +698,10 @@ atcResult:   1. DID Should be Positive Response <SID+0x40> <XX XX> XX XX XX.
              2. Breakpoint should be hit.
 ```
 
-The DID and the server-function signature come from the DiagSpec or an existing
-case. Note that SWE.6 covers diagnostics far more thoroughly — a diagnostic
-interface here is tested only as an interface.
+The DID comes from the DiagSpec and the server-function line from the `.c`
+(§9) — or, in `extend_existing` mode, from an existing case. Note that SWE.6
+covers diagnostics far more thoroughly — a diagnostic interface here is tested
+only as an interface.
 
 **P-08 — not testable by the debugger → no test case.** Where `aTestCriteria`
 asks for a review, a sequence walkthrough by the test team, or XCP-only
@@ -393,11 +725,87 @@ asks for it explicitly in this run's instructions.
 | `atsTestDesignTechnique` | `InterfaceTesting` |
 | `atsType` | `positive` or `negative` (§5.2) |
 
-## 9. Symbols
+## 9. Symbols and breakpoint lines
 
 Every `Rte_` symbol, source file name, struct member and enum value must come
-from a supplied input. Prefer symbols that already appear in the existing
-test-spec export — they show real usage. Do not construct a symbol by analogy
-(workflow-discipline §4 / no-fabrication.md). Do not reproduce inconsistent
-casing seen in the architecture text — take the spelling from the RTE headers or
-existing test cases, and note the variant in Open Points.
+from a supplied input, and two different things come from two different
+sources:
+
+- **Symbols** — `Rte_` names, type names, struct members, enum literals,
+  checkpoint names — come from the RTE headers (`docs.rte_type_headers`, or the
+  source repo's own `layout.rte_inc`) and the ARXML.
+- **Breakpoint lines and observed variables** come from the module's **`.c`
+  files** in `docs.source_repo`. A header carries no executable line and no
+  observable variable, so a case whose `atcActions` names a `.h` file is wrong.
+  Quote the `.c` line verbatim, argument expression included, and record the
+  file, the line number and the source revision in Traceability.
+
+The two spellings differ legitimately: code usually calls the RTE's short-name
+macro (`Rte_Read_R_<port>_<element>`), which the header defines over the
+component-prefixed name (`Rte_Read_<Swc>_R_<port>_<element>`). Quote the `.c`
+spelling in `atcActions`; the header is what confirms the symbol exists.
+
+If the call appears on **several** lines of the `.c`, list them and ask which
+one the case breaks on — never pick the first. In `extend_existing` mode an
+existing case may show which line a project usually breaks on; it never
+replaces reading the `.c` at the pinned revision.
+
+Do not construct a symbol by analogy (workflow-discipline §4 /
+no-fabrication.md). Do not reproduce inconsistent casing seen in the
+architecture text — take the spelling from the RTE headers and the code, and
+note the variant in Open Points.
+
+**Observed variables exist in the debug build.** A variable named in the `.c`
+file can still be missing from the software on the target: a file-scope
+`static` may live in a register or be removed by the optimiser, and code behind
+a configuration switch may not be compiled at all. With `docs.debug_build` —
+the Debug SW's ELF with symbols and/or its linker map file — look up every
+variable a case edits or watches (P-01's writer-side and reader-side
+variables, the P-05 observable):
+
+- **found, global** → cite the build file in Traceability;
+- **found, file-scope** (a local symbol in the ELF) → cite it, and note on the
+  case that the debugger may need the variable qualified by its file to show
+  it;
+- **not found** → the case cannot be run as written: an Open Point naming the
+  variable and the build, and `isValid = No` where the validity columns are
+  configured.
+
+Read the symbol table with whatever the environment offers — a text search of
+the map file, `readelf -s`/`nm`, a Python ELF reader. If nothing can read it,
+say so; never assume a symbol is present. Before trusting the build, check that
+it matches the pinned revision: a build file older than the newest commit that
+touched the module's `.c` files (`git log -1 --format=%cI -- <files>`) answers
+the question for different code — say so and ask whether to use it. The build
+output is usually not under Git; pin it by `git hash-object` like any other
+input (workflow-discipline §2). Without `docs.debug_build`, say once in Open
+Points that no observed variable was checked against a build.
+
+**Several copies of a generated header.** A project folder often holds more
+than one `Rte_*.h` of the same name (a copy under `20_AI/`, the BSW tree, a
+generator output folder) with different hashes, because generators stamp
+timestamps, copyright years and input-file lists. Compare their **exported
+symbol sets**, not their bytes. Identical sets → use the copy inside
+`docs.source_repo` at the pinned revision (else the configured one) and note
+the others once. Differing sets → a Phase-1 question naming the symbols that
+differ.
+
+**Without the code — a degraded run.** `docs.source_repo` is `.` — the
+repository the skill runs in — by default, and a path to the SWE.3 repo in the
+fallback setup (project-config.md §1). Only a recorded engineer decision sets
+it to `N/A` (workflow-discipline §1.1), and such a run is **degraded** — say so
+on the first line of the run summary. In a degraded run every breakpoint names the RTE symbol only, marked as
+a placeholder (`<line in <file>.c — not resolved: no source repo>`), the P-05
+observables stay unresolved, and every such case is flagged as not executable as
+written (output-format.md, validity columns) with an Open Point. Never derive a
+`.c` file name from an ARXML component name and present it as known.
+
+**A different identifier is not a casing variant.** Where the architecture
+names a symbol differently from the code, and the code, the RTE headers and the
+ARXML all agree against it, use the **code** spelling in the test case and
+raise the architecture as the outlier — an **architecture defect to be
+corrected**, addressed to the architecture owner, not a naming variant
+normalized quietly in a footnote. Observed and ruled on (FUSA_MotDrv,
+2026-10-05): architecture `1.4.1.1.3` says `SE01_MotDrv_Log_Stop_CP` where the
+code, the RTE header and the ARXML all say `Log_End_CP`; engineer ruling,
+"Architecture should be corrected."
