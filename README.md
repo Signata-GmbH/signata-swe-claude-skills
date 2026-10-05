@@ -268,7 +268,7 @@ other four skills:
   `common/workflow-discipline.md` §2.
 
 Everything else about the shape is deliberately the same: a hard Phase-1→
-Phase-2 gate, fail-closed input acquisition, a scope-count confirmation gate, a
+Phase-2 gate, fail-closed input acquisition, a row-count confirmation gate at the end of Phase 1, a
 skill-namespaced Phase-1-questions workbook, a self-check checklist, and a
 `last_run`/history ledger for in-place re-runs. `integration-test` scopes by
 **module** (`aFunctionModule`); `qualification-test` scopes by **feature**
@@ -295,9 +295,12 @@ its **text** (`Object Text`: the port-direction prose, the `DataType:` and
 them per object. A name-only export has no ranges; a text-only export has no
 port names. `_shared/testspec/workflow-discipline.md` §1.3 is an
 **export-completeness gate** that checks the column set, that both name and text
-are resolvable (one export with both columns, or two views of the same module
-joined on `ID`), and that DOORS table content survived — and **stops** for a
-re-export rather than letting the run invent a member name or a limit. One gap
+are resolvable (two columns, one column carrying the heading and the text
+together, or two views of the same module joined on `ID`), and that DOORS table
+content survived — and **stops** for a re-export rather than letting the run
+invent a member name or a limit. A names-only export is the one judgement call:
+the gate shows what the ARXML already resolves and which documented ranges
+would be lost, and the engineer decides. One gap
 is expected rather than fatal: the architecture module names its enum types but
 lists no literals for them, so `MOT_MOV_ROT_FWD_E` comes from `Rte_Type.h`/ARXML
 (or, when extending an existing spec, an existing test case), or the interface
@@ -318,7 +321,13 @@ module** at the other end of the target's port. Direction comes from the port's
 name prefix (`P_` writes, `R_` reads, cross-checked against "This port sends…"
 / "This port receives…"), pairing from the name with that prefix stripped
 (`P_Mot_Mov_Data` ↔ `R_Mot_Mov_Data`) confirmed by the data type, and an
-ambiguous pairing becomes a Phase-1 question rather than a pick. How far the
+ambiguous pairing becomes a Phase-1 question rather than a pick. One module can
+carry four spellings — its `aFunctionModule`, its architecture section heading,
+its ARXML component name and its test-spec heading (`FUSA_MotDrv` /
+`FUSA_CDD_MotDrv` / `CDD_MotDrv` / `Mot_Drv`) — any of them is accepted as the
+argument and resolved first (a feature name is recognised and refused), all
+four get cached, and a resolved module whose scope holds no ports stops the run
+instead of producing an empty workbook. How far the
 run reaches is explicit: `peer_depth: target_ports` (default) authors only the
 target's own interfaces, the peer being named inside each case but given no
 section; `peer_ports` also authors the direct peers' other interfaces — one

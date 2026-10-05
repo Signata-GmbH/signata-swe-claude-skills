@@ -21,8 +21,11 @@ argument-hint: [module]
 # Integration-Test Generation (SWE.5)
 
 Generate (or update in place) draft integration test cases for one module. The
-module is the argument — an `aFunctionModule` value (e.g.
-`/integration-test FUSA_ParkLckCtrl`); if omitted, ask for it.
+module is the argument — ideally its `aFunctionModule` value (e.g.
+`/integration-test FUSA_ParkLckCtrl`), but any of its four spellings is
+accepted and resolved before anything is filtered (integration-test-patterns
+§4.1); a feature name is recognised as one and refused as a module. If omitted,
+ask for it.
 
 An integration test case exercises **one interface across two modules**: one
 writes it (`Rte_Write`), the other reads it (`Rte_Read`). So every case names
@@ -62,7 +65,10 @@ Always load:
 
 ## Step 3 — Manifest: scaffold → validate → confirm (HARD GATE)
 
-Per workflow-discipline §3: compute derivable values, read
+Per workflow-discipline §3: compute derivable values, **resolve the module
+argument** against all four axes (integration-test-patterns §4.1 — the
+manifest is keyed by the resolved `aFunctionModule`, and a resolved value whose
+scope holds zero ports is a stop), read
 `20_AI/manifests/integration-test/<MODULE>.yaml` (scaffold from
 [../_shared/testspec/integration-test-manifest-template.yaml](../_shared/testspec/integration-test-manifest-template.yaml)
 if absent). **Settle `integration_test.authoring_mode` before any discovery**
@@ -76,10 +82,11 @@ never registered on its own, and a recorded `N/A` is never re-opened.
 and no recorded waiver is a stop; a recorded waiver makes the run degraded
 (integration-test-patterns §9). **Confirm the resolved inputs**. Run the
 **export-completeness gate** (workflow-discipline §1.3) — the
-run needs each object's **name** *and* its **text**, which a
-single-content-column DOORS view cannot both carry; one export with both
-columns, or two views of the module joined on `ID`. Missing either is a stop,
-not an Open Point. Apply the **AUTOSAR-only guard** (integration-test-patterns §0) before
+run needs each object's **name** *and* its **text**: two columns, one column
+carrying both (split on the first newline), or two views of the module joined
+on `ID`. Text missing is a stop — but first check what the ARXML and the source
+repo already resolve, and offer the names-only downgrade as the AI proposal for
+the engineer to accept or refuse. Apply the **AUTOSAR-only guard** (integration-test-patterns §0) before
 going further — if the module shows no RTE symbols to work from, stop here and
 say so. **Stop and wait** for confirmation. Remember workflow-discipline §0 — this may be the
 first skill ever run against this module in this project.
@@ -117,6 +124,8 @@ Per integration-test-patterns §1–§6 and workflow-discipline §1/§2/§4:
    §6) — including the objects that map to P-08 and get no case.
 8. **Proposed test cases** — one line each, no steps yet, marking primary vs
    mirror.
+9. **Row-count gate** (workflow-discipline §5) — the number of rows that table
+   produces, heading rows included, as the last question.
 Present the scope, the peer matrix, the mapping/interface analysis, the
 proposed-cases table, and numbered questions (written to
 `20_AI/<MODULE>_Phase1_Questions_IntegrationTest.xlsx`, workflow-discipline §5).

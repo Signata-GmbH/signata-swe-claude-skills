@@ -29,7 +29,8 @@ docs:
   run_instructions: ""             # optional free-text custom instructions for a run
 
 scope:
-  expected_row_count: "?"          # count gate — confirmed by the engineer on first run, never silently learned
+  expected_row_count: "?"          # row-count gate — rows of the Test Cases sheet, confirmed as the last
+                                    #   Phase-1 question (workflow-discipline §5), never silently learned
   requirement_ids: []              # optional — restrict this run to a subset; [] = all in-scope requirements
 
 last_run:                          # SKILL-OWNED ledger

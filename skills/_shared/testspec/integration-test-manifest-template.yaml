@@ -17,7 +17,8 @@ schema_version: 1
 inherits: 20_AI/ai_test_project.yaml
 
 module:
-  name: <MODULE_NAME>              # <-- fill   e.g. FUSA_ParkLckCtrl (an aFunctionModule value)
+  name: <MODULE_NAME>              # <-- fill   e.g. FUSA_ParkLckCtrl — the RESOLVED aFunctionModule value,
+                                    #     whichever of its four spellings the skill was invoked with (patterns §4.1)
   # Modules at the other end of this module's ports. DISCOVERED at the Phase-1
   # gate (integration-test-patterns.md §2) and confirmed by the engineer — an
   # ambiguous or unresolvable pairing is asked about, never guessed. Every case
@@ -44,7 +45,8 @@ docs:
   run_instructions: ""             # optional free-text custom instructions for a run
 
 scope:
-  expected_row_count: "?"          # count gate — confirmed by the engineer on first run, never silently learned
+  expected_row_count: "?"          # row-count gate — rows of the Test Cases sheet, confirmed as the last
+                                    #   Phase-1 question (workflow-discipline §5), never silently learned
   interfaces: []                   # optional — restrict this run to a subset; [] = all interfaces in scope
                                     #   (also records a fan-out answer: which writer→reader pairs to author)
   peer_depth: null                 # optional override of integration_test.peer_depth (target_ports | peer_ports)

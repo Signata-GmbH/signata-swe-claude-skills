@@ -65,6 +65,8 @@ Per qualification-test-patterns §1–§3 and workflow-discipline §1/§2/§4:
 4. **Vocabulary resolution** — every signal/variable/parameter/state/error
    name, with its source.
 5. **Proposed test cases** — one line each, no steps yet.
+6. **Row-count gate** (workflow-discipline §5) — the number of rows that table
+   produces, heading and logical-parent rows included, as the last question.
 Present all of the above and numbered questions (written to
 `20_AI/<FEATURE_SLUG>_Phase1_Questions_QualificationTest.xlsx`,
 workflow-discipline §5). **STOP.**

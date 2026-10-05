@@ -74,6 +74,14 @@ from the "most common" spelling seen:**
 - `integration_test.peer_depth` and `integration_test.peer_module_mirroring`
   (integration-test-patterns.md §2–§3) — propose `target_ports` and `false`, and
   say that the other values typically multiply the output several times over.
+- `integration_test.reference_columns` — whether the project wants the
+  architecture-ID column and the validity-review columns beside the 21
+  (output-format.md); propose both off.
+
+`integration_test.architecture_text_fallback` is **not** asked here: it starts
+as `stop` and changes only by an engineer decision at the export-completeness
+gate (workflow-discipline.md §1.3), when a names-only export is actually on the
+table.
 
 ### 4.2 Discover, then confirm
 

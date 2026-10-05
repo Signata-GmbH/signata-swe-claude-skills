@@ -72,14 +72,15 @@ docs:
                                               #     aStatusOfAnalysis, aVariant — AND, per object, BOTH its NAME
                                               #     (Object Heading: module, port, type, struct-member names) and
                                               #     its TEXT (port direction prose, "DataType:" and "Range:"
-                                              #     lines). See workflow-discipline §1.3.
+                                              #     lines) — as two columns, or as ONE column holding
+                                              #     "<section> <heading>\n<text>". See workflow-discipline §1.3.
   functional_architecture_export_text_view: <path or N/A>
                                               # <-- fill  ONLY when the project's DOORS view emits a single
-                                              #     content column, so names and text cannot appear in one
-                                              #     export. Then supply the SECOND view of the SAME module — the
-                                              #     one carrying the object text — and the skill joins the two on
-                                              #     the ID column (workflow-discipline §1.3). Both views must be
-                                              #     the same baseline; a differing ID set is a stop.
+                                              #     content column holding the heading ALONE. Then supply the
+                                              #     SECOND view of the SAME module — the one carrying the object
+                                              #     text — and the skill joins the two on the ID column
+                                              #     (workflow-discipline §1.3). Both views must be the same
+                                              #     baseline; a differing ID set is a stop.
   # ---- SWE.6 test basis -------------------------------------------------
   requirements_workbook: <path>              # <-- fill  SW requirements export (DOORS xlsx) — SWE.6 test basis.
                                               #     NOT read by integration-test.
@@ -138,21 +139,38 @@ integration_test:
   # in from_scratch mode every mirror heading is a proposal. Per-module override:
   # the manifest's scope.peer_module_mirroring.
   peer_module_mirroring: false     # <-- confirm
+  # What a NAMES-ONLY architecture export (no text view) does — set ONLY by an
+  # engineer decision at the workflow-discipline §1.3 gate, never by default:
+  #   stop : wait for an export that carries the object text.
+  #   arxml: proceed — direction and DataType from the ARXML, ranges from ARXML
+  #          DATA-CONSTR, else the type limits; every affected Min/Mid/Max is
+  #          flagged. Ignored as soon as an export carries the text.
+  architecture_text_fallback: stop # <-- engineer decision
+  # Columns beside the 21 DOORS attributes, never imported — declared once here
+  # instead of being re-requested every run (output-format.md, reference columns).
+  # A position-based DOORS import filter must skip them; a name-based one is
+  # unaffected.
+  reference_columns:
+    arch_requirement_id: false     # <-- confirm  column A: the traced architecture object's ID
+    validity_review:     false     # <-- confirm  trailing isValid + Reason for Invalid (no-fabrication.md)
   # aFunctionModule -> the set of peer modules at the other end of its ports,
   # DISCOVERED per module (integration-test-patterns.md §2) and CACHED here
   # with the resolved writer/reader side per interface. Never seeded by
   # analogy — an ambiguous pairing is asked about, not guessed.
   peer_modules: {}                 # <-- learned  e.g. { FUSA_MotDrv: ["FUSA_MotCtrl", "CDD_MotDrv"] }
-  # One module has up to THREE spellings: its architecture section heading, its
-  # aFunctionModule attribute, and its integration-test-spec section heading
-  # (e.g. FUSA_CDD_MotDrv / FUSA_MotDrv / Mot_Drv — all one module). Keyed by
-  # aFunctionModule. DISCOVERED ONCE per module (walk the Object Heading
-  # hierarchy + cross-check the aFeature mix — see
-  # integration-test-patterns.md), then CACHED here so later runs / other
-  # engineers don't re-derive it. Never seed this by analogy — an unresolved
-  # module is asked about, not guessed.
+  # One module has up to FOUR spellings: its aFunctionModule attribute, its
+  # architecture section heading, its ARXML software-component name (the RTE
+  # symbol prefix — and the spelling engineers most often type), and its
+  # integration-test-spec section heading (e.g. FUSA_MotDrv / FUSA_CDD_MotDrv /
+  # CDD_MotDrv / Mot_Drv — all one module). Keyed by aFunctionModule; any of
+  # the four is accepted as the skill argument (integration-test-patterns.md
+  # §4.1). The test_spec spelling is DISCOVERED in an existing spec
+  # (extend_existing) or PROPOSED + confirmed (from_scratch), then CACHED here
+  # so later runs / other engineers don't re-derive it. Never seed this by
+  # analogy — an unresolved module is asked about, not guessed.
   module_name_mapping: {}          # <-- learned
-                                    #   e.g. FUSA_MotDrv: { architecture: "FUSA_CDD_MotDrv", test_spec: "Mot_Drv" }
+                                    #   e.g. FUSA_MotDrv: { architecture: "FUSA_CDD_MotDrv",
+                                    #                       arxml_swc: "CDD_MotDrv", test_spec: "Mot_Drv" }
 
 # ---------------------------------------------------------------------
 # QUALIFICATION TEST (SWE.6)

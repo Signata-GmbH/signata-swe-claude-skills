@@ -73,9 +73,10 @@ read by this skill**; do not accept one in place of the other
 
 Every object carries a **name** (`Object Heading`) and a **text**
 (`Object Text`), and this skill needs both — the names give the ports, types
-and members, the text gives the ranges and the `DataType:` lines. A
-single-content-column export shows only one of the two, so the export may
-arrive as two views joined on `ID`; workflow-discipline §1.3 gates that.
+and members, the text gives the ranges and the `DataType:` lines. The export
+may carry them as two columns, as one column holding both, or as two views
+joined on `ID`; workflow-discipline §1.3 detects which, and decides what a
+names-only export can still support.
 
 ### 1.1 How the architecture module is laid out
 
@@ -287,15 +288,54 @@ under the reader's section.
 If mirroring is off, emit the primary only, and say once in the run summary
 that mirroring is off — not as an Open Point per peer section.
 
-## 4. Resolving the module name (the mapping table)
+## 4. Resolving the module name
 
-One module can carry **three** spellings, and they are all in play:
+### 4.1 Resolve the argument before filtering
 
-| Where | Example |
-|---|---|
-| architecture `1.4.1.<n>` section heading | `FUSA_CDD_MotDrv` |
-| `aFunctionModule` attribute (the skill's argument) | `FUSA_MotDrv` |
-| integration-test-spec section heading | `Mot_Drv` |
+The argument is meant to be an `aFunctionModule` value, but engineers type
+whichever spelling they know — the ARXML component name, the architecture
+heading, a feature name — and sometimes two of them at once. Before any scope
+filtering, resolve every argument against **all four axes** and report which
+one matched:
+
+| Axis | Found in | Example |
+|---|---|---|
+| `aFunctionModule` — the scope filter's key | the attribute column | `FUSA_MotDrv` |
+| architecture section heading | the `1.4.1.<n>` object's name | `FUSA_CDD_MotDrv` |
+| ARXML component | `APPLICATION-SW-COMPONENT-TYPE` short-name (also the `Rte_<Swc>.h` name and the RTE symbol prefix) | `CDD_MotDrv` |
+| `aFeature` — a **different axis**, never a module | the attribute column | `Motor Control` |
+
+- **Exactly one module on the three module axes** → proceed, saying which axis
+  matched and which `aFunctionModule` it resolved to. The manifest is keyed by
+  that resolved value.
+- **An `aFeature` value** → say so; list the modules whose objects carry that
+  feature, with their object counts, and ask which one is meant. Never run a
+  feature as a module.
+- **Several arguments that collapse to one module** (two spellings of the same
+  component) → say so and confirm that it is one run, not two.
+- **One argument matching several modules, or none** → run the near-match
+  search (§2 step 5) and ask.
+
+Then dry-run the resolved value through the scope filter (§1.2) before going
+further: one spelling, used as an `aFunctionModule`, can select a handful of
+non-port objects while the module's ports carry another. **A scope that yields
+zero `1.4.1.<n>.<m>` port objects is a hard STOP**, reported with the attrition
+per filter step — never an empty workbook reported as success.
+
+*(Observed on one module across two runs: first an argument that was an
+`aFeature` value; then the ARXML component spelling, which as an
+`aFunctionModule` selected two objects, neither of them a port.)*
+
+### 4.2 The mapping table
+
+One module can carry **four** spellings, and they are all in play:
+
+| Key in `module_name_mapping` | Where | Example |
+|---|---|---|
+| *(the key itself)* | `aFunctionModule` attribute | `FUSA_MotDrv` |
+| `architecture` | architecture `1.4.1.<n>` section heading | `FUSA_CDD_MotDrv` |
+| `arxml_swc` | ARXML `APPLICATION-SW-COMPONENT-TYPE` | `CDD_MotDrv` |
+| `test_spec` | integration-test-spec section heading | `Mot_Drv` (found in an existing spec) or the confirmed proposal (from scratch) |
 
 **The integration-test export has no `aFunctionModule` column** — only
 `aFeature`. Existing test cases for a module are located by walking the
@@ -317,7 +357,7 @@ only — apply it to whatever module you're given):
    broadly match the `aFeature` mix of the candidate section. A large mismatch
    means the wrong section was picked — stop and ask rather than proceed on a
    guess.
-3. Once resolved, **write all three spellings to `ai_test_project.yaml`
+3. Once resolved, **write all four spellings to `ai_test_project.yaml`
    `integration_test.module_name_mapping`** keyed by `aFunctionModule`
    (workflow-discipline §4) so the next run — this engineer's or another's —
    doesn't repeat the search. If the module is not on the cached list and cannot
@@ -360,9 +400,19 @@ child's **text** — then generate accordingly:
 | Type shape | Cases |
 |---|---|
 | Scalar with a documented `Range:` | **5** — Min, Mid, Max (`positive`); Min-1, Max+1 (`negative`) |
-| Enum | **one per literal**, all `positive`; plus one out-of-range `negative` case if the type documents an invalid/reserved value |
+| Enum | **one per literal**, all `positive`; plus **one** `negative` case by default (rules below) |
 | Struct | the **5-case set per member**, member by member (a 5-member struct → 25 cases) |
 | Boolean | both values, `positive`; the architecture text usually states the meaning (`0 - Enabled` / `1 - Disabled`) — carry it into the case |
+
+**Reading the range from the text.** Match the label loosely: `Range` followed
+by any separator (`:`, `-`, `=`, or none) and a bracketed pair, tolerating
+stray spaces inside the bracket and a unit after it — `Range: [0-100]`,
+`Range - [0- 100]%` and `Range [0 - 100]` are one and the same range. A strict
+`Range:` match misses the variants and silently falls back to the type limits:
+a quiet wrong answer. Report every variant that is not `Range: [<min>-<max>]`
+in Open Points as an architecture-text finding. Where a bound cannot be read
+unambiguously — a negative bound whose minus sign could be the separator, a
+factor or offset inside the bracket — ask; never guess which hyphen is which.
 
 Rules:
 
@@ -371,10 +421,15 @@ Do not derive all five from one range.
 
 - **Min / Mid / Max — the documented `Range:`** in the UserDefinedTypes entry
   when it has one; otherwise the implementation type's limits (`uint8` → 0/255).
-  **Mid** is the arithmetic midpoint of whichever range you used. Say which of
-  the two you used, per interface, in the Traceability sheet — the existing spec
-  is inconsistent about this and the engineer needs to see the choice, not
-  discover it.
+  In a names-only run (workflow-discipline §1.3) the ARXML `DATA-CONSTR` takes
+  the documented range's place where the type has one. **Mid** is the
+  arithmetic midpoint of whichever range you used, rounded **toward zero** when
+  that is not a whole number on an integer type (`0..255` → `127`,
+  `-32768..32767` → `0`); a floating-point type takes the exact midpoint. Say
+  which range you used, per interface, in the Traceability sheet — the engineer
+  needs to see the choice, not discover it. A constant in the source code
+  (`<MODULE>_..._MIN/MAX`) may **confirm** a range but never supplies one on its
+  own: testing the code against its own constant proves nothing.
 - **Min-1 / Max+1 — always the IMPLEMENTATION TYPE's limits**, never the
   documented range, even when the documented range is narrower. These two cases
   exist to exercise what the type does at its edges, so for a `uint8` member
@@ -422,6 +477,22 @@ Do not derive all five from one range.
   reconstruct a literal from the description, and never infer the literal set
   from the number of values an existing case happens to exercise — say in the
   Traceability sheet which source each literal came from.
+
+  Reach the literals through the type's **own reference** to its
+  `COMPU-METHOD`, never by matching a `COMPU-METHOD`'s name: an ECU extract can
+  carry a `COMPU-METHOD` named after one type that holds another type's
+  literals. A name-matched `COMPU-METHOD` whose literals do not belong to the
+  type is an Open Point, never a source.
+- **Enum negative case — one, by default.** Engineers expect a negative case on
+  every enum interface, so author one at the first value outside the valid set,
+  taken (in order) from: a literal the type documents as invalid/reserved; else
+  the ARXML `DATA-CONSTR` upper limit + 1 — the constraint documents the valid
+  range even where no literal is marked invalid. State in Traceability which of
+  the two it came from. Neither available → no negative case, and an Open Point.
+  The number is entered as-is; if it is not representable in the enum's base
+  type, the wrap rule above applies. Never support the case with a claim about
+  the reader's code (a missing `default:`) that you have not read
+  (no-fabrication.md).
 
 ## 6. `aTestCriteria` → pattern
 
@@ -530,45 +601,56 @@ Checkpoint names come from the RTE headers, and the breakpoint line is the
 constructed from the module name.
 
 **P-04 — negative / boundary value.** The Min-1 and Max+1 members of the
-5-value set, and any documented invalid enum value. `atsType = negative`. The
+5-value set, and the enum negative case (§5.2). `atsType = negative`. The
 positive/negative ratio is a sanity check to report, not a quota to enforce.
 
 **P-05 — task configuration & runnable timing.** From the `1.3.1.<n>.1.<m>`
 non-functional objects. Two shapes, grouped under a task-configuration section
-heading per module:
+heading per module.
+
+*Initialization* — the test is that the Init runnable runs at start-up: break
+inside it, restart the debugger, see the breakpoint hit. That is the shape
+whatever the runnable does, counter, flag or neither (the engineer's stated
+convention, FUSA_MotDrv Q-19):
 
 ```
 Object Text:  Test case to verify the Initialization of <Module>
-atcActions:   1. Set the Breakpoint at line <Module>_Init_counter++;
-              2. Add the Variable in Watch window and Verify.
-atcResult:    1. Breakpoint should be hit
-              2. <Module> counter should be update to 1.
-
-Object Text:  Testcase to verify the Runnable time for <Module> for every <n>msec.
-atcActions:   1. Set the Breakpoint at line <Module>_Cyclic_<n>msec_counter++;
-              2. Add the Variable in Watch window and Verify.
-atcResult:    1. Breakpoint should be hit
-              2. <Module> counter should be update every <n>ms.
+atcActions:   1. Set the Breakpoint at line <the last statement of the Init runnable, verbatim from <module>.c> in <module>.c
+              2. Restart the debugger.
+atcResult:    1. Breakpoint should be hit in the Init condition, confirming the initialization of <Module> is executed.
 ```
 
-`<Module>_Init_counter` and `<Module>_Cyclic_<n>msec_counter` above are the
-**shape of the observation, not symbol names.** They are the symbols of one
-legacy stub and exist in no current module — treating them as real is a
-fabrication (no-fabrication.md). Resolve the actual observable from the code.
+Break on the **last** statement of the Init runnable — the line where the
+module marks itself initialised (`<Module>_IsInitialized_… = TRUE;`), if it has
+one — so that a hit means the whole runnable ran. Do not add a step checking
+that flag's value at the breakpoint: a breakpoint stops *before* its line
+executes, so the flag still shows its old value there.
 
-The counter symbol and the period both come from an input — the period from the
-architecture object's own text ("This runnable should be called from 2msec
-Task_FUSA_2ms"), the counter from the code/RTE or an existing case. Existing
-cases in the spec contain period mismatches between action and result; do not
-copy one, and flag any you relied on. A counter *name* that contradicts the
-architecture period (a `..._1msec_counter` inside a 2 ms runnable) never
-overrides the architecture text — use the architecture period and raise the
-mismatch in Open Points.
+*Cyclic runnable* — the runnable is called at its period:
 
-If the init runnable sets **no** counter or flag at all, the case is "set the
-breakpoint inside the Init runnable, restart the debugger, the breakpoint shall
-be hit" — this is the engineer's stated convention (FUSA_MotDrv Q-19,
-2026-09-24), not a deviation from P-05 needing a question of its own.
+```
+Object Text:  Testcase to verify the Runnable time for <Module> for every <n>msec.
+atcActions:   1. Set the Breakpoint at line <the cyclic observable's update, verbatim from <module>.c> in <module>.c
+              2. Add the Variable <cyclic observable> in Watch window and Verify.
+atcResult:    1. Breakpoint should be hit
+              2. <cyclic observable> should be update every <n>ms.
+```
+
+The cyclic observable is whatever the runnable updates on every call — usually
+a counter — and it is **found in the `.c` file, never constructed** from the
+module name and the period: real names follow no single convention (`_2ms_` vs
+`_2msec_`, `_ctr_u32` vs `_counter`). The `<Module>_Init_counter` /
+`<Module>_Cyclic_<n>msec_counter` names of earlier versions of this pattern
+belonged to one legacy stub and exist in no current module; using them is a
+fabrication (no-fabrication.md). If the cyclic runnable updates nothing
+observable, the case is a Phase-1 question, not an invented counter.
+
+The period comes from the architecture object's own text ("This runnable should
+be called from 2msec Task_FUSA_2ms"). An identifier or trace id in the code that
+contradicts it (a `…_1msec…` name inside a 2 ms runnable) never overrides the
+architecture text — use the architecture period and raise the mismatch in Open
+Points. In `extend_existing` mode, existing cases contain period mismatches
+between action and result; do not copy one, and flag any you relied on.
 
 **P-06 — client/server port.** `Rte_Call_<port>_<operation>` at the caller, the
 server runnable entered at the other end. Breakpoint at the call, breakpoint in

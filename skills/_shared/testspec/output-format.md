@@ -19,6 +19,24 @@ position of two columns differs** — see below.
 Get this backwards and the workbook won't align with the DOORS import filter —
 confirm which skill is running before writing the header row.
 
+## Optional reference columns (declared in config, never ad hoc)
+
+A project may want columns beside the 21 that DOORS never imports — a linking
+key for the reviewer, and a review verdict. Declare them once in the running
+skill's config block (for SWE.5, `integration_test.reference_columns` in
+`ai_test_project.yaml`) instead of re-requesting them per run:
+
+| Key | Column(s) | Position | Content |
+|---|---|---|---|
+| `arch_requirement_id` | `Architecture Requirement ID` | **before** the 21 (column A) | the ID of the architecture object the row traces to — the same ID as in `Traceability`; empty on a heading row that has no object of its own |
+| `validity_review` | `isValid`, `Reason for Invalid` | **after** the 21 | the validity policy in [no-fabrication.md](no-fabrication.md) |
+
+The 21 attributes stay **contiguous and in schema order** between them. State
+the import consequence once — in the run summary, and as one Open Points row —
+rather than leaving the reviewer to discover it: *a name-based DOORS import
+filter is unaffected; a position-based one must skip the leading column and
+drop the trailing ones.*
+
 ## Structure: heading rows vs. concrete-case rows
 
 A heading row (module, interface, test group, parameterised logical parent) is
@@ -55,8 +73,8 @@ skill-specific — see `integration-test-patterns.md` / `qualification-test-patt
 
 ## The 3-sheet workbook contract
 
-**Sheet 1 — `Test Cases`.** Exactly the 21 columns above, in the order for the
-running skill.
+**Sheet 1 — `Test Cases`.** The 21 columns above, in the order for the running
+skill — framed by the configured reference columns, if any, and nothing else.
 
 **Sheet 2 — `Traceability`.** One row per generated test case: proposed title,
 the requirement/architecture object it covers (and, for SWE.6, which clause of

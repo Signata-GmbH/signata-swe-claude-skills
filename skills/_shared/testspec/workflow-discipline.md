@@ -101,27 +101,58 @@ column, say which DOORS view carries it, and ask for a re-export. Never
 reconstruct a missing attribute from another column.
 
 **2. Name *and* text available per object — the two-view trap.** Every object
-carries two things this skill needs, and a single-content-column export shows
-only one of them per object:
+carries two things this skill needs:
 
 - its **name** (`Object Heading`) — module, port, data-element, type and
   struct-member names, and the `P_`/`R_` direction prefix;
 - its **text** (`Object Text`) — the port-direction prose, the `DataType:` line,
   the `Range:` line.
 
-An export whose single content column concatenates the section number with the
-*heading* has no ranges; one that concatenates it with the *text* has no names.
-Neither alone supports a test case. So:
+DOORS views deliver them in one of three shapes. Detect the shape from the
+**content**, not the column name, and report `objects | with name | with text |
+with both` whichever it is:
 
-- Preferred: **one export carrying both** `Object Heading` and `Object Text` as
-  separate columns.
-- Accepted fallback: **two views of the same module**, joined on `ID`
+- **(a) Two columns** — `Object Heading` and `Object Text` side by side.
+  Preferred.
+- **(b) One column carrying both** — a single content column (often named after
+  the module, e.g. `Architecture Document`) whose cell holds
+  `<section> <heading>` on its first line and the object text on the lines
+  after it. Split each cell on its **first newline**: line 1 is the name where
+  it reads `<section number> <name>`, the remainder is the text. Expect
+  heading-only and text-only objects as well (DOORS numbers text-only objects
+  `<n>.0-<k>`); count them, never drop them. The signal is unmistakable: the
+  text markers (`This port`, `DataType:`, `Range`) appear in hundreds of cells
+  of a shape-(b) export and in none of a heading-only one.
+- **(c) Two views of the same module**, each a single content column — one
+  carrying the headings, one the text — joined on `ID`
   (`docs.functional_architecture_export` + `_text_view`). Verify the join
-  before using it — identical `ID` sets, same baseline — and report
-  `objects | with name | with text | with both`. A differing `ID` set means the
-  two views are different baselines: **hard STOP**.
-- Neither available → **hard STOP**, naming which of the two is missing and
-  what it would have supplied.
+  before using it — identical `ID` sets, same baseline. A differing `ID` set
+  means the two views are different baselines: **hard STOP**.
+
+A single column carrying only the *text* has no port, type or member names:
+**hard STOP**, asking for the heading view.
+
+**A single column carrying only the *names* — check before stopping.** The
+text's job is partly done by inputs the run may already hold, so before
+declaring the STOP, check them and put the result in the stop message:
+
+| The text would have supplied | Already resolved by | Still lost |
+|---|---|---|
+| port direction prose | the `P_`/`R_` prefix, settled by ARXML `P-PORT-PROTOTYPE`/`R-PORT-PROTOTYPE` | nothing |
+| the `DataType:` line | the ARXML port interface's data element type | nothing |
+| the documented `Range:` | ARXML `DATA-CONSTR`, where the type has one | the **architect's documented range** wherever the ARXML has no constraint — Min/Mid/Max then fall back to the type limits (`0/127/255` where the architecture would have said e.g. `0/50/100`) |
+
+Offer "proceed names-only" as the **AI proposal**, listing for each in-scope
+interface where its Min/Mid/Max would come from — but leave the decision to the
+engineer: the ranges that change are exactly the quiet wrong answer this gate
+exists to prevent. Record an acceptance as
+`integration_test.architecture_text_fallback: arxml` in `ai_test_project.yaml`
+so later runs do not re-ask; it is ignored as soon as an export carries the
+text. In a names-only run, every Min/Mid/Max states in Traceability that the
+documented range was not available, and Open Points lists the interfaces that
+fell back to the type limits. *(Observed: a run stopped on a names-only export
+when the ARXML already held every type, member and literal the run needed; the
+engineer had to ask whether the stop was the export's fault or the skill's.)*
 
 **3. Table content survived.** DOORS tables are the first thing an export
 loses; the symptom is a block of rows whose content column is empty while their
@@ -195,12 +226,8 @@ Both manifests **inherit** `ai_test_project.yaml` (`release`, `variants`,
   confirmation**, every discovered document marked as a proposal.
 - If **present**: validate required fields; flag/repair anything malformed
   rather than proceeding on it.
-- **Scope-count gate (mandatory).** After applying the scope filter
-  (integration-test-patterns §1.2 — at the confirmed `peer_depth` — /
-  qualification-test-patterns §1), report the resulting count and **require the
-  engineer to confirm or enter the expected count** before proceeding — persist
-  it as `expected_row_count`. Never silently learn it; a mismatch on a later run
-  halts (§8).
+- The **row-count gate** is not part of this gate: it closes Phase 1 (§5),
+  because a count only means something once the scope analysis is on the table.
 - **STOP and wait for confirmation** before doing any work.
 
 ## 4. Grounding & no silent assumptions
@@ -252,6 +279,17 @@ Corollary: **end a question on the thing you are asking**, not on background
 you have already said you will handle anyway. Whatever a question closes with
 is what a short answer attaches to.
 
+**Row-count gate (mandatory — the last Phase-1 question).** After the
+proposed-cases table, state how many rows the `Test Cases` sheet will have —
+heading rows and case rows, counted from that table — and require the engineer
+to confirm it or enter their own; "accept the AI proposal" is a valid answer.
+Persist the answer as `expected_row_count`. Never learn it silently; on a later
+run with unchanged scope a mismatch halts (§8). Two things this replaces: the
+count used to be asked at the manifest gate, before the scope had been
+analysed, so the engineer was asked to predict a number nobody had seen yet;
+and it counted the objects the scope filter selected, while
+`expected_row_count` holds rows of the output.
+
 ## 6. Self-check before output
 
 Run every item, report the result, fix before output or list as an Open Points
@@ -296,6 +334,12 @@ row:
     — or, in a degraded run, is a marked placeholder with an Open Point.
 14. **integration-test only, `from_scratch`** — nothing in the workbook, the
     Traceability sheet or Open Points cites a legacy test-case workbook.
+15. **integration-test only** — every enum interface has its negative case, or
+    an Open Point saying why not (integration-test-patterns.md §5.2).
+16. **Both skills, when reference columns are configured** — the 21 attributes
+    sit contiguous and in schema order between them; no `isValid` cell says
+    `Yes`; every `No` names the missing item and its Open Point; the run
+    summary states the `No` count and the import note (output-format.md).
 
 ## 7. Traceability & Open Points (both skills, every run)
 
