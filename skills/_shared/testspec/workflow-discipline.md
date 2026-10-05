@@ -209,9 +209,15 @@ resolve every part of its question, re-emit the unresolved part as a **new
 Observed failure (FUSA_MotDrv Q-13, 2026-09-24): one QID asked both "P-08 or
 P-03 for the watchdog checkpoints?" and "SECOND ISSUE: they carry
 `aFunctionModule = WdgM` although they sit under the `FUSA_CDD_MotDrv`
-section". The answer "note it only" was applied to the first part and the two
-test cases were suppressed; the engineer had meant the second part, and
-rejected the result at validation.
+section", and the written explanation of it ENDED on that second part, which
+was itself framed as "independent of your answer" and "reported as an Open
+Point regardless". The answer "note it only" was applied to the first part and
+the two test cases were suppressed; the engineer had meant the second, and
+rejected the result at validation three weeks later.
+
+Corollary: **end a question on the thing you are asking**, not on background
+you have already said you will handle anyway. Whatever a question closes with
+is what a short answer attaches to.
 
 ## 6. Self-check before output
 

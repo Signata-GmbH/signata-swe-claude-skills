@@ -239,6 +239,16 @@ found in the architecture but not resolvable to RTE symbols. Check the standing
 obligations: does every module in scope have a `Watch Dog for <module>` group,
 a task-configuration group, and a section for every connection.
 
+**Authoring from scratch is a first-class mode, not a degraded one.** When
+`docs.integration_test_spec_export` is `N/A` the project is deliberately
+authoring without an existing spec, and source (2) above simply does not exist:
+the coverage baseline is empty, every interface is "no test cases", and an
+existing manual or legacy test-case workbook that happens to sit in the project
+folder is **not** a substitute input. Do not open it, do not mine it for
+spellings, and do not cite it as evidence for a decision — if the engineer
+wanted it used they would have configured it. Fall back to the architecture and
+`docs.rte_type_headers`, and let an unresolvable item become an Open Point.
+
 ### 5.2 Values come from the UserDefinedTypes chapter
 
 For each interface, resolve its `DataType:` in the architecture's `1.2` chapter
@@ -331,9 +341,9 @@ Observed failure (FUSA_MotDrv, 2026-10-05): `Ftm_Pwm_Ip_FastUpdatePwmDuty`
 (6227), `Ftm_Pwm_Ip_UnMaskOutputChannels` (6230) and the two WdgM checkpoint
 ports (5847 / 5904) were all suppressed to heading rows on `aTestCriteria =
 "review"` / `"1. Review the flow"`. All four are called directly from
-`CDD_MotDrv.c`, and the project's existing manual spec already carried cases
-for them. The QA engineer rejected all three heading rows at validation with
-"TestCases need to Design for this interfaces".
+`CDD_MotDrv.c` — the symbols were in hand and nothing was unresolved. The QA
+engineer rejected all three heading rows at validation with "TestCases need to
+Design for this interfaces".
 
 ## 7. Patterns
 
@@ -487,5 +497,5 @@ raise the architecture as the outlier — an **architecture defect to be
 corrected**, addressed to the architecture owner, not a naming variant
 normalized quietly in a footnote. Observed and ruled on (FUSA_MotDrv,
 2026-10-05): architecture `1.4.1.1.3` says `SE01_MotDrv_Log_Stop_CP` where the
-code, the RTE header, the ARXML and the project's existing manual case all say
-`Log_End_CP`; engineer ruling, "Architecture should be corrected."
+code, the RTE header and the ARXML all say `Log_End_CP`; engineer ruling,
+"Architecture should be corrected."
