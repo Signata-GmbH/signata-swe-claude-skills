@@ -235,6 +235,22 @@ same way a wrong git SHA is treated in the SWE.3 skills: as invalidating.
 Both manifests **inherit** `ai_test_project.yaml` (`release`, `variants`,
 `attributes`, `docs.*`) — never duplicate those fields in the manifest.
 
+- **The target is the primary input.** `integration-test` takes a **module**,
+  `qualification-test` a **feature**, as the command argument — the same way
+  the SWE.3 skills take their module. If it was not given, ask for it **before
+  anything else** (before the config, before any export), as a typed answer:
+  only the engineer knows it. Never infer it from the folder — an existing
+  manifest, the last run, a file name, a document lying in `20_AI/` — not even
+  when only one candidate exists. The manifest path is derived from it, so
+  nothing module- or feature-specific is read until it is known. A module given
+  to `qualification-test`, or a feature given to `integration-test`, is said to
+  be the other axis (§0) and asked again, never run.
+- Collect the other inputs the friendly way: **`AskUserQuestion` popups** for
+  categorical choices; **discovery → popup** when a glob finds several
+  candidate documents (pick one); typed values only for the genuinely
+  unknowable — the module or feature name, a release id, a path discovery
+  missed.
+
 - If the manifest is **absent**: derive what you can, discover the
   per-module/per-feature documents **whose config entry is unset** (§1.2) —
   existing test cases for this module/feature, but never under

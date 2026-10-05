@@ -17,9 +17,12 @@ argument-hint: [feature]
 # Qualification-Test Generation (SWE.6)
 
 Generate (or update in place) draft qualification test cases for one feature.
-The feature is the argument — an `aFeature` value (e.g.
-`/qualification-test "Actuator Data"`); if omitted, ask for it, and check it
-against `qualification_test.valid_features` once the config is loaded.
+**The feature is the argument** — an `aFeature` value (e.g.
+`/qualification-test "Actuator Data"`); if omitted, **ask for it first** —
+before reading the config or any export — and never take it from the folder
+instead (an existing manifest, a previous run, a file name). Check it against
+`qualification_test.valid_features` once the config is loaded; a module name
+(an `aFunctionModule` value) is recognised as one and refused as a feature.
 
 Follow these steps in order. Detailed rules live in the linked shared files —
 load them as you reach each step (progressive disclosure).

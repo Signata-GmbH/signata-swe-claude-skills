@@ -20,12 +20,13 @@ argument-hint: [module]
 
 # Integration-Test Generation (SWE.5)
 
-Generate (or update in place) draft integration test cases for one module. The
-module is the argument — ideally its `aFunctionModule` value (e.g.
-`/integration-test FUSA_ParkLckCtrl`), but any of its four spellings is
-accepted and resolved before anything is filtered (integration-test-patterns
-§4.1); a feature name is recognised as one and refused as a module. If omitted,
-ask for it.
+Generate (or update in place) draft integration test cases for one module.
+**The module is the argument** (e.g. `/integration-test FUSA_ParkLckCtrl`); if
+omitted, **ask for it first** — before reading the config or any export — and
+never take it from the folder instead (an existing manifest, a previous run, a
+file name). Any of the module's four spellings is accepted and resolved in
+Step 3 (integration-test-patterns §4.1); a feature name is recognised as one and
+refused as a module.
 
 An integration test case exercises **one interface across two modules**: one
 writes it (`Rte_Write`), the other reads it (`Rte_Read`). So every case names
