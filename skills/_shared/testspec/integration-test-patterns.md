@@ -99,10 +99,11 @@ checkpoints into every run — in the MQBST2 baseline that is 15 checkpoint
 objects across 8 different modules, of which a run for `FUSA_MotDrv`
 (section `1.4.1.1`) must select exactly two: `1.4.1.1.2` and `1.4.1.1.3`.
 
-Such an object keeps **its own** `aFeature` on the generated case, never the
-section's (§8). Do not filter on `aFeature` either — it is not uniform even
-within one service: the MQBST2 checkpoints carry `Watchdog` on 13 objects and
-`System Faults` on 2.
+Such an object sits under the **target module's** section heading and keeps
+**its own** `aFeature` on the generated case, never the section's (§8) —
+both engineer-confirmed for the watchdog checkpoints on 2026-10-05. Do not
+filter on `aFeature` either: it is not uniform even within one service, as the
+MQBST2 checkpoints carry `Watchdog` on 13 objects and `System Faults` on 2.
 
 Report these objects separately in the scope count and name them in Open
 Points, so the engineer can see which objects came in by section rather than by
@@ -281,9 +282,11 @@ Do not derive all five from one range.
   the documented `[0- 100]%` range were accepted in the same review, which is
   what fixes the split between the two sources.)*
 - A value **out of the documented range but inside the type** (`101` on a
-  `[0-100]%` `uint8`) is a **separate, optional sixth case**, and often the one
-  that actually breaks the reader. Raise it as a Phase-1 question; never
-  substitute it for Max+1.
+  `[0-100]%` `uint8`) gets **no case**. It was put to the engineer on
+  2026-10-05 and declined — "Not required, we need only for 256" — so the
+  five-case set stands as defined above. Do not generate a sixth case and do
+  **not** re-raise it as a Phase-1 question on later runs; this answer is
+  settled project policy, not a per-run judgement.
 - **No documented range and no resolvable implementation type** → the interface
   gets **no** cases and an Open Point. Never invent a limit, a step size, a
   member name or an enum literal (no-fabrication.md). Expect this to be common:
@@ -476,3 +479,13 @@ test-spec export — they show real usage. Do not construct a symbol by analogy
 (workflow-discipline §4 / no-fabrication.md). Do not reproduce inconsistent
 casing seen in the architecture text — take the spelling from the RTE headers or
 existing test cases, and note the variant in Open Points.
+
+**A different identifier is not a casing variant.** Where the architecture
+names a symbol differently from the code, and the code, the RTE headers and the
+ARXML all agree against it, use the **code** spelling in the test case and
+raise the architecture as the outlier — an **architecture defect to be
+corrected**, addressed to the architecture owner, not a naming variant
+normalized quietly in a footnote. Observed and ruled on (FUSA_MotDrv,
+2026-10-05): architecture `1.4.1.1.3` says `SE01_MotDrv_Log_Stop_CP` where the
+code, the RTE header, the ARXML and the project's existing manual case all say
+`Log_End_CP`; engineer ruling, "Architecture should be corrected."
