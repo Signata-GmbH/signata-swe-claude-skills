@@ -75,6 +75,14 @@ the module (SWE.5 or SWE.6) alongside the ID, never the bare ID alone.
 classification judgement, every requirement/interface you could not cover and
 why, every assumption made, every spelling variant normalized.
 
+**Formula-prone cells.** Any cell whose text begins with `-`, `=`, `+` or `@` —
+which is every `atcPreconditions` and `atcPostconditions` block, since both
+start with `- ` — must be written with `quotePrefix` set on the cell style, so
+Excel does not convert it to a formula the moment a reviewer clicks into it.
+Observed: cell `E4` of a returned, engineer-validated workbook had become an
+array formula displaying `#NAME?`, silently destroying the preconditions of
+that test case.
+
 ## Output location & filename
 
 - `integration-test` → `20_AI/IntegrationTest/<MODULE>_SWE5_TestCases.xlsx`

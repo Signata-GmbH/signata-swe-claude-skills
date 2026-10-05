@@ -71,7 +71,9 @@ Two traps at the `1.4` level:
 
 Select architecture objects where:
 
-- `aFunctionModule` = the target module **or one of its peer modules** (§2)
+- `aFunctionModule` = the target module **or one of its peer modules** (§2),
+  **or** the object is a direct child of the target module's own architecture
+  section while carrying a different `aFunctionModule` (see below)
 - `aTestability` ∈ `integration_test.testability_filter`
 - `aStatusOfAnalysis` ∈ `attributes.status_filter`
 - `aRequirementObjectType` = `functional requirement` or `non functional requirement`
@@ -82,6 +84,29 @@ text, or that are information/feature/feature-description rows, are common).
 Objects of type `information` are **not** in scope as test-case sources, but a
 `1.4.1.<n>.<m>.<k>` information child **is** read for its type/range detail,
 and so is every `1.2` type/member object the in-scope ports reference.
+
+**Section ownership beats `aFunctionModule` for nested service objects.** Some
+ports sit under a module's own section but are owned by a *service* module —
+watchdog supervision checkpoints are the standing case (`aFunctionModule =
+WdgM` under `1.4.1.<n>.<m>`), and `Os`, `Dem`, `NvM` and `Dcm` behave the same
+way where a project uses them. An object like this belongs to the run **when
+its section number is a child of the target module's own section**, because
+that is the only module whose code calls it.
+
+Scope it by **section prefix, not by a blanket allowance on the
+`aFunctionModule` value**. Allowing `WdgM` globally would pull every module's
+checkpoints into every run — in the MQBST2 baseline that is 15 checkpoint
+objects across 8 different modules, of which a run for `FUSA_MotDrv`
+(section `1.4.1.1`) must select exactly two: `1.4.1.1.2` and `1.4.1.1.3`.
+
+Such an object keeps **its own** `aFeature` on the generated case, never the
+section's (§8). Do not filter on `aFeature` either — it is not uniform even
+within one service: the MQBST2 checkpoints carry `Watchdog` on 13 objects and
+`System Faults` on 2.
+
+Report these objects separately in the scope count and name them in Open
+Points, so the engineer can see which objects came in by section rather than by
+`aFunctionModule`.
 
 ### 1.3 `aTestCriteria` is the engineer's own stated approach
 
@@ -229,17 +254,36 @@ child's **text** — then generate accordingly:
 
 Rules:
 
-- **Min/Max**: from the documented `Range:` in the UserDefinedTypes entry when
-  it has one; otherwise the implementation type's limits (`uint8` → 0/255).
-  Say which of the two you used, per interface, in the Traceability sheet — the
-  existing spec is inconsistent about this and the engineer needs to see the
-  choice, not discover it.
-- **Mid**: the arithmetic midpoint of whichever range you used.
-- **Min-1 / Max+1**: the *written* value is the out-of-range value; the value
-  the **reader** is expected to show is the value wrapped to the reader's type
-  width (`uint8`: Min-1 → `255`, Max+1 → `0`). Compute the wrap from the
-  reader's type. If the reader's type is unresolved, do **not** guess the wrap —
+The in-range triple and the out-of-range pair come from **different sources**.
+Do not derive all five from one range.
+
+- **Min / Mid / Max — the documented `Range:`** in the UserDefinedTypes entry
+  when it has one; otherwise the implementation type's limits (`uint8` → 0/255).
+  **Mid** is the arithmetic midpoint of whichever range you used. Say which of
+  the two you used, per interface, in the Traceability sheet — the existing spec
+  is inconsistent about this and the engineer needs to see the choice, not
+  discover it.
+- **Min-1 / Max+1 — always the IMPLEMENTATION TYPE's limits**, never the
+  documented range, even when the documented range is narrower. These two cases
+  exist to exercise what the type does at its edges, so for a `uint8` member
+  they are *always* written `-1` → reader shows `255`, and written `256` →
+  reader shows `0`, whatever the documented `Range:` says.
+
+  A `[0-100]%` `uint8` member therefore gives **Max = 100 and Max+1 = 256**: the
+  two are deliberately not arithmetically adjacent, and a run that "corrects"
+  Max+1 to 101 for adjacency is wrong. Compute the wrap from the **reader's**
+  type width. If the reader's type is unresolved, do **not** guess the wrap —
   leave the expected value as a marked placeholder and raise an Open Point.
+
+  *(Engineer ruling, FUSA_MotDrv SWE.5 validation 2026-10-05: a generated
+  Max+1 = 101 was rejected with "If its uint8 max value is 255 so max+1 value
+  should b 256 and thes result should be 0." Min = 0 / Mid = 50 / Max = 100 from
+  the documented `[0- 100]%` range were accepted in the same review, which is
+  what fixes the split between the two sources.)*
+- A value **out of the documented range but inside the type** (`101` on a
+  `[0-100]%` `uint8`) is a **separate, optional sixth case**, and often the one
+  that actually breaks the reader. Raise it as a Phase-1 question; never
+  substitute it for Max+1.
 - **No documented range and no resolvable implementation type** → the interface
   gets **no** cases and an Open Point. Never invent a limit, a step size, a
   member name or an enum literal (no-fabrication.md). Expect this to be common:
@@ -269,6 +313,24 @@ Rules:
 
 Typos and case vary between objects ("wehther", "CHnage", "ini runnable") —
 match on meaning, and never copy a misspelling into a generated case.
+
+**P-08 is never applied silently.** A `review`-type `aTestCriteria` suppresses
+a whole object, so before emitting P-08, check whether the object nevertheless
+has a concrete, observable symbol in a supplied input — an `Rte_Call_*`,
+`Rte_Write_*` or `Rte_Read_*` in the code, or a driver API the module actually
+calls. If it does, the criterion and the code disagree, and that is a
+**Phase-1 question**, not a decision to take alone. The default proposal in
+that question is **author the case**: `aTestCriteria` is often older than the
+code. An object that maps to P-08 *and* has no resolvable symbol needs no
+question — Open Points is enough.
+
+Observed failure (FUSA_MotDrv, 2026-10-05): `Ftm_Pwm_Ip_FastUpdatePwmDuty`
+(6227), `Ftm_Pwm_Ip_UnMaskOutputChannels` (6230) and the two WdgM checkpoint
+ports (5847 / 5904) were all suppressed to heading rows on `aTestCriteria =
+"review"` / `"1. Review the flow"`. All four are called directly from
+`CDD_MotDrv.c`, and the project's existing manual spec already carried cases
+for them. The QA engineer rejected all three heading rows at validation with
+"TestCases need to Design for this interfaces".
 
 ## 7. Patterns
 
@@ -346,11 +408,24 @@ atcResult:    1. Breakpoint should be hit
               2. <Module> counter should be update every <n>ms.
 ```
 
+`<Module>_Init_counter` and `<Module>_Cyclic_<n>msec_counter` above are the
+**shape of the observation, not symbol names.** They are the symbols of one
+legacy stub and exist in no current module — treating them as real is a
+fabrication (no-fabrication.md). Resolve the actual observable from the code.
+
 The counter symbol and the period both come from an input — the period from the
 architecture object's own text ("This runnable should be called from 2msec
 Task_FUSA_2ms"), the counter from the code/RTE or an existing case. Existing
 cases in the spec contain period mismatches between action and result; do not
-copy one, and flag any you relied on.
+copy one, and flag any you relied on. A counter *name* that contradicts the
+architecture period (a `..._1msec_counter` inside a 2 ms runnable) never
+overrides the architecture text — use the architecture period and raise the
+mismatch in Open Points.
+
+If the init runnable sets **no** counter or flag at all, the case is "set the
+breakpoint inside the Init runnable, restart the debugger, the breakpoint shall
+be hit" — this is the engineer's stated convention (FUSA_MotDrv Q-19,
+2026-09-24), not a deviation from P-05 needing a question of its own.
 
 **P-06 — client/server port.** `Rte_Call_<port>_<operation>` at the caller, the
 server runnable entered at the other end. Breakpoint at the call, breakpoint in

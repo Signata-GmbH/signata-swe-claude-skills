@@ -198,6 +198,21 @@ non-empty `Answer` (or `Status` = `answered`/`deferred`) are resolved; re-emit
 only still-`open` rows under their existing `QID`s. Every question cites the
 source document + row/section it rests on.
 
+**One question per QID.** A question containing a "SECOND ISSUE", an "also", or
+any two things a reader could answer separately must be split into two QIDs.
+Engineers answer in three words — "note it only", "yes", "ok" — and a
+three-word answer cannot be mapped back onto a two-part question. The skill has
+no licence to choose which part it answered. If an answer arrives that does not
+resolve every part of its question, re-emit the unresolved part as a **new
+`open` QID** rather than inferring, and say in Open Points that you did.
+
+Observed failure (FUSA_MotDrv Q-13, 2026-09-24): one QID asked both "P-08 or
+P-03 for the watchdog checkpoints?" and "SECOND ISSUE: they carry
+`aFunctionModule = WdgM` although they sit under the `FUSA_CDD_MotDrv`
+section". The answer "note it only" was applied to the first part and the two
+test cases were suppressed; the engineer had meant the second part, and
+rejected the result at validation.
+
 ## 6. Self-check before output
 
 Run every item, report the result, fix before output or list as an Open Points
@@ -224,9 +239,11 @@ row:
     module's section and under each peer's section (or mirroring is off and the
     peer sections are listed in Open Points); every mirror row is marked as such
     in `Traceability`.
-11. **integration-test only** — every boundary value states which range it came
+11. **integration-test only** — every Min/Mid/Max states which range it came
     from (documented `Range:` vs implementation type), and every Min-1/Max+1
-    expected-at-reader value states the type width the wrap was computed from.
+    states the implementation type its written value and its wrap came from —
+    which must be the **type**, never the documented range, even when the
+    documented range is narrower (integration-test-patterns.md §5.2).
 12. **integration-test only** — every enum literal used states its source
     (`Rte_Type.h` / existing test case); no literal is derived from a value's
     prose description.

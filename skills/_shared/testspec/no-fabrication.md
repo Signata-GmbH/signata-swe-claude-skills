@@ -21,6 +21,13 @@
   have authored a draft by inspection, nothing has run.
 - Write to DOORS. The output is a workbook for an engineer to review and enter
   by hand.
+- State a property of the code — a missing `default:` branch, an absent
+  counter, an unreachable path, "no caller" — without having read the lines
+  that prove it. Cite file and line, or do not make the claim. Such a claim is
+  **never** carried into a Phase-1 question, where it would steer the
+  engineer's answer: in FUSA_MotDrv Q-06 a wrong "and no default branch" was
+  offered as an argument for generating a case, and the switch in question had
+  a `default:` on the line after the one cited.
 - Copy a misspelling or inconsistent casing forward from a source export
   (near-duplicate environment strings, inconsistent signal-name casing) without
   normalizing to the dominant form and noting the variant in Open Points.
