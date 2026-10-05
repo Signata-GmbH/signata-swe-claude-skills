@@ -65,7 +65,7 @@ parameterised parent).
 | `atsTestExecution` | `automated` unless the case genuinely cannot be automated. |
 | `atsTestEnvironment` | From `ai_test_project.yaml` `attributes.environment`. |
 | `atsState` | `in work`. **Never `agreed`.** |
-| `aChangeRequID` | Empty. |
+| `aChangeRequID` | Empty on a module's or feature's first run. On a re-run, a case added or updated because its object is new or changed carries that object's `aChangeRequID`, copied verbatim (workflow-discipline.md §8). |
 
 Everything else (`atcPreconditions`/`atcActions`/`atcResult`/`atcPostconditions`,
 `atcRemark`, `aFeature`, `atsTestKind`, `atsTestDesignTechnique`, `atsType`) is

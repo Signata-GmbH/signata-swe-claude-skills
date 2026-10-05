@@ -75,7 +75,9 @@ last_run:                          # SKILL-OWNED ledger
     path: null
     hash: null                     # git hash-object at write time; a different hash later = edited since
   supplied_but_not_read: {}        # input -> one-line reason it was not opened this run
-  interfaces:       {}             # interface name -> { hash, writer, reader, data_type, cases: [titles],
+  interfaces:       {}             # interface name -> { hash (port + element + 1.2 type/member objects),
+                                    #                     change_requests: {object ID: aChangeRequID},
+                                    #                     writer, reader, data_type, cases: [titles],
                                     #                     mirrored_into: [module, ...] }
   peers:            []             # peer modules the run resolved (mirrors the confirmed module.peers)
   open_points:      []

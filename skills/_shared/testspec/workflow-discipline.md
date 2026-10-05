@@ -42,6 +42,8 @@
 | Existing test-spec export for this module/feature | ✔ under `integration_test.authoring_mode: extend_existing` · – under `from_scratch` (integration-test-patterns §0.1) | ✔, unless `N/A` by a recorded engineer decision (§1.2) |
 | The code (`docs.source_repo` — this repository by default) — breakpoint lines and observed variables | ✔ — waivable only by a recorded engineer decision, which makes the run *degraded* (integration-test-patterns §9) | – never read: black-box (§0) |
 | ARXML / `Rte_*.h` / `Rte_Type.h` (`docs.rte_type_headers`, or `layout.rte_inc` in `ai_project.yaml`) | ✔ — every RTE symbol and every enum literal | – |
+| OS and RTE configuration (`docs.os_config`) — ECUC ARXML or the generated OS/RTE code | **ask** — P-05's task and period (integration-test-patterns §7); without it, they rest on the architecture text alone | – |
+| Debug build — ELF with symbols and/or map file (`docs.debug_build`) | **ask** — every observed variable exists in the build (integration-test-patterns §9); without it, none is checked | – |
 | A2L file or code variable list (`docs.a2l_or_varlist`) | – | ✔ |
 | DiagSpec (`docs.diagspec`) | diagnostic interfaces (pattern P-07) only | diagnostic features only |
 | Communication database — DBC / LDF / ARXML system extract (`docs.comm_database`) | – (tests at RTE level) | **ask** — every bus signal's encoding, cycle time and timeout; without it those values are Open Points |
@@ -218,7 +220,12 @@ so the equivalent of revision pinning is:
   worktree dirty too, so judge dirtiness on the code only, outside `20_AI/`.
 - **Per-requirement/per-interface hash** — hash each in-scope requirement's or
   interface's Object Text, so a later run can tell *new* from *changed* from
-  *unchanged* (§8) without re-reading the whole export.
+  *unchanged* (§8) without re-reading the whole export. An **interface's** hash
+  covers every object its cases are built from, not only the port: the port,
+  its data-element child, and the `1.2` type and member objects its values
+  resolve through. A range changed in the UserDefinedTypes chapter changes the
+  Min/Mid/Max of every interface using that type, so it must register as a
+  changed interface, not slip through as "unchanged".
 - **Re-hash immediately before generation**, not only at pre-flight. An input
   can change mid-session — a new export dropped into the folder between Phase 1
   and Phase 2 is common — and the analysis the engineer approved is valid only
@@ -418,6 +425,15 @@ row:
     the workbook was derived from source code; every bus-signal value, cycle
     time and timeout cites `docs.comm_database` (qualification-test-patterns
     §0, §1.1, §3).
+19. **integration-test only** — every P-05 case cites the task and period found
+    in `docs.os_config`, or an Open Point says they were not checked or
+    disagree with the architecture (integration-test-patterns §7).
+20. **integration-test only** — every variable a case edits or watches was
+    found in `docs.debug_build` (cited in Traceability), or an Open Point says
+    it was not checked or is missing (integration-test-patterns §9).
+21. **Both skills** — `aChangeRequID` is empty on a first run, and on a re-run
+    carries the change request of each new or changed object behind the case,
+    or an Open Point says why not (§8).
 
 ## 7. Traceability & Open Points (both skills, every run)
 
@@ -463,7 +479,8 @@ domain's pin:
   — for integration-test also the `source_repo` pin —, the **`scope`** the run
   was made at, the **`output`** it wrote (path + hash), the inputs
   **`supplied_but_not_read`**, the requirement/interface snapshot
-  (`ID -> {hash, cases: [...]}`), and the delta. Drives re-runs; not history.
+  (`ID -> {hash, change requests, cases: [...]}`), and the delta. Drives
+  re-runs; not history.
 - **`20_AI/manifests/{integration-test,qualification-test}/history/<KEY>.jsonl`
   — append-only audit trail.** After each run, **append** one immutable record
   (never edit prior lines): `{ts, skill, skill_v, release_id, variants,
@@ -508,6 +525,22 @@ requirement's/interface's hash and compare to `last_run`:
   surface the orphaned case for the engineer to decide.
 - **unchanged** → leave untouched.
 Show the delta and **confirm before writing**.
+
+**Change requests follow the change.** A case added or updated on a re-run
+because its object is new or changed carries that object's `aChangeRequID`,
+copied verbatim into the case's `aChangeRequID`; where several objects behind
+one case changed, carry every distinct value, separated the way the export
+separates multiple values. Record each object's `aChangeRequID` in the
+`last_run` snapshot so the next run can compare. Three cases leave it empty:
+
+- **the first run** for a module or feature — authoring the baseline is not a
+  change, and an object's old change request says how the object came to be,
+  not why the test case was written;
+- **an object that changed but carries no change request, or the same one as
+  last run** — keep the case's current value and raise an `Input hygiene` Open
+  Point: the change may not be tracked;
+- **an export without an `aChangeRequID` column** — one Open Point, never a
+  stop.
 
 **Writing the config and the manifest.** Both are commented YAML, and the
 comments are their documentation. Write them through a **round-trip** YAML

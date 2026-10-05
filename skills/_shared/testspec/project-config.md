@@ -124,6 +124,13 @@ table.
   is lost without it (workflow-discipline.md §1.1). In the SWE.3 repo the bus
   database (DBC/LDF/ARXML system extract) is often already under version
   control; propose that copy before asking for another.
+- **`docs.os_config`, `docs.debug_build`** (integration-test) — the OS/RTE
+  configuration is usually in this repository already: propose the ECUC ARXML
+  that defines the tasks and the event-to-task mapping, or the generated OS/RTE
+  sources, and confirm. The debug build is a build output, usually outside Git
+  and rebuilt often: ask for its usual location (the ELF and/or the map file of
+  the **Debug** SW, not the series build), and offer both explicitly, saying
+  what is not checked without them (workflow-discipline.md §1.1).
 - **`vteststudio.project`** — reserved for v2. Ask for the path only if the
   engineer knows it; otherwise `N/A`. Keep `write_access: false`.
 - **`qualification_test.valid_features`** — derive from the distinct `aFeature`

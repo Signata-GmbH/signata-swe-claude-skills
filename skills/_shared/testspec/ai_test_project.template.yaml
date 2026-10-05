@@ -136,6 +136,14 @@ docs:
     ref:  <tag/branch/SHA or N/A>            # <-- fill  the revision test cases are authored against; a run whose
                                               #     HEAD differs stops and asks. N/A = whatever is checked out,
                                               #     recorded per run in the manifest ledger.
+  os_config:            <path or N/A>        # <-- ask  SWE.5: the OS and RTE configuration — the ECUC ARXML (tasks,
+                                              #     alarms/schedule tables, counters, event-to-task mapping) or the
+                                              #     generated OS/RTE code. P-05 checks each runnable's task and period
+                                              #     against it (integration-test-patterns §7). Usually already in this repo.
+  debug_build:          <path or N/A>        # <-- ask  SWE.5: the Debug SW's ELF (with symbols) and/or linker map file —
+                                              #     every variable a case edits or watches is looked up in it
+                                              #     (integration-test-patterns §9). Usually a build output outside Git:
+                                              #     give its usual location; it is pinned by hash per run.
   # ---- SWE.6: communication and test-plan inputs --------------------------
   comm_database:        <path or N/A>        # <-- ask  DBC / LDF / ARXML system extract — every bus signal's message,
                                               #     encoding (length, factor, offset, min/max), cycle time and timeout

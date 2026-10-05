@@ -87,8 +87,9 @@ Per workflow-discipline §3, in this order:
    `extend_existing`, never under `from_scratch`; the module's `.c` files in
    `docs.source_repo`, found from its `Rte_` call sites; RTE headers if needed.
    A discovered file is a proposal, never registered on its own, and a recorded
-   `N/A` is never re-opened. Offer the test environment description if it is
-   not configured (workflow-discipline §1.1).
+   `N/A` is never re-opened. Offer the test environment description, the OS
+   and RTE configuration and the debug build if they are not configured
+   (workflow-discipline §1.1).
 5. **Resolve and pin the source repo** (workflow-discipline §2) — no source
    repo and no recorded waiver is a stop; a recorded waiver makes the run
    degraded (integration-test-patterns §9).
@@ -135,7 +136,10 @@ Per integration-test-patterns §1–§6 and workflow-discipline §1/§2/§4:
    interface which range the Min/Mid/Max came from, and where each enum literal
    came from (the chapter names enum types but lists no literals).
 7. **Pattern per object** from its `aTestCriteria` (integration-test-patterns
-   §6) — including the objects that map to P-08 and get no case.
+   §6) — including the objects that map to P-08 and get no case. For P-05,
+   report each runnable's task and period from the OS configuration next to
+   the architecture's, flagging any mismatch (§7); for every variable a case
+   will edit or watch, report whether the debug build has it (§9).
 8. **Proposed test cases** — one line each, no steps yet, marking primary vs
    mirror.
 9. **Row-count gate** (workflow-discipline §5) — the number of rows that table

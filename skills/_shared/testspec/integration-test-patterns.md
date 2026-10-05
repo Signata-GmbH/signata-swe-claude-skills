@@ -659,6 +659,30 @@ architecture text — use the architecture period and raise the mismatch in Open
 Points. In `extend_existing` mode, existing cases contain period mismatches
 between action and result; do not copy one, and flag any you relied on.
 
+**Check the task and the period against the OS configuration.** The
+architecture text states the intent; the OS and RTE configuration
+(`docs.os_config`) states what was built. Before writing a P-05 case, find
+there:
+
+- **which task runs the runnable** — the RTE's event-to-task mapping (e.g.
+  `RteEventToTaskMapping` in the ECUC configuration), or the generated task body
+  that calls the runnable;
+- **how often that task runs** — the runnable's `TIMING-EVENT` period in its
+  SWC description, and the alarm or schedule table that activates the task,
+  converted to time with the counter's own tick length. Never assume one tick
+  is one millisecond; a tick length you cannot resolve is an Open Point;
+- **for the Init runnable**, that it is triggered by an init event and called
+  at start-up.
+
+Cite what you found in Traceability. Where the configuration agrees with the
+architecture, the case stands as written. Where it disagrees — another task or
+another period — write the case to the **architecture**, which is the test
+basis (the case should then fail on the bench, and that is the point), and
+raise the mismatch as an `Input hygiene` Open Point for both the architect and
+the integrator. Without `docs.os_config`, write the case from the architecture
+text alone and say once in Open Points that no task or period was checked
+against the configuration.
+
 **P-06 — client/server port.** `Rte_Call_<port>_<operation>` at the caller, the
 server runnable entered at the other end. Breakpoint at the call, breakpoint in
 the server function, verify the argument passed.
@@ -730,6 +754,32 @@ Do not construct a symbol by analogy (workflow-discipline §4 /
 no-fabrication.md). Do not reproduce inconsistent casing seen in the
 architecture text — take the spelling from the RTE headers and the code, and
 note the variant in Open Points.
+
+**Observed variables exist in the debug build.** A variable named in the `.c`
+file can still be missing from the software on the target: a file-scope
+`static` may live in a register or be removed by the optimiser, and code behind
+a configuration switch may not be compiled at all. With `docs.debug_build` —
+the Debug SW's ELF with symbols and/or its linker map file — look up every
+variable a case edits or watches (P-01's writer-side and reader-side
+variables, the P-05 observable):
+
+- **found, global** → cite the build file in Traceability;
+- **found, file-scope** (a local symbol in the ELF) → cite it, and note on the
+  case that the debugger may need the variable qualified by its file to show
+  it;
+- **not found** → the case cannot be run as written: an Open Point naming the
+  variable and the build, and `isValid = No` where the validity columns are
+  configured.
+
+Read the symbol table with whatever the environment offers — a text search of
+the map file, `readelf -s`/`nm`, a Python ELF reader. If nothing can read it,
+say so; never assume a symbol is present. Before trusting the build, check that
+it matches the pinned revision: a build file older than the newest commit that
+touched the module's `.c` files (`git log -1 --format=%cI -- <files>`) answers
+the question for different code — say so and ask whether to use it. The build
+output is usually not under Git; pin it by `git hash-object` like any other
+input (workflow-discipline §2). Without `docs.debug_build`, say once in Open
+Points that no observed variable was checked against a build.
 
 **Several copies of a generated header.** A project folder often holds more
 than one `Rte_*.h` of the same name (a copy under `20_AI/`, the BSW tree, a

@@ -356,7 +356,8 @@ test tables and `.vtsoproj`/CAPL automation — generating or updating those is 
 explicit **v2**, not attempted here. Two v1 inputs exist mainly to prepare for
 it: the test environment description (what the bench can stimulate and
 observe) and, for SWE.6, the communication database — a script needs exact
-signal and channel names where a spreadsheet case can paraphrase. `integration-test` is also **AUTOSAR-only
+signal and channel names where a spreadsheet case can paraphrase. The parked
+plan for v2 is in [VTESTSTUDIO-AUTOMATION-PLAN.md](VTESTSTUDIO-AUTOMATION-PLAN.md). `integration-test` is also **AUTOSAR-only
 for v1**: its only validated pattern is RTE-debugger breakpoint testing
 (`Rte_Write`/`Rte_Read`), so it stops rather than inventing a black-box pattern
 for a module with no RTE symbols to work from.
