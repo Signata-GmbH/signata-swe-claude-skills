@@ -1,0 +1,34 @@
+{
+  "description": "signata-swe run tracking: stamps run/gate times and blocks a run from ending with its files uncommitted (skills/_shared/common/run-tracking.md §6).",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          { "type": "command", "command": "python \"${CLAUDE_PLUGIN_ROOT}/hooks/run_tracker.py\" session-start", "timeout": 15 }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          { "type": "command", "command": "python \"${CLAUDE_PLUGIN_ROOT}/hooks/run_tracker.py\" prompt", "timeout": 15 }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Skill",
+        "hooks": [
+          { "type": "command", "command": "python \"${CLAUDE_PLUGIN_ROOT}/hooks/run_tracker.py\" skill", "timeout": 15 }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          { "type": "command", "command": "python \"${CLAUDE_PLUGIN_ROOT}/hooks/run_tracker.py\" stop", "timeout": 30 }
+        ]
+      }
+    ]
+  }
+}

@@ -123,6 +123,13 @@ the broken fields, never overwriting your file.
    **stop rather than guess** if a mandatory one is missing.
 4. It confirms the **requirement count** and its plan, then does the work and writes
    an audit record under `20_AI/manifests/<MODULE>.yaml`.
+5. **It commits its own files** — at every point where it stops for your
+   confirmation, and at the end (generated or fixed source code in a commit of
+   its own). You no longer need to commit manifests, history, question
+   workbooks or outputs by hand. It **never pushes** — push when you are ready.
+   If you are on `develop` it asks once whether to commit there or on an
+   `ai/<skill>/<module>` branch. Find a run's commits with
+   `git log --grep "AI-Run:"`.
 
 ## What to expect (and what it will NOT do)
 
@@ -132,7 +139,20 @@ the broken fields, never overwriting your file.
 - It **asks before overwriting** existing validated code and **stops** instead of
   inventing missing inputs. If it seems to pause a lot, that's the safety design.
 - **Re-runs update in place** — change a requirement and re-run; it revises just the
-  affected cases/findings, and logs the run.
+  affected cases/findings, and logs the run. There is **one** output file per
+  module (e.g. `20_AI/CodeReview/<MODULE>_CodeReview_Findings.xlsx`); old versions
+  are in git history, not in dated copies.
+- **Code review re-runs keep your answers.** Fill in *Author's statement*, *Status
+  of rework* and *Finder's comment* in the findings list; a re-run never touches
+  those columns, keeps each finding's ID, marks fixed ones *Not reproduced —
+  confirm closure* (you close them), updates the Statistics sheet, and adds a row
+  to the *Run History* sheet.
+- **Runs are timed** — start, end, each phase and each wait for your answer, from
+  the system clock. If you close a session mid-run, the next session asks whether
+  to resume or abort it.
+- **Hooks** — the plugin installs small hooks (Python 3 must be on your `PATH` as
+  `python`) that record those times and remind the AI to commit before it stops.
+  Check they are active with `/hooks` in Claude Code.
 
 ## It's a beta — please report
 

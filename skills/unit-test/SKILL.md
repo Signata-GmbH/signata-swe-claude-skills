@@ -17,6 +17,16 @@ the argument (e.g. `/unit-test CDD_MotDrv`); if omitted, ask for it.
 Follow these steps in order. Detailed rules live in the linked shared files — load
 them as you reach each step (progressive disclosure).
 
+## Step 0 — Start the run (tracked, committed)
+
+As soon as the module is known — before reading the config — load
+[../_shared/common/run-tracking.md](../_shared/common/run-tracking.md) and start the run (§1): resolve any open run first (§5), take the
+start time from the shell clock, write the active-run marker, append
+`run_start`. From here on **every HARD GATE and STOP below is a gate**: append
+`gate_reached` and make the **gate commit** (§3) before you stop, and append
+`gate_ack` when the engineer answers. Timestamps come from `date -u`, never
+from memory.
+
 ## Step 1 — Resolve project config
 
 Read `20_AI/ai_project.yaml`. If it is **absent**, do **not** scaffold it blindly
@@ -34,6 +44,7 @@ Always load:
 [../_shared/common/workflow-discipline.md](../_shared/common/workflow-discipline.md),
 [../_shared/common/unittest-design.md](../_shared/common/unittest-design.md),
 [../_shared/common/vectorcast-syntax.md](../_shared/common/vectorcast-syntax.md),
+[../_shared/common/run-tracking.md](../_shared/common/run-tracking.md),
 [../_shared/common/no-fabrication.md](../_shared/common/no-fabrication.md).
 
 Then, by `project.type`:
@@ -50,7 +61,7 @@ Per workflow-discipline §3: compute derivable values (`module.upper`,
 [../_shared/manifest-template.yaml](../_shared/manifest-template.yaml) if absent),
 discover the input docs, and **confirm the resolved inputs** (popup for the
 categorical choices: subprograms scope, requirement filter / `sw_req_ids`).
-**Stop and wait** for confirmation. Remember §0 — this skill may be the first to
+**Stop and wait** for confirmation (gate commit). Remember §0 — this skill may be the first to
 run for the module; never assume code-gen ran.
 
 ## Step 4 — Analysis phase → phase gate (STOP)
@@ -68,7 +79,7 @@ Per workflow-discipline §2/§4/§6:
    drop duplicates of the existing suite.
 Present scope, analysis summary, Gate Table, duplication table, and the numbered
 questions (write them to `20_AI/<MODULE>_Phase1_Questions_UnitTest.xlsx`, §5).
-**STOP.**
+**STOP** (gate commit).
 
 ## Step 5 — Author the `.tst`
 
@@ -77,9 +88,11 @@ Only after acknowledgement. Follow the **test-design rules** in
 [vectorcast-syntax.md](../_shared/common/vectorcast-syntax.md): requirement-driven
 cases first (assert a real effect), then close structural coverage to the target
 in `coverage.unit_test`; compound tests for stateful logic; every case carries a
-true `TEST.NOTES` block. Write to the env path under `layout.vcast_env`. For a
-re-run, apply the in-place diff (workflow-discipline §9): new→add, changed→update
-the mapped case in place, removed→flag.
+true `TEST.NOTES` block. Write to the env path under `layout.vcast_env` and add
+it to the marker's `owned_paths`. For a re-run, first run the previous-output
+checks (run-tracking §7 — the `.tst` still there, edited since, committed), then
+apply the in-place diff (workflow-discipline §9): new→add, changed→update the
+mapped case in place, removed→flag.
 
 ## Step 6 — Deliverables
 
@@ -90,8 +103,11 @@ Per the **deliverables list** in
 **symbol-grounding self-check** (unittest-design.md) and any code findings.
 **No build/run/coverage claims.**
 
-## Step 7 — Ledger & history
+## Step 7 — Ledger, history & final commit
 
-Overwrite `unit_test.last_run` in the manifest (working state) and **append** one
-record to `20_AI/manifests/history/<MODULE>.jsonl` (workflow-discipline §9): ts,
-workflow, skill_version, source SHA + blob hashes, requirements SHA, delta.
+Overwrite `unit_test.last_run` in the manifest (working state — including
+`output: {path, hash}` of the `.tst`, `run_id`, `started`, `ended`, `timing`)
+and append `run_end` to `20_AI/manifests/history/<MODULE>.jsonl`
+(workflow-discipline §9): skill_version, source SHA + blob hashes, requirements
+SHA, delta. Then make the **final commit** — the `.tst` with the manifest and
+history — and delete the active-run marker (run-tracking §2–§4).
