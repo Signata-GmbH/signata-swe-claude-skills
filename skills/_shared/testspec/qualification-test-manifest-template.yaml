@@ -37,7 +37,10 @@ scope:
   requirement_ids: []              # optional — restrict this run to a subset; [] = all in-scope requirements
 
 last_run:                          # SKILL-OWNED ledger
-  timestamp:        null
+  run_id:           null           # <skill>-<KEY>-<UTC start> (run-tracking.md §1); commits carry it as AI-Run:
+  started:          null           # UTC, from the shell clock — never written from memory
+  ended:            null
+  timing:           {}             # total_s, engineer_wait_s, ai_active_s, sessions (run-tracking.md §4)
   skill_version:    null
   release_id:       null           # release.id the run was authored against (baseline pinning)
   variants:         []

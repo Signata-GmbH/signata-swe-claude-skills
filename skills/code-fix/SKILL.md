@@ -26,6 +26,16 @@ issue/ticket ID the optional second; if the module is omitted, ask for it.
 Runs standalone (workflow-discipline §0): the module need not have been produced
 by `/code-dev`, and no prior skill run is assumed.
 
+## Step 0 — Start the run (tracked, committed)
+
+As soon as the module is known — before intake — load
+[../_shared/common/run-tracking.md](../_shared/common/run-tracking.md) and start the run (§1): resolve any open run first (§5), take the
+start time from the shell clock, write the active-run marker, append
+`run_start`. From here on **every HARD GATE and STOP below is a gate**: append
+`gate_reached` and make the **gate commit** (§3) before you stop, and append
+`gate_ack` when the engineer answers. Timestamps come from `date -u`, never
+from memory.
+
 ## Step 1 — Intake: issue identity & evidence
 
 **Parse first, ask second.** Most invocations already carry the bug report, the
@@ -75,7 +85,8 @@ bootstrap inline when already on the base branch. Note `project.type`.
 
 Always load
 [../_shared/common/defect-analysis.md](../_shared/common/defect-analysis.md),
-[../_shared/common/workflow-discipline.md](../_shared/common/workflow-discipline.md)
+[../_shared/common/workflow-discipline.md](../_shared/common/workflow-discipline.md),
+[../_shared/common/run-tracking.md](../_shared/common/run-tracking.md)
 and [../_shared/common/no-fabrication.md](../_shared/common/no-fabrication.md).
 
 Then, by `project.type`:
@@ -104,9 +115,11 @@ not a fix; stop and route to `/code-dev`.
 Apply the **evidence gate** (defect-analysis §2): observed-vs-expected **+** at
 least one artifact or a statically traceable reproduction condition **+** the
 build identity. Any missing → name exactly what is needed and **stop**. Present
-the evidence table with each artifact's limits.
+the evidence table with each artifact's limits. Evidence files the
+engineer placed in the repository are inputs: they go in the gate commit
+(run-tracking §3.2); evidence outside it is recorded by path + digest only.
 
-**Stop for confirmation.**
+**Stop for confirmation** (gate commit).
 
 ## Step 5 — Phase 1: root-cause analysis (NO code)
 
@@ -125,7 +138,8 @@ the evidence table with each artifact's limits.
    bench or test-case defect) · **V4** not localisable.
 6. **Numbered questions** → `20_AI/<MODULE>_Phase1_Questions_CodeFix.xlsx` (§5).
 7. **Present** the anchored expectation, the trace, the candidate table, the
-   verdict, and the questions, and **STOP. Write no `.c`/`.h`/`.mak`.**
+   verdict, and the questions, and **STOP** (gate commit). **Write no
+   `.c`/`.h`/`.mak`.**
    - **V1** → proceed to Step 6 on acknowledgement.
    - **V2** → present the proposed requirement change and the code change it
      *would* imply; write nothing without an explicit engineer decision.
@@ -142,7 +156,10 @@ the evidence table with each artifact's limits.
 
 8. **Propose the change first** — the line-by-line table
    `file:line | before → after | which part of the cause it addresses` — and
-   **discover before define** (workflow-discipline §4); wait for confirmation.
+   **discover before define** (workflow-discipline §4); wait for confirmation
+   (gate commit). Add every file the fix touches to the marker's `owned_paths`
+   now, and check none carries uncommitted engineer changes (run-tracking
+   §3.3).
    If the honest fix is structural, say so and scope it separately rather than
    slipping a redesign into a bug fix.
 9. **Apply the minimal diff** (defect-analysis §6): no drive-by changes, no
@@ -157,6 +174,10 @@ the evidence table with each artifact's limits.
     the changed lines; record deviations with justification. State
     **"syntactic review only — proposed fix, unverified"** (no build, no static
     analysis, no test execution, no reproduction).
+12. **Code commit** (run-tracking §3.2) — the changed source files in
+    `owned_paths`, alone, as `AI(code-fix): <MODULE> — fix <ISSUE_ID>`, with an
+    extra `AI-Issue: <ISSUE_ID>` trailer. One fix, one commit: easy to review,
+    easy to revert.
 
 ## Step 7 — Report, verification plan & follow-ups
 
@@ -169,11 +190,15 @@ follow-up runs (`/code-review` in diff mode on the change, `/unit-test` for the
 case updates, a requirement change request for a V2). Never write "fixed",
 "resolved", or "verified", and state any residual unexplained observation.
 
-## Step 8 — Ledger & history
+## Step 8 — Ledger, history & final commit
 
 Update the issue's entry in `code_fix.issues` (verdict, root cause with
 `file:line`, files changed, report path, follow-ups, status) and overwrite
-`code_fix.last_run` (issue ID, source SHA, evidence digest, deferrals). Append
-the run record to `20_AI/manifests/history/<MODULE>.jsonl`
-(workflow-discipline §9). A re-run on the same issue ID **updates that entry in
-place** — never open a duplicate.
+`code_fix.last_run` (issue ID, source SHA, evidence digest, deferrals,
+`run_id`, `started`, `ended`, `timing`). Append
+`run_end` (with the issue ID) to `20_AI/manifests/history/<MODULE>.jsonl`
+(workflow-discipline §9), then make the **final commit** — the fix report,
+manifest and history, with the `AI-Issue:` trailer — and delete the active-run
+marker (run-tracking §2–§4). A V2/V3/V4 run has no code commit; its report
+is still committed. A re-run on the same issue ID **updates that entry and its
+report in place** — never open a duplicate.

@@ -49,6 +49,16 @@ Git (project-config §1).
 Follow these steps in order. Detailed rules live in the linked shared files —
 load them as you reach each step (progressive disclosure).
 
+## Step 0 — Start the run (tracked, committed)
+
+As soon as the module is known — before reading the config — load
+[../_shared/common/run-tracking.md](../_shared/common/run-tracking.md) and start the run (§1): resolve any open run first (§5), take the
+start time from the shell clock, write the active-run marker, append
+`run_start`. From here on **every HARD GATE and STOP below is a gate**: append
+`gate_reached` and make the **gate commit** (§3) before you stop, and append
+`gate_ack` when the engineer answers. Timestamps come from `date -u`, never
+from memory.
+
 ## Step 1 — Resolve the test-spec project config
 
 Read `20_AI/ai_test_project.yaml`, and `20_AI/ai_project.yaml` beside it: the
@@ -174,9 +184,12 @@ Object Text for this skill) to
 `20_AI/IntegrationTest/<MODULE>_SWE5_TestCases.xlsx`. Print the workbook
 summary in chat plus the no-fabrication disclaimer.
 
-## Step 7 — Ledger & history
+## Step 7 — Ledger, history & final commit
 
-Overwrite `last_run` in the manifest (workflow-discipline §8) — including the
+Overwrite `last_run` in the manifest (workflow-discipline §8) — including
+`run_id`, `started`, `ended`, `timing`, the
 source-repo pin, the scope, the output path + hash, and the inputs supplied but
-not read — through a comment-preserving YAML writer, and **append** one record
-to `20_AI/manifests/integration-test/history/<MODULE>.jsonl`.
+not read — through a comment-preserving YAML writer, append `run_end` to
+`20_AI/manifests/integration-test/history/<MODULE>.jsonl`, then make the
+**final commit** — the workbook, manifest and history — and delete the
+active-run marker (run-tracking §2–§4).

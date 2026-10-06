@@ -83,7 +83,9 @@ consistently.
 
 Columns: `# | Review Date | Reviewer | Location of Finding | Description of Finding |
 Type of Finding | Author's statement (blank) | Status of rework (Open) |
-Finder's Comment on Rework (blank)`. Checklist sheet name:
-`SWE.3 Code Review Checklist`. Save a **new copy** under `20_AI/CodeReview/` as
-`<Module>_CodeReview_Findings_<YYYY-MM-DD>.xlsx` — never overwrite the template.
-Otherwise follow common/review-quality output mechanics.
+Finder's Comment on Rework (blank)`, then (J left empty) `K Finding ID ·
+L First Found (Run) · M Last Seen (Run) · N AI Re-check`. Checklist sheet name:
+`SWE.3 Code Review Checklist`. One **living** workbook per module,
+`20_AI/CodeReview/<Module>_CodeReview_Findings.xlsx`, updated in place on every
+run — never overwrite the template. Merge rules, finding IDs, the Statistics and
+Run History sheets: common/review-quality "Output mechanics".

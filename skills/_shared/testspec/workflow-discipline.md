@@ -471,21 +471,26 @@ category `Input hygiene`:
 
 ## 8. Ledger & run history (audit)
 
+Run identity, timing, the event format of the history file, and the automatic
+commits at every gate and at the end follow
+[../common/run-tracking.md](../common/run-tracking.md) — load it with this file.
+
 Same two-record shape as `common/workflow-discipline.md` §9, adapted to this
 domain's pin:
 
 - **`last_run:` in the manifest — working state, overwritten each run.** Holds
-  `timestamp`, `skill_version`, `release_id`, `variants`, `input_hashes` (§2)
+  `run_id`, `started`, `ended`, `timing` totals, `skill_version`, `release_id`, `variants`, `input_hashes` (§2)
   — for integration-test also the `source_repo` pin —, the **`scope`** the run
   was made at, the **`output`** it wrote (path + hash), the inputs
   **`supplied_but_not_read`**, the requirement/interface snapshot
   (`ID -> {hash, change requests, cases: [...]}`), and the delta. Drives
   re-runs; not history.
 - **`20_AI/manifests/{integration-test,qualification-test}/history/<KEY>.jsonl`
-  — append-only audit trail.** After each run, **append** one immutable record
-  (never edit prior lines): `{ts, skill, skill_v, release_id, variants,
-  input_hashes, scope, output, supplied_but_not_read,
-  reqs_delta:{added,updated,removed}, notes}`.
+  — append-only audit trail.** One immutable JSON **event** per line (never
+  edit prior lines; run-tracking.md §2). The closing `run_end` event carries the
+  per-run record `{skill, skill_v, release_id, variants, input_hashes, scope,
+  output, supplied_but_not_read, reqs_delta:{added,updated,removed}, notes}`
+  plus `timing`. Lines without an `ev` field are legacy per-run records.
 
 **Supplied but not read.** Record every input that was supplied (configured or
 attached) but not opened this run, each with a one-line reason (`not needed: no
