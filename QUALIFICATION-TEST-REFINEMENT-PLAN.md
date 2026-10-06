@@ -1,7 +1,8 @@
 # qualification-test (SWE.6) — refinement plan from the QA validation
 
-**Status:** waiting for the QA engineer's answers (§4). Recorded 2026-10-06 on
-branch `fix/swe6-validation-feedback-2026-10`. Nothing implemented yet.
+**Status:** QA answered (§4); implemented 2026-10-06 on branch
+`fix/swe6-validation-feedback-2026-10` (§6). Next: re-run the same feature and
+compare against the 37 / 77 baseline.
 
 **Source:** the QA validation of a generated SWE.6 workbook for one CAN
 feature — 37 concrete cases accepted, 77 rejected. The detailed feedback is
@@ -93,3 +94,30 @@ compare against the 37 / 77 baseline.
 
 Not blocked by QA: N1, P1 (without the notation), P3, P4, N2, N3, N4, P5,
 P7, P8 (items 23–24). Blocked: P2's notation (Q1), P6 (Q3), P9's names (Q4).
+
+## 6. QA's answers and what was implemented
+
+| Q | Answer (summarised) | Implemented as |
+|---|---|---|
+| 1 | The `[<tool/channel>] <action>` format is fine; every step must name the message, signal or variable — saying which it is — the value, and how it is set (CANoe panel, XCP, CAPL, …) | qualification-test-patterns §3 (kind of every item), §7 (actions open with the means) |
+| 2 | Manual instructions are wanted: which panel, which steps | §3.2 catalogue `Manual steps` column; a `Manual:` line under each action (§7) |
+| 3 | A merged case has one final result covering all its requirements; the verdict is on the test case, not per requirement | §7 merged requirements: proposed at Phase 1, one pass/fail result, each requirement traced to its result step |
+| 4 | Review columns `Review_Test`, `Review_Peer` (Minor Findings / Major Findings / Questions / No Findings) and `Comment_Review_Test`, `Comment_Review_Peer` | `reference_columns.review_columns` (configurable names and values, both skills); written blank, read back on re-run (N1) |
+| 5 | The cited specifications were supplied (an OEM CAN performance specification and an OEM network-management test specification) | §3.1 cited specifications. **Open:** the supplied CAN specification is a different version from the one the requirements cite — ask QA which applies |
+| 6 | XCP is available for injecting values; refer to the code for the variables that inject a fault | §0 narrow exception: the code may give the **name** of a fault-injection variable, which must be in the A2L and is marked `from code`; never a value or an expected result |
+
+All of P1–P9 and N1–N4 are in. Changed files: `qualification-test/SKILL.md`,
+`integration-test/SKILL.md` (re-runs read review verdicts),
+`qualification-test-patterns.md` (§0, §3, §3.1, §3.2, §6, §7, §8),
+`workflow-discipline.md` (§1.1, §5, §6 items 22–27, §8),
+`no-fabrication.md`, `output-format.md`, `project-config.md`, the config and
+manifest templates, README and USING-THE-BETA.
+
+Still open:
+
+- **Version of the cited CAN specification** (Q5 above).
+- **SWE.5 review columns** — QA named the columns for "QA Validation" without
+  saying whether SWE.5 uses them too; `integration_test.reference_columns`
+  can declare them, and the template leaves them empty until confirmed.
+- **The supplied specifications stay out of Git** — they are OEM documents.
+

@@ -154,9 +154,10 @@ docs:
                                               #     per feature and recorded in the manifest.
   # ---- both: the test bench -------------------------------------------------
   test_environment:     <path or N/A>        # <-- ask  what the bench can STIMULATE and OBSERVE: debugger, XCP, bus
-                                              #     access / rest-bus simulation, diagnostic tester, HIL I/O channels
-                                              #     (workflow-discipline §4). Without it, the means each case assumes are
-                                              #     listed once in Open Points. Mandatory once scripts are generated (v2).
+                                              #     access / rest-bus simulation, diagnostic tester, HIL I/O channels,
+                                              #     and the CANoe configuration's panels and controls (workflow-discipline
+                                              #     §4). Without it, SWE.6 asks every means in its Phase-1 catalogue
+                                              #     (qualification-test-patterns §3.2). Mandatory once scripts are generated (v2).
   a2l_or_varlist:        <path or N/A>       # <-- fill  A2L file or code variable list — MANDATORY for SWE.6
   diagspec:               <path or N/A>      # <-- fill  UDS DiagSpec (e.g. EE0339_UDS_DiagSpec) — SWE.6 diagnostic features;
                                               #     SWE.5 diagnostic interfaces (pattern P-07) only
@@ -216,6 +217,7 @@ integration_test:
   reference_columns:
     arch_requirement_id: false     # <-- confirm  column A: the traced architecture object's ID
     validity_review:     false     # <-- confirm  trailing isValid + Reason for Invalid (no-fabrication.md)
+    review_columns:      []        # <-- confirm  the project's review columns — same shape as qualification_test's
   # aFunctionModule -> the set of peer modules at the other end of its ports,
   # DISCOVERED per module (integration-test-patterns.md §2) and CACHED here
   # with the resolved writer/reader side per interface. Never seeded by
@@ -246,3 +248,24 @@ qualification_test:
   nrc_table: <path or "not available">  # <-- fill  negative-diagnostic-case NRC lookup; if unavailable, negative
                                           #     diagnostic cases leave the expected response as a to-be-completed
                                           #     placeholder and are listed in Open Points, never guessed.
+  # Columns beside the 21 DOORS attributes, never imported (output-format.md,
+  # reference columns). Review columns hold the reviewers' verdicts: the skill
+  # writes them blank and reads them back on a re-run (workflow-discipline §8).
+  reference_columns:
+    requirement_id:  false         # <-- confirm  column A: the traced requirement's ID
+    validity_review: false         # <-- confirm  trailing isValid + Reason for Invalid (no-fabrication.md)
+    review_columns: []             # <-- confirm  the project's review columns, in order, e.g.:
+                                    #   - { name: Review_Test, role: verdict,
+                                    #       values: { "No Findings": accepted, "Minor Findings": rejected,
+                                    #                 "Major Findings": rejected, "Questions": question } }
+                                    #   - { name: Comment_Review_Test, role: comment, explains: Review_Test }
+                                    #   - { name: Review_Peer, role: verdict, values: { ...same... } }
+                                    #   - { name: Comment_Review_Peer, role: comment, explains: Review_Peer }
+  # Stimulus and observation means of THIS bench, confirmed row by row in the
+  # Phase-1 catalogue (qualification-test-patterns §3.2) and cached here so the
+  # next feature only confirms new items. Never seeded by analogy.
+  bench_catalogue: {}              # <-- learned  item -> { kind, set_by, read_in, manual_steps,
+                                    #                        series_sw: true|false, debug_sw: true|false, source }
+                                    #   e.g. <Sig>: { kind: signal, set_by: "CANoe panel <Panel> / <Control>",
+                                    #                 read_in: "CANoe Trace", manual_steps: "...", series_sw: true,
+                                    #                 debug_sw: true, source: comm_database }

@@ -113,6 +113,9 @@ Per integration-test-patterns §1–§6 and workflow-discipline §1/§2/§4:
    completeness gate) and **pin the baseline** — `release.id`/`variants` + a
    content hash of every supplied export, and the source repo's revision (§2).
    Every symbol/value/breakpoint line is valid only at that baseline.
+   On a re-run, read the previous output's review verdicts here
+   (workflow-discipline §8): accepted cases are kept, every reviewer question
+   and every finding the inputs cannot answer becomes a Phase-1 question.
 2. **Resolve the peers** (integration-test-patterns §2) — direction per port
    from its text, then the writer→reader pairing; reuse the cached
    `integration_test.peer_modules` if present, otherwise discover, confirm and
@@ -160,7 +163,8 @@ peer's section per §3. Every symbol, struct member, enum literal and boundary
 value traced to a supplied input, and every breakpoint line quoted from a `.c`
 file at the pinned revision (workflow-discipline §4, integration-test-patterns
 §9); an unresolved one goes to Open Points, never a guess.
-For a re-run, run the three checks of workflow-discipline §8 first — previous
+For a re-run, read the reviewers' verdicts first and leave accepted cases
+untouched, then run the three checks of workflow-discipline §8 — previous
 output gone or edited since, scope changed (→ regeneration, not a delta),
 layout-only (→ re-render, no analysis) — then apply the in-place diff: new →
 add, changed → update the mapped case in place, removed → flag.

@@ -79,5 +79,7 @@ last_run:                          # SKILL-OWNED ledger
                                     #                     change_requests: {object ID: aChangeRequID},
                                     #                     writer, reader, data_type, cases: [titles],
                                     #                     mirrored_into: [module, ...] }
+  review:           {}             # case title -> { <review column>: <value> } as read from the reviewed output
+                                    #   before this run (workflow-discipline §8) — accepted cases are left untouched
   peers:            []             # peer modules the run resolved (mirrors the confirmed module.peers)
   open_points:      []

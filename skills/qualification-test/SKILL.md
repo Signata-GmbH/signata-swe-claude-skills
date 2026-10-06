@@ -5,8 +5,9 @@ description: >-
   feature, as a 3-sheet Excel workbook (Test Cases / Traceability / Open
   Points) an engineer reviews and enters into DOORS by hand. Runs in the SWE.3
   project repository like the code skills, with its own test-spec config
-  (20_AI/ai_test_project.yaml) beside ai_project.yaml — but tests black-box and
-  never reads the source code. v1 is Excel-only (no .vtt /
+  (20_AI/ai_test_project.yaml) beside ai_project.yaml — but tests black-box:
+  the code is searched only for the name of a fault-injection variable, never
+  for an expected result. v1 is Excel-only (no .vtt /
   vTestStudio automation-script generation). Handles requirements-based,
   boundary-value, and diagnostic (UDS DID/RID) test cases. Author by
   inspection only — never claims a DOORS write or a test execution. Use when
@@ -27,9 +28,10 @@ instead (an existing manifest, a previous run, a file name). Check it against
 
 **Run it from the SWE.3 project repository**, like the code skills — never from
 a vTestStudio project folder, which is usually outside Git (project-config §1).
-The code is within reach there, and **must not be read**: qualification testing
-is black-box, and an expected result taken from the code would test the code
-against itself (qualification-test-patterns §0).
+The code is within reach there, and **must not be read** for anything but the
+name of a fault-injection variable the A2L does not settle: qualification
+testing is black-box, and an expected result taken from the code would test the
+code against itself (qualification-test-patterns §0).
 
 Follow these steps in order. Detailed rules live in the linked shared files —
 load them as you reach each step (progressive disclosure).
@@ -80,27 +82,40 @@ Per qualification-test-patterns §1–§3 and workflow-discipline §1/§2/§4:
    in-scope requirement's verification criterion (`aTestCriteria`,
    qualification-test-patterns §1.1): followed, ruling the level out, or empty.
 3. **Existing coverage** split (covered / not covered / partially covered).
+   On a re-run, read the previous output's review verdicts here
+   (workflow-discipline §8): accepted cases are kept, every reviewer question
+   and every finding the inputs cannot answer becomes a Phase-1 question.
 4. **Vocabulary resolution** — every signal/variable/parameter/state/error
    name, with its source; bus signals with their encoding, cycle time and
    timeout from the communication database (qualification-test-patterns §3) —
    never from the source code.
-5. **Proposed test cases** — one line each, no steps yet.
-6. **Row-count gate** (workflow-discipline §5) — the number of rows that table
+5. **Cited specifications** (qualification-test-patterns §3.1) — every document
+   a requirement cites, with the cited and the supplied version; ask for each
+   one missing, reuse the ones the manifest's `docs.extra` already records.
+6. **Stimulus and observation catalogue** (qualification-test-patterns §3.2) —
+   every item the cases will set or read, with its means, manual steps and
+   whether it exists on Series/Debug SW; rows already in
+   `qualification_test.bench_catalogue` shown as confirmed.
+7. **Proposed test cases** — one line each, no steps yet, with each proposed
+   merge of requirements (qualification-test-patterns §7).
+8. **Row-count gate** (workflow-discipline §5) — the number of rows that table
    produces, heading and logical-parent rows included, as the last question.
 Present all of the above and numbered questions (written to
-`20_AI/<FEATURE_SLUG>_Phase1_Questions_QualificationTest.xlsx`,
-workflow-discipline §5). **STOP.**
+`20_AI/<FEATURE_SLUG>_Phase1_Questions_QualificationTest.xlsx`, with the
+catalogue as its own sheet, workflow-discipline §5). **STOP.**
 
 ## Step 5 — Phase 2 — Generation
 
 Only after acknowledgement. First **re-hash every input** (workflow-discipline
 §2) — anything changed since pre-flight is a stop, not a mixed baseline. Apply
 the structure, title convention, boundary-
-value rule, and (for diagnostic features) the DID/RID templates from
+value rule, the writing rules (every action names its means, every result
+what is observed and where), and (for diagnostic features) the DID/RID templates from
 [qualification-test-patterns.md](../_shared/testspec/qualification-test-patterns.md)
 §4–§9. Every symbol/value traced to a supplied input (workflow-discipline §4);
-an unresolved one goes to Open Points, never a guess. For a re-run, run the
-three checks of workflow-discipline §8 first — previous output gone or edited
+an unresolved one goes to Open Points, never a guess. For a re-run, read the
+reviewers' verdicts first and leave accepted cases untouched, then run the
+three checks of workflow-discipline §8 — previous output gone or edited
 since, scope changed (→ regeneration, not a delta), layout-only (→ re-render,
 no analysis) — then apply the in-place diff: new → add, changed → update the
 mapped case in place, removed → flag.
@@ -117,6 +132,8 @@ workbook summary in chat plus the no-fabrication disclaimer.
 ## Step 7 — Ledger & history
 
 Overwrite `last_run` in the manifest (workflow-discipline §8) — including the
-scope, the output path + hash, and the inputs supplied but not read — through a
+scope, the output path + hash, the review verdicts read, and the inputs
+supplied but not read — and write the confirmed catalogue rows to
+`qualification_test.bench_catalogue` in the config, both through a
 comment-preserving YAML writer, and **append** one record to
 `20_AI/manifests/qualification-test/history/<FEATURE_SLUG>.jsonl`.

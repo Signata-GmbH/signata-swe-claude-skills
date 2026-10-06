@@ -91,9 +91,12 @@ from the "most common" spelling seen:**
 - `integration_test.peer_depth` and `integration_test.peer_module_mirroring`
   (integration-test-patterns.md §2–§3) — propose `target_ports` and `false`, and
   say that the other values typically multiply the output several times over.
-- `integration_test.reference_columns` — whether the project wants the
-  architecture-ID column and the validity-review columns beside the 21
-  (output-format.md); propose both off.
+- `integration_test.reference_columns` and `qualification_test.reference_columns`
+  — whether the project wants the ID column (architecture object for SWE.5,
+  requirement for SWE.6) and the validity columns beside the 21, and which
+  review columns its reviewers fill, with their values (output-format.md);
+  propose the ID and validity columns off, and ask the reviewers' column names
+  and values rather than proposing any.
 
 `integration_test.architecture_text_fallback` is **not** asked here: it starts
 as `stop` and changes only by an engineer decision at the export-completeness
@@ -141,6 +144,10 @@ table.
   run that resolves a module's writer→reader pairings appends them here after
   engineer confirmation, so a later run of the same module (or of one of its
   peers) reuses the pairing instead of re-deriving it. Never seeded by analogy.
+- **`qualification_test.bench_catalogue`** — starts empty; each
+  `qualification-test` run appends the stimulus/observation means confirmed in
+  its Phase-1 catalogue (qualification-test-patterns.md §3.2), so the next
+  feature confirms only new items. Never seeded by analogy.
 - **`integration_test.module_name_mapping`** — starts empty; each
   `integration-test` run that resolves a new module's mapping (per
   `integration-test-patterns.md`'s discovery method) appends its entry here so
