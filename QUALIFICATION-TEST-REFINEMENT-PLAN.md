@@ -5,7 +5,9 @@ branch `fix/swe6-validation-feedback-2026-10`. Nothing implemented yet.
 
 **Source:** the QA validation of a generated SWE.6 workbook for one CAN
 feature — 37 concrete cases accepted, 77 rejected. The detailed feedback is
-kept out of Git (it holds customer-project details; this repository is public).
+[QualificationTest_Skill_Feedback_2026-10-06.md](QualificationTest_Skill_Feedback_2026-10-06.md),
+on this branch only: it holds customer-project details and this repository is
+public, so it is removed before the branch is pushed or merged.
 
 ---
 
