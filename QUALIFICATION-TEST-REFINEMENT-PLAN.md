@@ -6,9 +6,7 @@ compare against the 37 / 77 baseline.
 
 **Source:** the QA validation of a generated SWE.6 workbook for one CAN
 feature — 37 concrete cases accepted, 77 rejected. The detailed feedback is
-[QualificationTest_Skill_Feedback_2026-10-06.md](QualificationTest_Skill_Feedback_2026-10-06.md),
-on this branch only: it holds customer-project details and this repository is
-public, so it is removed before the branch is pushed or merged.
+kept out of Git (it holds customer-project details; this repository is public).
 
 ---
 
