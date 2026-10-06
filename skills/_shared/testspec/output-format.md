@@ -19,25 +19,19 @@ position of two columns differs** — see below.
 Get this backwards and the workbook won't align with the DOORS import filter —
 confirm which skill is running before writing the header row.
 
-## Optional reference columns (declared in config, never ad hoc)
+## Reference columns (beside the 21, never imported)
 
-A project may want columns beside the 21 that DOORS never imports — a linking
-key for the reviewer, a validity marker, and the reviewers' own verdict
-columns. Declare them once in the running skill's config block
+Columns DOORS never imports: an ID column that links each row to what it
+tests — **always written** — and the validity columns for QA's validation,
+declared once in the running skill's config block
 (`integration_test.reference_columns` or `qualification_test.reference_columns`
-in `ai_test_project.yaml`) instead of re-requesting them per run:
+in `ai_test_project.yaml`) instead of re-requested per run:
 
 | Key | Column(s) | Position | Content |
 |---|---|---|---|
-| `arch_requirement_id` (SWE.5) | `Architecture Requirement ID` | **before** the 21 (column A) | the ID of the architecture object the row traces to — the same ID as in `Traceability`; empty on a heading row that has no object of its own |
-| `requirement_id` (SWE.6) | `Requirement ID` | **before** the 21 (column A) | the ID of the requirement the row traces to — every ID, separated by newlines, for a merged case; empty on a heading row |
-| `validity_review` | `isValid`, `Reason for Invalid` | **after** the 21 | the validity policy in [no-fabrication.md](no-fabrication.md) |
-| `review_columns` | as configured, e.g. `Review_Test`, `Comment_Review_Test`, `Review_Peer`, `Comment_Review_Peer` | **after** the 21, after the validity columns | the reviewers' verdicts and comments — **always written blank** (no-fabrication.md), each verdict column with a drop-down of its configured values; read back on a re-run (workflow-discipline.md §8) |
-
-`review_columns` lists each column with its role — `verdict` (with its allowed
-values and which of them means accepted, rejected or a question) or `comment`
-(with the verdict column it explains). The column names and values are the
-project's, so never rename or translate them.
+| — always (SWE.5) | `Architecture Requirement ID` | **before** the 21 (column A) | the ID of the architecture object the row traces to — the same ID as in `Traceability`; empty on a heading row that has no object of its own |
+| — always (SWE.6) | `Requirement ID` | **before** the 21 (column A) | the ID of the requirement the row traces to — every ID, separated by newlines, for a merged case; empty on a heading row |
+| `validity_review` | `isValid`, `Reason for Invalid` | **after** the 21 | the validity policy in [no-fabrication.md](no-fabrication.md); QA's verdict, read back on a re-run (workflow-discipline.md §8) |
 
 The 21 attributes stay **contiguous and in schema order** between them. State
 the import consequence once — in the run summary, and as one Open Points row —

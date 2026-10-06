@@ -419,10 +419,11 @@ row:
     Traceability sheet or Open Points cites a legacy test-case workbook.
 15. **integration-test only** — every enum interface has its negative case, or
     an Open Point saying why not (integration-test-patterns.md §5.2).
-16. **Both skills, when reference columns are configured** — the 21 attributes
-    sit contiguous and in schema order between them; no `isValid` cell says
-    `Yes`; every `No` names the missing item and its Open Point; the run
-    summary states the `No` count and the import note (output-format.md).
+16. **Both skills** — column A holds the traced ID on every case row; the 21
+    attributes sit contiguous and in schema order after it; where the validity
+    columns are configured, no `isValid` cell says `Yes`, every `No` names the
+    missing item and its Open Point, and the run summary states the `No` count;
+    the run summary carries the import note (output-format.md).
 17. **Both skills** — every case's stimulus and observation means is available
     on the bench described by `docs.test_environment`, or is listed in Open
     Points (§4).
@@ -459,9 +460,9 @@ row:
     either cites the supplied document, version and section in `Traceability`,
     or is an Open Point naming the missing document; no case has a placeholder
     pass criterion for it (qualification-test-patterns §3.1).
-27. **Both skills, when review columns are configured** — every review column
-    is blank on every row written this run, and on a re-run every accepted case
-    is unchanged (§8).
+27. **Both skills, when the validity columns are configured** — on a re-run,
+    every case QA marked `isValid = Yes` is unchanged, and no value or reason
+    QA entered was altered (§8).
 
 ## 7. Traceability & Open Points (both skills, every run)
 
@@ -525,8 +526,8 @@ diagnostic interface in scope`). A later run can then tell "not needed" from
 1. **Does the previous output still exist?** If `last_run.output.path` is gone,
    the re-run is a **regeneration**, not an in-place update — say so. If it
    exists but its hash differs from `last_run.output.hash`, someone edited it
-   after the run (a reviewer's copy, a validated version): say so, read its
-   review verdicts (below), and ask before writing over it.
+   after the run (a reviewer's copy, a validated version): say so, read QA's
+   validity verdicts (below), and ask before writing over it.
 2. **Has the scope changed?** Compare `last_run.scope` with this run's —
    integration-test: the modules authored, `peer_depth`,
    `peer_module_mirroring`, `authoring_mode`, `scope.interfaces`;
@@ -544,29 +545,26 @@ diagnostic interface in scope`). A later run can then tell "not needed" from
    `notes: layout-only`. No test-case content is generated, so this does not
    skip the Phase-1 gate (no-fabrication.md).
 
-**A reviewed output is read before anything is planned.** When the previous
-workbook carries filled review columns (`review_columns`, output-format.md) —
-or, in a project without them, a column a reviewer added — read every case's
-verdicts and comments first, and work from them:
+**A validated output is read before anything is planned.** When the previous
+workbook carries the validity columns (`isValid`, `Reason for Invalid` —
+output-format.md) and QA has filled them, read every case's value and reason
+first, and work from them. Tell QA's entries from the skill's own by comparing
+with `last_run.review`, which holds what the skill wrote:
 
-- **Accepted** (every verdict column holds a value configured as accepted, e.g.
-  `No Findings`) → leave the case **untouched**, even where a rule has changed
-  since it was written. A changed input behind it is still a *changed* item
-  below; say in the delta that an accepted case is affected.
-- **Findings** (a value configured as rejected, e.g. `Minor Findings` / `Major
-  Findings`) → rework the case to answer the comment, cite the comment in
-  `Traceability` (reviewer column + the text), and show the old and new case
-  side by side in the delta. A comment the inputs cannot answer becomes a
-  Phase-1 question quoting it.
-- **Questions** → each one is a Phase-1 question quoting the comment, answered
-  before the case is touched.
-- **Blank** → not reviewed yet; treat as an ordinary case.
-- **Never write to a review column**, and never clear one — a reworked case
-  keeps its old verdict and comment until the reviewer changes them. Snapshot
-  the verdicts in `last_run.review` so the next run can see which changed.
-- A value that is not among the configured ones is asked about, not mapped.
-- A reviewer's added column the config does not declare: ask once which role it
-  has, then offer to declare it in `review_columns`.
+- **`Yes`** (QA) → accepted: leave the case **untouched**, even where a rule has
+  changed since it was written. A changed input behind it is still a *changed*
+  item below; say in the delta that an accepted case is affected.
+- **`No` entered or changed by QA** → rework the case to answer the `Reason for
+  Invalid`, cite the reason in `Traceability`, and show the old and new case
+  side by side in the delta. A reason the inputs cannot answer, or one that is
+  a question, becomes a Phase-1 question quoting it.
+- **`No` the skill wrote** (unchanged since last run) → its own placeholder
+  mark: resolve it if the inputs now settle the missing item, otherwise keep it.
+- **Blank** → not validated yet; treat as an ordinary case.
+- **Never change what QA entered** — a reworked case keeps QA's value and reason
+  until QA changes them. Snapshot the column values in `last_run.review` so the
+  next run can see what QA changed.
+- Any other value, or a column a reviewer added: ask, never map it.
 
 **In-place re-run** (output present, scope unchanged): recompute each in-scope
 requirement's/interface's hash and compare to `last_run`:

@@ -82,9 +82,9 @@ Per qualification-test-patterns §1–§3 and workflow-discipline §1/§2/§4:
    in-scope requirement's verification criterion (`aTestCriteria`,
    qualification-test-patterns §1.1): followed, ruling the level out, or empty.
 3. **Existing coverage** split (covered / not covered / partially covered).
-   On a re-run, read the previous output's review verdicts here
-   (workflow-discipline §8): accepted cases are kept, every reviewer question
-   and every finding the inputs cannot answer becomes a Phase-1 question.
+   On a re-run, read QA's validity verdicts in the previous output here
+   (workflow-discipline §8): cases marked `Yes` are kept, and every `Reason for
+   Invalid` the inputs cannot answer becomes a Phase-1 question.
 4. **Vocabulary resolution** — every signal/variable/parameter/state/error
    name, with its source; bus signals with their encoding, cycle time and
    timeout from the communication database (qualification-test-patterns §3) —
@@ -113,8 +113,8 @@ value rule, the writing rules (every action names its means, every result
 what is observed and where), and (for diagnostic features) the DID/RID templates from
 [qualification-test-patterns.md](../_shared/testspec/qualification-test-patterns.md)
 §4–§9. Every symbol/value traced to a supplied input (workflow-discipline §4);
-an unresolved one goes to Open Points, never a guess. For a re-run, read the
-reviewers' verdicts first and leave accepted cases untouched, then run the
+an unresolved one goes to Open Points, never a guess. For a re-run, read QA's
+validity verdicts first and leave accepted cases untouched, then run the
 three checks of workflow-discipline §8 — previous output gone or edited
 since, scope changed (→ regeneration, not a delta), layout-only (→ re-render,
 no analysis) — then apply the in-place diff: new → add, changed → update the
@@ -132,7 +132,7 @@ workbook summary in chat plus the no-fabrication disclaimer.
 ## Step 7 — Ledger & history
 
 Overwrite `last_run` in the manifest (workflow-discipline §8) — including the
-scope, the output path + hash, the review verdicts read, and the inputs
+scope, the output path + hash, the validity values read, and the inputs
 supplied but not read — and write the confirmed catalogue rows to
 `qualification_test.bench_catalogue` in the config, both through a
 comment-preserving YAML writer, and **append** one record to

@@ -92,11 +92,9 @@ from the "most common" spelling seen:**
   (integration-test-patterns.md §2–§3) — propose `target_ports` and `false`, and
   say that the other values typically multiply the output several times over.
 - `integration_test.reference_columns` and `qualification_test.reference_columns`
-  — whether the project wants the ID column (architecture object for SWE.5,
-  requirement for SWE.6) and the validity columns beside the 21, and which
-  review columns its reviewers fill, with their values (output-format.md);
-  propose the ID and validity columns off, and ask the reviewers' column names
-  and values rather than proposing any.
+  — whether the project wants the validity columns beside the 21
+  (output-format.md); propose off. The ID column (column A) is always written
+  and is not asked.
 
 `integration_test.architecture_text_fallback` is **not** asked here: it starts
 as `stop` and changes only by an engineer decision at the export-completeness

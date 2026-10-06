@@ -55,6 +55,6 @@ last_run:                          # SKILL-OWNED ledger
     hash: null                     # git hash-object at write time; a different hash later = edited since
   supplied_but_not_read: {}        # input -> one-line reason it was not opened this run
   requirements:     {}             # requirement ID -> { hash, change_request: aChangeRequID, cases: [proposed titles] }
-  review:           {}             # case title -> { <review column>: <value> } as read from the reviewed output
-                                    #   before this run (workflow-discipline §8) — accepted cases are left untouched
+  review:           {}             # case title -> { isValid, reason } as the skill wrote them — tells QA's entries
+                                    #   from the skill's own on the next run (workflow-discipline §8)
   open_points:      []

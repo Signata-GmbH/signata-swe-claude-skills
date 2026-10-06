@@ -210,14 +210,12 @@ integration_test:
   #          DATA-CONSTR, else the type limits; every affected Min/Mid/Max is
   #          flagged. Ignored as soon as an export carries the text.
   architecture_text_fallback: stop # <-- engineer decision
-  # Columns beside the 21 DOORS attributes, never imported — declared once here
-  # instead of being re-requested every run (output-format.md, reference columns).
-  # A position-based DOORS import filter must skip them; a name-based one is
-  # unaffected.
+  # Columns beside the 21 DOORS attributes, never imported (output-format.md,
+  # reference columns). Column A, `Architecture Requirement ID`, is always
+  # written. A position-based DOORS import filter must skip them; a name-based
+  # one is unaffected.
   reference_columns:
-    arch_requirement_id: false     # <-- confirm  column A: the traced architecture object's ID
-    validity_review:     false     # <-- confirm  trailing isValid + Reason for Invalid (no-fabrication.md)
-    review_columns:      []        # <-- confirm  the project's review columns — same shape as qualification_test's
+    validity_review: false         # <-- confirm  trailing isValid + Reason for Invalid (no-fabrication.md)
   # aFunctionModule -> the set of peer modules at the other end of its ports,
   # DISCOVERED per module (integration-test-patterns.md §2) and CACHED here
   # with the resolved writer/reader side per interface. Never seeded by
@@ -249,18 +247,11 @@ qualification_test:
                                           #     diagnostic cases leave the expected response as a to-be-completed
                                           #     placeholder and are listed in Open Points, never guessed.
   # Columns beside the 21 DOORS attributes, never imported (output-format.md,
-  # reference columns). Review columns hold the reviewers' verdicts: the skill
-  # writes them blank and reads them back on a re-run (workflow-discipline §8).
+  # reference columns). Column A, `Requirement ID`, is always written. QA fills
+  # isValid / Reason for Invalid; a re-run reads them back and leaves accepted
+  # cases untouched (workflow-discipline §8).
   reference_columns:
-    requirement_id:  false         # <-- confirm  column A: the traced requirement's ID
     validity_review: false         # <-- confirm  trailing isValid + Reason for Invalid (no-fabrication.md)
-    review_columns: []             # <-- confirm  the project's review columns, in order, e.g.:
-                                    #   - { name: Review_Test, role: verdict,
-                                    #       values: { "No Findings": accepted, "Minor Findings": rejected,
-                                    #                 "Major Findings": rejected, "Questions": question } }
-                                    #   - { name: Comment_Review_Test, role: comment, explains: Review_Test }
-                                    #   - { name: Review_Peer, role: verdict, values: { ...same... } }
-                                    #   - { name: Comment_Review_Peer, role: comment, explains: Review_Peer }
   # Stimulus and observation means of THIS bench, confirmed row by row in the
   # Phase-1 catalogue (qualification-test-patterns §3.2) and cached here so the
   # next feature only confirms new items. Never seeded by analogy.

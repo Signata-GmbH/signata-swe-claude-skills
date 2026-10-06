@@ -28,9 +28,8 @@
 - Set `atsState` to `agreed` — that is a post-review value only a human sets.
 - Write `Yes` in a validity column (below) — nothing was built, flashed or
   executed, so nothing is known to work.
-- Write anything in a review column (`review_columns`, output-format.md) — they
-  hold the reviewers' verdicts and comments, and stay blank on every row the
-  skill writes.
+- Change a validity value or reason QA entered — on a re-run, QA's `Yes`, `No`
+  and reasons stay as QA left them (workflow-discipline.md §8).
 - Report a test case as executed, passed, failed, or covered by execution — you
   have authored a draft by inspection, nothing has run.
 - Write to DOORS. The output is a workbook for an engineer to review and enter
