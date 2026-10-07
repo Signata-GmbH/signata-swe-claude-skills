@@ -12,7 +12,12 @@
 #
 # `last_run:` blocks are SKILL-OWNED — do not hand-edit. They drive in-place
 # re-runs and form the audit trail (which skill version + which source
-# revision + which requirement revision produced which output).
+# revision + which requirement revision produced which output). Older
+# manifests carry `timestamp:` (= run end) instead of run_id/started/ended;
+# the next run replaces it.
+#
+# Every run commits this file itself, at each gate and at the end
+# (run-tracking.md §3) — never leave it for a manual commit.
 #
 # LOCATION (derived by the skills):  20_AI/manifests/<MODULE_NAME>.yaml
 # =====================================================================
@@ -49,12 +54,16 @@ code_dev:
   open_questions:     []            # <-- optional  seed Phase-1; mirrored to 20_AI/<MODULE>_Phase1_Questions_<Skill>.xlsx
 
   last_run:                         # SKILL-OWNED ledger
-    timestamp:        null
+    run_id:           null          # <skill>-<MODULE>-<UTC start> (run-tracking.md §1); commits carry it as AI-Run:
+    started:          null          # UTC, from the shell clock — never written from memory
+    ended:            null
+    timing:           {}            # total_s, engineer_wait_s, ai_active_s, sessions (run-tracking.md §4)
     skill_version:    null
     source_sha:       null          # git SHA the run was authored against (revision pinning)
     requirements_sha: null          # digest of the whole filtered set (scope-drift guard)
     requirements:     {}            # ID -> { hash, files: [file:line, ...] }
     files_created:    []
+    implementation_review: null     # path of the Implementation Review document
     deferred_items:   []
 
 # ---------------------------------------------------------------------
@@ -80,7 +89,10 @@ code_fix:
                                     #     status:        analysed | fix-proposed | fix-applied | no-change | blocked
 
   last_run:                         # SKILL-OWNED ledger
-    timestamp:        null
+    run_id:           null          # <skill>-<MODULE>-<UTC start> (run-tracking.md §1); commits carry it as AI-Run:
+    started:          null          # UTC, from the shell clock — never written from memory
+    ended:            null
+    timing:           {}            # total_s, engineer_wait_s, ai_active_s, sessions (run-tracking.md §4)
     skill_version:    null
     issue_id:         null
     source_sha:       null          # working-tree revision the analysis was authored against
@@ -104,13 +116,26 @@ code_review:
     rte_io_signatures:          AUTO
 
   last_run:                         # SKILL-OWNED ledger
-    timestamp:          null
+    run_id:           null          # <skill>-<MODULE>-<UTC start> (run-tracking.md §1); commits carry it as AI-Run:
+    started:          null          # UTC, from the shell clock — never written from memory
+    ended:            null
+    timing:           {}            # total_s, engineer_wait_s, ai_active_s, sessions (run-tracking.md §4)
     skill_version:      null
     source_sha:         null
     row_count_seen:     null
-    findings_file:      null        # path of the saved Findings-List xlsx copy
-    findings:           []
+    mode:               null        # full | diff (diff: findings outside the diff are not re-checked)
+    output:                         # the living Findings List — checked before every re-run (run-tracking.md §7)
+      path:             null        # 20_AI/CodeReview/<MODULE>_CodeReview_Findings.xlsx
+      hash:             null        # git hash-object at write time; differs later = authors edited it (expected)
+    counts:             {}          # new / still_present / not_reproduced / not_rechecked / total_open
     checklist_coverage: {}          # walked / pass / fail / na / question counts
+
+  finding_seq:  0                   # SKILL-OWNED  last finding number issued — numbers are never reused
+  findings:     {}                  # SKILL-OWNED  stable finding register (review-quality.md "Living findings list"):
+                                    #   CR-001: { fingerprint: "<tag-class>|<file>|<function>|<normalised code>",
+                                    #             type: Major, first_run: <run_id>, last_seen_run: <run_id>,
+                                    #             ai_recheck: present | not-reproduced | not-rechecked }
+  statistics_map: {}                # SKILL-OWNED  where the Statistics sheet's counts live, confirmed once
 
 # ---------------------------------------------------------------------
 # UNIT TEST   (/autosar-unit-test or /unit-test)
@@ -125,10 +150,16 @@ unit_test:
   stub_plan:          {}              # [N] siblings to STUB vs INCLUDE (e.g. stub SAPF_EH_*, motor3ph_*)
 
   last_run:                            # SKILL-OWNED ledger (in-place req -> case map)
-    timestamp:               null
+    run_id:           null          # <skill>-<MODULE>-<UTC start> (run-tracking.md §1); commits carry it as AI-Run:
+    started:          null          # UTC, from the shell clock — never written from memory
+    ended:            null
+    timing:           {}            # total_s, engineer_wait_s, ai_active_s, sessions (run-tracking.md §4)
     skill_version:           null
     source_sha:              null      # revision pinning (harmonized up from non-AUTOSAR)
     source_blob_hashes:      {}       # file -> git blob hash at author time
     requirements_source_sha: null
     requirements:            {}       # ID -> { hash, cases: [SAPF_Mode.001, ...] }
     coverage_only_cases:     []
+    output:                            # the .tst this run wrote — checked before every re-run (run-tracking.md §7)
+      path:                  null
+      hash:                  null

@@ -44,7 +44,8 @@ This project makes the prompts **first-class, versioned, invokable tooling**:
 | **Project config** | `20_AI/ai_project.yaml` — **one per repo**, created once by `/project-init` **on the base branch** and committed. Holds everything that varies by project (type, compiler, target, layout roots, coverage, variants, docs). |
 | **Manifest** | `20_AI/manifests/<MODULE>.yaml` — **one per module**. Inherits the project config; holds module-specific inputs + the skill-owned run ledgers. |
 | **Ledger** | `last_run:` in the manifest — the latest run's state, used to compute in-place re-runs. Overwritten each run. |
-| **Run history** | `20_AI/manifests/history/<MODULE>.jsonl` — append-only audit trail, one immutable record per run. |
+| **Run history** | `20_AI/manifests/history/<MODULE>.jsonl` — append-only audit trail of timestamped **events** (run start, phases, gates, run end with timing), one immutable line each. |
+| **Run** | One invocation of a skill, identified by a `run_id` (`<skill>-<KEY>-<UTC start>`). It commits its own files at every gate and at the end; each commit carries an `AI-Run:` trailer. |
 
 ---
 
@@ -62,6 +63,7 @@ This project makes the prompts **first-class, versioned, invokable tooling**:
 │   ├── common/                   # flavor-AGNOSTIC discipline (both flavors load these)
 │   │   ├── project-config.md        #   per-repo config bootstrap: base-branch + duplicate guards
 │   │   ├── workflow-discipline.md   #   gates, revision pinning, Gate Table, ledger/history
+│   │   ├── run-tracking.md          #   run identity, timing, automatic commits, one living output
 │   │   ├── defect-analysis.md       #   evidence taxonomy, hypotheses, verdicts, minimal diff
 │   │   ├── review-quality.md        #   finding quality, checklist walk, traceability
 │   │   ├── vectorcast-syntax.md     #   .tst grammar (shared verbatim)
@@ -195,6 +197,33 @@ Two records with different jobs:
 **Revision pinning** ties every output to the exact code state it was authored
 against — essential for ASIL-B traceability. Git provides a second,
 corroborating trail.
+
+### 3.7a Runs are tracked, timed and committed by the skill
+
+Engineers used to commit skill outputs, manifests and history by hand; when they
+did not, the next run diffed against a ledger git never saw and what a run had
+done was lost. Now every ledger-keeping skill follows
+[`_shared/common/run-tracking.md`](skills/_shared/common/run-tracking.md):
+
+- **Run identity** — a `run_id` and an untracked active-run marker
+  (`20_AI/.active_run.json`) as soon as the module/feature is known.
+- **Events, not one record** — the history file gets `run_start`,
+  `phase_start`, `gate_reached`, `gate_ack`, `output_written`, `run_end` /
+  `run_aborted`, each with a shell-clock UTC timestamp.
+- **Timing** — `run_end.timing` splits total time into **engineer wait** (gate
+  reached → answered) and **AI active** time, per phase and per gate; the totals
+  are copied to `last_run`.
+- **Automatic commits** — a gate commit at every HARD GATE / STOP, a separate
+  code commit for `code-dev` / `code-fix` source, and a final commit; explicit
+  paths only, never a push, `AI-Run` / `AI-Skill` / `AI-Key` / `AI-Phase`
+  trailers. `git log --grep "AI-Key: <MODULE>"` lists every run on a module.
+- **One living output per key** — no dated copies; earlier versions are
+  commits. The code review keeps one findings workbook with stable finding IDs,
+  carries the authors' columns forward, recomputes the Statistics sheet and
+  appends a Run History sheet.
+- **Plugin hooks** ([`hooks/`](hooks/)) back this up: they stamp stop/prompt
+  times into the marker, block a stop once while the run's files are
+  uncommitted, and flag a run left open when a session starts.
 
 ### 3.8 No pipeline assumption
 
@@ -383,6 +412,7 @@ for a module with no RTE symbols to work from.
 | 13 | **Excel-only v1; AUTOSAR-only `integration-test`** | The vTestStudio `.vtt`/CAPL automation-script generation the user ultimately wants is deferred to v2 rather than attempted without a validated pattern. `integration-test`'s only validated pattern is RTE-debugger breakpoint testing, so it stops on a module with no RTE symbols rather than inventing a black-box equivalent. |
 | 14 | **`code-fix` as a fifth SWE.3 skill, not a mode of `code-dev`** | The fix workflow inverts the input (evidence, not a requirement set), the allowed output (four verdicts — three of which forbid a diff), and the exit criterion (a verification plan the engineer runs, since nothing is reproducible here). Bolting a second entry path onto `code-dev` would double its branching for both workflows and leave the evidence gate nowhere to live; a separate orchestrator sharing `workflow-discipline`, `no-fabrication`, and both flavor packs keeps the guard-rails identical where they genuinely are identical. |
 | 15 | **Run `integration-test`/`qualification-test` from the SWE.3 project repository**, not the vTestStudio project folder | The vTestStudio folder is usually outside version control, and the skills' guarantees — one shared config, an append-only run history, recoverable in-place updates — rest on Git. In the SWE.3 repository the code `integration-test` reads is local and the requirements export, A2L and ARXML are one shared copy. The vTestStudio folder becomes an external path reserved for v2 script generation. `qualification-test` stays black-box: it takes nothing from the code beside it but, where the A2L does not settle it, the name of a fault-injection variable — never a value or an expected result. |
+| 16 | **Skills commit their own files and time their own runs** (gate / code / final commits; event history; plugin hooks as backstop) | Manual commits were skipped, so ledgers and outputs drifted from git and runs could not be reconstructed; the code review produced an overwritten file on same-day re-runs and a new dated file otherwise. Auto-commits with run trailers, one living output per key and shell-clock event timestamps make every run reconstructable and give the team AI-active vs engineer-wait time. Hooks enforce what the model might forget, but never commit themselves. |
 
 ---
 

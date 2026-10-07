@@ -36,6 +36,16 @@ code against itself (qualification-test-patterns §0).
 Follow these steps in order. Detailed rules live in the linked shared files —
 load them as you reach each step (progressive disclosure).
 
+## Step 0 — Start the run (tracked, committed)
+
+As soon as the feature (its slug) is known — before reading the config — load
+[../_shared/common/run-tracking.md](../_shared/common/run-tracking.md) and start the run (§1): resolve any open run first (§5), take the
+start time from the shell clock, write the active-run marker, append
+`run_start`. From here on **every HARD GATE and STOP below is a gate**: append
+`gate_reached` and make the **gate commit** (§3) before you stop, and append
+`gate_ack` when the engineer answers. Timestamps come from `date -u`, never
+from memory.
+
 ## Step 1 — Resolve the test-spec project config
 
 Read `20_AI/ai_test_project.yaml`, and `20_AI/ai_project.yaml` beside it: with
@@ -131,11 +141,14 @@ Object Heading for this skill) to
 `20_AI/QualificationTest/<FEATURE_SLUG>_SWE6_TestCases.xlsx`. Print the
 workbook summary in chat plus the no-fabrication disclaimer.
 
-## Step 7 — Ledger & history
+## Step 7 — Ledger, history & final commit
 
-Overwrite `last_run` in the manifest (workflow-discipline §8) — including the
+Overwrite `last_run` in the manifest (workflow-discipline §8) — including
+`run_id`, `started`, `ended`, `timing`, the
 scope, the output path + hash, the validity values read, and the inputs
 supplied but not read — and write the confirmed catalogue rows to
 `qualification_test.bench_catalogue` in the config, both through a
-comment-preserving YAML writer, and **append** one record to
-`20_AI/manifests/qualification-test/history/<FEATURE_SLUG>.jsonl`.
+comment-preserving YAML writer, append `run_end` to
+`20_AI/manifests/qualification-test/history/<FEATURE_SLUG>.jsonl`, then make the
+**final commit** — the workbook, manifest, config and history — and delete the
+active-run marker (run-tracking §2–§4).

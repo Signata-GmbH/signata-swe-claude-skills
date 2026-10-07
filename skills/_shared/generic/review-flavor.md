@@ -45,15 +45,17 @@ state what information/decision is needed instead of a code change.
 
 ## Output columns (Findings List sheet)
 
-Fill **A–F** and **J**; leave **G, H, I** blank (author's rework cycle):
+Fill **A–F**, **J** and **K–N**; never write **G, H, I** (author's rework cycle — blank on a new finding, carried forward verbatim on a re-run):
 
 `A #` · `B Review Date (today, YYYY-MM-DD)` · `C Reviewer (AI Reviewer)` ·
 `D Location of Finding (<file>:<line(s)>, + SW_Req-NNNN / SwDD ch. where relevant)` ·
 `E Description (what's wrong + what to rework + Guideline §/Checklist #/SW_Req ref)` ·
 `F Type (Major/Minor/Trivial/Question)` · `J AI Suggested Fix`.
 
-Add the `AI Suggested Fix` header in `J1` if absent. Save a **new copy** under
-`20_AI/CodeReview/` as `<Module>_CodeReview_Findings_<YYYY-MM-DD>.xlsx` — never
-overwrite the template; preserve the other sheets (an openpyxl data-validation
-drop warning is acceptable). Checklist sheet name: `SWE.3 Code Review Checklist`.
-Otherwise follow common/review-quality output mechanics.
+Add the `AI Suggested Fix` header in `J1` if absent, then `K Finding ID ·
+L First Found (Run) · M Last Seen (Run) · N AI Re-check`. One **living**
+workbook per module, `20_AI/CodeReview/<Module>_CodeReview_Findings.xlsx`,
+updated in place on every run — never overwrite the template; preserve the other
+sheets (an openpyxl data-validation drop warning is acceptable). Checklist sheet
+name: `SWE.3 Code Review Checklist`. Merge rules, finding IDs, the Statistics and
+Run History sheets: common/review-quality "Output mechanics".
