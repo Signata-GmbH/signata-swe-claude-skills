@@ -152,6 +152,14 @@ docs:
   test_plan:            <path or N/A>        # <-- ask  the Test Plan — per feature, whether it is tested on Series SW
                                               #     or Debug SW (qualification-test atcRemark). Without it, asked once
                                               #     per feature and recorded in the manifest.
+  # SWE.6 reference specifications — OEM performance or test specifications,
+  # standards. Sources of values and procedures, never the test basis. Every
+  # run lists the documents its requirements cite and asks for the ones not
+  # registered here; ALL registered ones are searched, whichever version a
+  # requirement cites (qualification-test-patterns §3.1).
+  reference_specs: []                        # <-- learned  e.g.
+                                              #   - { title: "<OEM CAN specification>", version: "<as the file says>",
+                                              #       path: <path or N/A>, reason_if_na: "" }
   # ---- both: the test bench -------------------------------------------------
   test_environment:     <path or N/A>        # <-- ask  what the bench can STIMULATE and OBSERVE: debugger, XCP, bus
                                               #     access / rest-bus simulation, diagnostic tester, HIL I/O channels,

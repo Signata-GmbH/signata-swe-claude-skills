@@ -65,8 +65,10 @@ Per workflow-discipline §3: compute `FEATURE_SLUG`, read
 if absent), discover the per-feature input docs whose config entry is unset
 (existing test cases for this feature; workflow-discipline §1.2), offer the
 communication database, the Test Plan and the test environment description if
-they are not configured (workflow-discipline §1.1), and **confirm the resolved
-inputs** — including whether the target is a diagnostic feature (routes to §9
+they are not configured (workflow-discipline §1.1), list the reference
+specifications the in-scope requirements cite — registered ones to be used,
+missing ones asked for (qualification-test-patterns §3.1) — and **confirm the
+resolved inputs** — including whether the target is a diagnostic feature (routes to §9
 of the patterns file). **Stop and wait**
 for confirmation. Remember workflow-discipline §0 — this may be the first
 skill ever run against this feature in this project.
@@ -89,9 +91,9 @@ Per qualification-test-patterns §1–§3 and workflow-discipline §1/§2/§4:
    name, with its source; bus signals with their encoding, cycle time and
    timeout from the communication database (qualification-test-patterns §3) —
    never from the source code.
-5. **Cited specifications** (qualification-test-patterns §3.1) — every document
-   a requirement cites, with the cited and the supplied version; ask for each
-   one missing, reuse the ones the manifest's `docs.extra` already records.
+5. **Reference specifications** (qualification-test-patterns §3.1) — the
+   sections read in each registered document, and any version difference
+   between what a requirement cites and what was supplied.
 6. **Stimulus and observation catalogue** (qualification-test-patterns §3.2) —
    every item the cases will set or read, with its means, manual steps and
    whether it exists on Series/Debug SW; rows already in

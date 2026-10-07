@@ -120,6 +120,9 @@ table.
   out", pinned per run. Declining the code is allowed only as a recorded
   decision with its reason, and makes every integration-test run degraded
   (integration-test-patterns.md §9) — say so before writing it.
+- **`docs.reference_specs`** (qualification-test) — starts empty; filled at
+  the start of each run from the documents its requirements cite
+  (qualification-test-patterns.md §3.1), and reused by every feature after.
 - **`docs.comm_database`, `docs.test_plan`, `docs.test_environment`** —
   discover like any other document, then **offer** each explicitly, saying what
   is lost without it (workflow-discipline.md §1.1). In the SWE.3 repo the bus

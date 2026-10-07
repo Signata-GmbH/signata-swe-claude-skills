@@ -101,7 +101,7 @@ P7, P8 (items 23–24). Blocked: P2's notation (Q1), P6 (Q3), P9's names (Q4).
 | 2 | Manual instructions are wanted: which panel, which steps | §3.2 catalogue `Manual steps` column; a `Manual:` line under each action (§7) |
 | 3 | A merged case has one final result covering all its requirements; the verdict is on the test case, not per requirement | §7 merged requirements: proposed at Phase 1, one pass/fail result, each requirement traced to its result step |
 | 4 | Review columns `Review_Test`, `Review_Peer` (Minor Findings / Major Findings / Questions / No Findings) and `Comment_Review_Test`, `Comment_Review_Peer` | **Not adopted** — by decision, both skills keep `isValid` / `Reason for Invalid` as the only validation columns; a re-run reads them back (N1) |
-| 5 | The cited specifications were supplied (an OEM CAN performance specification and an OEM network-management test specification) | §3.1 cited specifications. **Open:** the supplied CAN specification is a different version from the one the requirements cite — ask QA which applies |
+| 5 | The cited specifications were supplied (an OEM CAN performance specification and an OEM network-management test specification) | §3.1 reference specifications: registered once per project, asked at the start of each run. QA's follow-up on the version difference: refer to all the documents — so every registered document is searched, the supplied version is used, and each version difference is one Open Point |
 | 6 | XCP is available for injecting values; refer to the code for the variables that inject a fault | §0 narrow exception: the code may give the **name** of a fault-injection variable, which must be in the A2L and is marked `from code`; never a value or an expected result |
 
 All of P1–P9 and N1–N4 are in. Changed files: `qualification-test/SKILL.md`,
@@ -113,6 +113,5 @@ manifest templates, README and USING-THE-BETA.
 
 Still open:
 
-- **Version of the cited CAN specification** (Q5 above).
 - **The supplied specifications stay out of Git** — they are OEM documents.
 

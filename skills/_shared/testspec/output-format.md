@@ -87,7 +87,7 @@ the requirement text). For SWE.5 also: the interface, its data type, the
 whether the row is the **primary** or a **mirror** (§3), and which range the
 Min/Mid/Max values came from — the documented `Range:` or the implementation
 type's limits (§5.2). For SWE.6 also: each merged requirement with the
-result step that checks it, the cited specification, version and section a
+result step that checks it, the reference specification, version and section a
 value or procedure came from (qualification-test-patterns.md §3.1), the
 catalogue row (`CID`) behind each means, and any fault-injection variable
 named from the code — marked `from code`, with file and line (§0). The engineer creates the DOORS links by hand from this

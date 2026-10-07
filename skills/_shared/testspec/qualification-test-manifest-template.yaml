@@ -28,11 +28,8 @@ docs:
   existing_qualification_test_cases: <path or N/A>  # <-- fill  MANDATORY unless N/A by a recorded engineer decision
                                               #     (workflow-discipline §1.2) — this feature's slice of the existing
                                               #     qualification-test-spec export (exemplars + coverage baseline)
-  extra: []                        # specifications a requirement cites (qualification-test-patterns §3.1), and
-                                    #   any other document for a run — asked at Phase 1, then reused:
-                                    #   - { path: <path or N/A>, title: "<document>", cited_version: "<as the
-                                    #       requirement cites it>", supplied_version: "<as the file says>",
-                                    #       cited_by: [<requirement IDs>], sections_read: [], reason_if_na: "" }
+  extra: []                        # optional additional documents for a run (reference specifications are
+                                    #   project-wide: docs.reference_specs in ai_test_project.yaml)
   run_instructions: ""             # optional free-text custom instructions for a run
 
 scope:
@@ -54,6 +51,7 @@ last_run:                          # SKILL-OWNED ledger
     path: null
     hash: null                     # git hash-object at write time; a different hash later = edited since
   supplied_but_not_read: {}        # input -> one-line reason it was not opened this run
+  reference_specs:  {}             # title -> { version_read, cited_versions: {req ID: version}, sections_read: [] }
   requirements:     {}             # requirement ID -> { hash, change_request: aChangeRequID, cases: [proposed titles] }
   review:           {}             # case title -> { isValid, reason } as the skill wrote them — tells QA's entries
                                     #   from the skill's own on the next run (workflow-discipline §8)

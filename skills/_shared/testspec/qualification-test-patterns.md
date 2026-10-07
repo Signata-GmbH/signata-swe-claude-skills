@@ -89,7 +89,7 @@ say which clause).
 
 List every signal, variable, parameter, state and error name needed. Name the
 source for each: `docs.signals_params`, `docs.a2l_or_varlist`, `docs.diagspec`,
-`docs.comm_database`, a cited specification (`docs.extra`, §3.1), or an
+`docs.comm_database`, a reference specification (`docs.reference_specs`, §3.1), or an
 existing test case for this feature — never the source code (§0). Any identifier that cannot be resolved goes to Open Points —
 never invented, never a guessed variant of one you can see.
 
@@ -115,37 +115,50 @@ signal or variable, say which it is — "message `<Msg>`", "signal `<Sig>` in
 message `<Msg>`", "XCP variable `<Var>`" — so nobody has to guess what a bare
 identifier refers to.
 
-### 3.1 Specifications a requirement cites
+### 3.1 Reference specifications
 
-A requirement that names another document — an OEM performance
-specification, a network-management specification, a standard — or whose
-behaviour is only defined there, cannot be tested from the requirement alone.
+Some behaviour is defined outside the requirements: in an OEM performance
+specification, a network-management specification or test catalogue, a
+standard. Requirements cite such documents, or rely on them without naming
+them. They are **reference specifications**: sources of values and
+procedures, like the communication database. They are **not** the test basis —
+every case still traces to a requirement.
 
-- **Ask for it at Phase 1.** List every cited document with the requirements
-  citing it, and ask for each file, or a recorded `N/A` with the reason. Record
-  the answer in the manifest's `docs.extra` with the **cited version**, the
-  **supplied version**, and the file's hash (workflow-discipline §2). A later
-  run reuses it and does not ask again.
-- **Check the version.** The version the requirement cites must be the
-  version supplied. A different version is a Phase-1 question naming both —
-  never a silent substitution, since timeouts and values move between
-  versions.
-- **Read only what is cited.** These documents run to hundreds of pages. Read
-  the sections a requirement points to, or that define the behaviour it
-  names, and record which sections were read.
+- **Registered once for the project.** They apply across features (a CAN
+  specification serves every CAN feature), so they are listed in
+  `ai_test_project.yaml` under `docs.reference_specs` — title, version, path —
+  never per feature.
+- **Asked at the start of every run** (Step 3, the input confirmation). Read
+  the in-scope requirements, list every document they cite, and match each
+  against the registered list. Show both in the inputs table: the registered
+  ones that will be used, and the cited ones not registered. For each missing
+  one, ask for the file, or a recorded `N/A` with the reason, and write the
+  answer to the list. A run whose requirements cite nothing new asks nothing.
+- **Read every registered specification, not only the cited one.** Search all
+  of them for the behaviour a requirement names — a network-management test
+  catalogue applies to the network-management requirements whether or not they
+  cite it by name.
+- **Use the version supplied.** Where a requirement cites a different version
+  of a registered document, use the supplied version — do not stop or ask. In
+  `Traceability`, record the version the requirement cites next to the version
+  read, and raise **one** `Input hygiene` Open Point per document (not per
+  case), naming both versions and the requirements citing the other one, so the
+  difference stays visible to the requirement owner.
+- **Read the relevant sections only.** These documents run to hundreds of
+  pages. Read the sections that define the behaviour a requirement names, and
+  record them in `last_run.reference_specs`.
 - **Cite it like any other source.** A value or behaviour taken from it names
   the document, its version and the section in `Traceability`.
-- **A test specification is a procedure source.** Where the cited document is
-  itself a test specification (an OEM network-management test catalogue, for
-  instance) and one of its tests covers the requirement, follow that test's
-  conditions and steps and put its test ID in `atsReference`, rather than
-  writing a procedure of your own. Whether a case that only repeats an OEM
-  test is wanted at all — or is already covered by the OEM's own communication
-  testing — is one Phase-1 question per document, not per case.
-- **Language.** A cited document may be in another language. The case text
-  stays in the workbook's language; test IDs, signal names and section titles
-  are quoted as the document writes them.
-- **Not supplied** (`N/A` recorded) → every requirement that depends on it is
+- **A test specification is a procedure source.** Where a reference
+  specification is itself a test specification and one of its tests covers the
+  requirement, follow that test's conditions and steps and put its test ID in
+  `atsReference`, rather than writing a procedure of your own. Whether a case
+  that only repeats an OEM test is wanted at all — or is already covered by the
+  OEM's own testing — is one Phase-1 question per document, not per case.
+- **Language.** A reference specification may be in another language. The
+  case text stays in the workbook's language; test IDs, signal names and
+  section titles are quoted as the document writes them.
+- **Not available** (`N/A` recorded) → every requirement that depends on it is
   listed in Open Points with the document named, and gets no case with a
   placeholder pass criterion.
 

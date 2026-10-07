@@ -49,7 +49,7 @@
 | Communication database — DBC / LDF / ARXML system extract (`docs.comm_database`) | – (tests at RTE level) | **ask** — every bus signal's encoding, cycle time and timeout; without it those values are Open Points |
 | Test Plan (`docs.test_plan`) | – | **ask** — Series SW or Debug SW per feature (`atcRemark`); without it, asked once per feature |
 | Test environment description (`docs.test_environment`) | **ask** | **ask** — what the bench can stimulate and observe (§4), including the CANoe configuration's panel list; without it, every means is asked in the Phase-1 catalogue (qualification-test-patterns §3.2) |
-| Specifications a requirement cites (manifest `docs.extra`) | – | **ask**, per cited document — OEM performance or test specifications, standards (qualification-test-patterns §3.1); without one, the requirements depending on it are Open Points |
+| Reference specifications (`docs.reference_specs`) — OEM performance or test specifications, standards | – | **ask**, at every run, for each document the in-scope requirements cite that is not registered (qualification-test-patterns §3.1); without one, the requirements depending on it are Open Points |
 
 **The two SWE.5 test-basis documents are not interchangeable with the SWE.6
 one.** `integration-test` reads the Functional_Architecture export and never
@@ -456,10 +456,11 @@ row:
     the feature's `test_software`; every boundary value is on a settable
     quantity; no database shorthand in the text (qualification-test-patterns
     §3, §6, §8).
-26. **qualification-test only** — every requirement that cites a specification
-    either cites the supplied document, version and section in `Traceability`,
-    or is an Open Point naming the missing document; no case has a placeholder
-    pass criterion for it (qualification-test-patterns §3.1).
+26. **qualification-test only** — every value or procedure taken from a
+    reference specification cites its document, version and section in
+    `Traceability`; every version difference has its one Open Point; every
+    requirement depending on an unavailable document is an Open Point, never a
+    case with a placeholder pass criterion (qualification-test-patterns §3.1).
 27. **Both skills, when the validity columns are configured** — on a re-run,
     every case QA marked `isValid = Yes` is unchanged, and no value or reason
     QA entered was altered (§8).
