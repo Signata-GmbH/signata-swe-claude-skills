@@ -82,5 +82,7 @@ last_run:                          # SKILL-OWNED ledger
                                     #                     change_requests: {object ID: aChangeRequID},
                                     #                     writer, reader, data_type, cases: [titles],
                                     #                     mirrored_into: [module, ...] }
+  review:           {}             # case title -> { isValid, reason } as the skill wrote them — tells QA's entries
+                                    #   from the skill's own on the next run (workflow-discipline §8)
   peers:            []             # peer modules the run resolved (mirrors the confirmed module.peers)
   open_points:      []

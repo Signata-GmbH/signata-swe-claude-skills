@@ -91,9 +91,10 @@ from the "most common" spelling seen:**
 - `integration_test.peer_depth` and `integration_test.peer_module_mirroring`
   (integration-test-patterns.md §2–§3) — propose `target_ports` and `false`, and
   say that the other values typically multiply the output several times over.
-- `integration_test.reference_columns` — whether the project wants the
-  architecture-ID column and the validity-review columns beside the 21
-  (output-format.md); propose both off.
+- `integration_test.reference_columns` and `qualification_test.reference_columns`
+  — whether the project wants the validity columns beside the 21
+  (output-format.md); propose off. The ID column (column A) is always written
+  and is not asked.
 
 `integration_test.architecture_text_fallback` is **not** asked here: it starts
 as `stop` and changes only by an engineer decision at the export-completeness
@@ -119,6 +120,9 @@ table.
   out", pinned per run. Declining the code is allowed only as a recorded
   decision with its reason, and makes every integration-test run degraded
   (integration-test-patterns.md §9) — say so before writing it.
+- **`docs.reference_specs`** (qualification-test) — starts empty; filled at
+  the start of each run from the documents its requirements cite
+  (qualification-test-patterns.md §3.1), and reused by every feature after.
 - **`docs.comm_database`, `docs.test_plan`, `docs.test_environment`** —
   discover like any other document, then **offer** each explicitly, saying what
   is lost without it (workflow-discipline.md §1.1). In the SWE.3 repo the bus
@@ -141,6 +145,10 @@ table.
   run that resolves a module's writer→reader pairings appends them here after
   engineer confirmation, so a later run of the same module (or of one of its
   peers) reuses the pairing instead of re-deriving it. Never seeded by analogy.
+- **`qualification_test.bench_catalogue`** — starts empty; each
+  `qualification-test` run appends the stimulus/observation means confirmed in
+  its Phase-1 catalogue (qualification-test-patterns.md §3.2), so the next
+  feature confirms only new items. Never seeded by analogy.
 - **`integration_test.module_name_mapping`** — starts empty; each
   `integration-test` run that resolves a new module's mapping (per
   `integration-test-patterns.md`'s discovery method) appends its entry here so

@@ -14,11 +14,22 @@
 - Invent a numeric value, threshold, tolerance, or step size. Where a
   requirement states a limit but no parameter backs it with a resolution, put
   the requirement on Open Points rather than inventing a step size.
+- Invent a test procedure. Behaviour no supplied input describes — a state
+  machine, an initialisation sequence, a mode transition, a wake-up or
+  shut-down order — is a Phase-1 question or an Open Point, never a procedure
+  written from what such systems usually do. Where a requirement cites a
+  specification that describes it, ask for that document
+  (qualification-test-patterns.md §3.1).
+- Invent the name of a bench means — a CANoe panel, a panel control, a CAPL
+  function, a HIL channel. It comes from the test environment description or
+  from the engineer's answer in the Phase-1 catalogue.
 - Assign a `SW_TST` ID, or any DOORS object ID — `ID` stays empty; DOORS assigns
   it.
 - Set `atsState` to `agreed` — that is a post-review value only a human sets.
 - Write `Yes` in a validity column (below) — nothing was built, flashed or
   executed, so nothing is known to work.
+- Change a validity value or reason QA entered — on a re-run, QA's `Yes`, `No`
+  and reasons stay as QA left them (workflow-discipline.md §8).
 - Report a test case as executed, passed, failed, or covered by execution — you
   have authored a draft by inspection, nothing has run.
 - Write to DOORS. The output is a workbook for an engineer to review and enter

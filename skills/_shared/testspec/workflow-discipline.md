@@ -40,7 +40,7 @@
 | Requirements workbook (`docs.requirements_workbook`) | – | ✔ |
 | Signals & Parameters (`docs.signals_params`) | where a signal's raw values are exercised | ✔ |
 | Existing test-spec export for this module/feature | ✔ under `integration_test.authoring_mode: extend_existing` · – under `from_scratch` (integration-test-patterns §0.1) | ✔, unless `N/A` by a recorded engineer decision (§1.2) |
-| The code (`docs.source_repo` — this repository by default) — breakpoint lines and observed variables | ✔ — waivable only by a recorded engineer decision, which makes the run *degraded* (integration-test-patterns §9) | – never read: black-box (§0) |
+| The code (`docs.source_repo` — this repository by default) — breakpoint lines and observed variables | ✔ — waivable only by a recorded engineer decision, which makes the run *degraded* (integration-test-patterns §9) | – black-box: searched only for the name of a fault-injection variable the A2L does not settle (qualification-test-patterns §0) |
 | ARXML / `Rte_*.h` / `Rte_Type.h` (`docs.rte_type_headers`, or `layout.rte_inc` in `ai_project.yaml`) | ✔ — every RTE symbol and every enum literal | – |
 | OS and RTE configuration (`docs.os_config`) — ECUC ARXML or the generated OS/RTE code | **ask** — P-05's task and period (integration-test-patterns §7); without it, they rest on the architecture text alone | – |
 | Debug build — ELF with symbols and/or map file (`docs.debug_build`) | **ask** — every observed variable exists in the build (integration-test-patterns §9); without it, none is checked | – |
@@ -48,7 +48,8 @@
 | DiagSpec (`docs.diagspec`) | diagnostic interfaces (pattern P-07) only | diagnostic features only |
 | Communication database — DBC / LDF / ARXML system extract (`docs.comm_database`) | – (tests at RTE level) | **ask** — every bus signal's encoding, cycle time and timeout; without it those values are Open Points |
 | Test Plan (`docs.test_plan`) | – | **ask** — Series SW or Debug SW per feature (`atcRemark`); without it, asked once per feature |
-| Test environment description (`docs.test_environment`) | **ask** | **ask** — what the bench can stimulate and observe (§4); without it, the means each case assumes are listed once in Open Points |
+| Test environment description (`docs.test_environment`) | **ask** | **ask** — what the bench can stimulate and observe (§4), including the CANoe configuration's panel list; without it, every means is asked in the Phase-1 catalogue (qualification-test-patterns §3.2) |
+| Reference specifications (`docs.reference_specs`) — OEM performance or test specifications, standards | – | **ask**, at every run, for each document the in-scope requirements cite that is not registered (qualification-test-patterns §3.1); without one, the requirements depending on it are Open Points |
 
 **The two SWE.5 test-basis documents are not interchangeable with the SWE.6
 one.** `integration-test` reads the Functional_Architecture export and never
@@ -356,6 +357,11 @@ Corollary: **end a question on the thing you are asking**, not on background
 you have already said you will handle anyway. Whatever a question closes with
 is what a short answer attaches to.
 
+**qualification-test adds a second sheet, `Catalogue`** — the stimulus and
+observation means, one row per item, each answered on its own
+(qualification-test-patterns §3.2). Its rows are read back like the questions:
+answered rows are resolved, only `open` ones are re-emitted.
+
 **Row-count gate (mandatory — the last Phase-1 question).** After the
 proposed-cases table, state how many rows the `Test Cases` sheet will have —
 heading rows and case rows, counted from that table — and require the engineer
@@ -413,16 +419,18 @@ row:
     Traceability sheet or Open Points cites a legacy test-case workbook.
 15. **integration-test only** — every enum interface has its negative case, or
     an Open Point saying why not (integration-test-patterns.md §5.2).
-16. **Both skills, when reference columns are configured** — the 21 attributes
-    sit contiguous and in schema order between them; no `isValid` cell says
-    `Yes`; every `No` names the missing item and its Open Point; the run
-    summary states the `No` count and the import note (output-format.md).
+16. **Both skills** — column A holds the traced ID on every case row; the 21
+    attributes sit contiguous and in schema order after it; where the validity
+    columns are configured, no `isValid` cell says `Yes`, every `No` names the
+    missing item and its Open Point, and the run summary states the `No` count;
+    the run summary carries the import note (output-format.md).
 17. **Both skills** — every case's stimulus and observation means is available
     on the bench described by `docs.test_environment`, or is listed in Open
     Points (§4).
 18. **qualification-test only** — every case's pass/fail result implements its
     requirement's `aTestCriteria`, or an Open Point says why not; nothing in
-    the workbook was derived from source code; every bus-signal value, cycle
+    the workbook was derived from source code except fault-injection variable
+    names, each marked `from code`; every bus-signal value, cycle
     time and timeout cites `docs.comm_database` (qualification-test-patterns
     §0, §1.1, §3).
 19. **integration-test only** — every P-05 case cites the task and period found
@@ -434,6 +442,28 @@ row:
 21. **Both skills** — `aChangeRequID` is empty on a first run, and on a re-run
     carries the change request of each new or changed object behind the case,
     or an Open Point says why not (§8).
+22. **qualification-test only** — every `atcActions` entry opens with a
+    confirmed means from the catalogue and names the item with its kind and
+    value; a manual-steps line where the means needs one; no action states a
+    condition instead of doing something (qualification-test-patterns §7).
+23. **qualification-test only** — every `atcResult` entry names the
+    observation means and an observable item (a signal, message or A2L
+    variable), never an internal state; no result reads a signal or message the
+    case's own actions removed; every observation window cites its source
+    (qualification-test-patterns §7).
+24. **Both skills** — no precondition contradicts the case's own actions.
+25. **qualification-test only** — every item a case sets or reads exists on
+    the feature's `test_software`; every boundary value is on a settable
+    quantity; no database shorthand in the text (qualification-test-patterns
+    §3, §6, §8).
+26. **qualification-test only** — every value or procedure taken from a
+    reference specification cites its document, version and section in
+    `Traceability`; every version difference has its one Open Point; every
+    requirement depending on an unavailable document is an Open Point, never a
+    case with a placeholder pass criterion (qualification-test-patterns §3.1).
+27. **Both skills, when the validity columns are configured** — on a re-run,
+    every case QA marked `isValid = Yes` is unchanged, and no value or reason
+    QA entered was altered (§8).
 
 ## 7. Traceability & Open Points (both skills, every run)
 
@@ -502,8 +532,8 @@ diagnostic interface in scope`). A later run can then tell "not needed" from
 1. **Does the previous output still exist?** If `last_run.output.path` is gone,
    the re-run is a **regeneration**, not an in-place update — say so. If it
    exists but its hash differs from `last_run.output.hash`, someone edited it
-   after the run (a reviewer's copy, a validated version): say so, and ask
-   before writing over it.
+   after the run (a reviewer's copy, a validated version): say so, read QA's
+   validity verdicts (below), and ask before writing over it.
 2. **Has the scope changed?** Compare `last_run.scope` with this run's —
    integration-test: the modules authored, `peer_depth`,
    `peer_module_mirroring`, `authoring_mode`, `scope.interfaces`;
@@ -520,6 +550,27 @@ diagnostic interface in scope`). A later run can then tell "not needed" from
    Show the old→new column map, confirm, and append a history record with
    `notes: layout-only`. No test-case content is generated, so this does not
    skip the Phase-1 gate (no-fabrication.md).
+
+**A validated output is read before anything is planned.** When the previous
+workbook carries the validity columns (`isValid`, `Reason for Invalid` —
+output-format.md) and QA has filled them, read every case's value and reason
+first, and work from them. Tell QA's entries from the skill's own by comparing
+with `last_run.review`, which holds what the skill wrote:
+
+- **`Yes`** (QA) → accepted: leave the case **untouched**, even where a rule has
+  changed since it was written. A changed input behind it is still a *changed*
+  item below; say in the delta that an accepted case is affected.
+- **`No` entered or changed by QA** → rework the case to answer the `Reason for
+  Invalid`, cite the reason in `Traceability`, and show the old and new case
+  side by side in the delta. A reason the inputs cannot answer, or one that is
+  a question, becomes a Phase-1 question quoting it.
+- **`No` the skill wrote** (unchanged since last run) → its own placeholder
+  mark: resolve it if the inputs now settle the missing item, otherwise keep it.
+- **Blank** → not validated yet; treat as an ordinary case.
+- **Never change what QA entered** — a reworked case keeps QA's value and reason
+  until QA changes them. Snapshot the column values in `last_run.review` so the
+  next run can see what QA changed.
+- Any other value, or a column a reviewer added: ask, never map it.
 
 **In-place re-run** (output present, scope unchanged): recompute each in-scope
 requirement's/interface's hash and compare to `last_run`:

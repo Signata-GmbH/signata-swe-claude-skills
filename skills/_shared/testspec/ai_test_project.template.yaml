@@ -152,11 +152,20 @@ docs:
   test_plan:            <path or N/A>        # <-- ask  the Test Plan — per feature, whether it is tested on Series SW
                                               #     or Debug SW (qualification-test atcRemark). Without it, asked once
                                               #     per feature and recorded in the manifest.
+  # SWE.6 reference specifications — OEM performance or test specifications,
+  # standards. Sources of values and procedures, never the test basis. Every
+  # run lists the documents its requirements cite and asks for the ones not
+  # registered here; ALL registered ones are searched, whichever version a
+  # requirement cites (qualification-test-patterns §3.1).
+  reference_specs: []                        # <-- learned  e.g.
+                                              #   - { title: "<OEM CAN specification>", version: "<as the file says>",
+                                              #       path: <path or N/A>, reason_if_na: "" }
   # ---- both: the test bench -------------------------------------------------
   test_environment:     <path or N/A>        # <-- ask  what the bench can STIMULATE and OBSERVE: debugger, XCP, bus
-                                              #     access / rest-bus simulation, diagnostic tester, HIL I/O channels
-                                              #     (workflow-discipline §4). Without it, the means each case assumes are
-                                              #     listed once in Open Points. Mandatory once scripts are generated (v2).
+                                              #     access / rest-bus simulation, diagnostic tester, HIL I/O channels,
+                                              #     and the CANoe configuration's panels and controls (workflow-discipline
+                                              #     §4). Without it, SWE.6 asks every means in its Phase-1 catalogue
+                                              #     (qualification-test-patterns §3.2). Mandatory once scripts are generated (v2).
   a2l_or_varlist:        <path or N/A>       # <-- fill  A2L file or code variable list — MANDATORY for SWE.6
   diagspec:               <path or N/A>      # <-- fill  UDS DiagSpec (e.g. EE0339_UDS_DiagSpec) — SWE.6 diagnostic features;
                                               #     SWE.5 diagnostic interfaces (pattern P-07) only
@@ -209,13 +218,12 @@ integration_test:
   #          DATA-CONSTR, else the type limits; every affected Min/Mid/Max is
   #          flagged. Ignored as soon as an export carries the text.
   architecture_text_fallback: stop # <-- engineer decision
-  # Columns beside the 21 DOORS attributes, never imported — declared once here
-  # instead of being re-requested every run (output-format.md, reference columns).
-  # A position-based DOORS import filter must skip them; a name-based one is
-  # unaffected.
+  # Columns beside the 21 DOORS attributes, never imported (output-format.md,
+  # reference columns). Column A, `Architecture Requirement ID`, is always
+  # written. A position-based DOORS import filter must skip them; a name-based
+  # one is unaffected.
   reference_columns:
-    arch_requirement_id: false     # <-- confirm  column A: the traced architecture object's ID
-    validity_review:     false     # <-- confirm  trailing isValid + Reason for Invalid (no-fabrication.md)
+    validity_review: false         # <-- confirm  trailing isValid + Reason for Invalid (no-fabrication.md)
   # aFunctionModule -> the set of peer modules at the other end of its ports,
   # DISCOVERED per module (integration-test-patterns.md §2) and CACHED here
   # with the resolved writer/reader side per interface. Never seeded by
@@ -246,3 +254,17 @@ qualification_test:
   nrc_table: <path or "not available">  # <-- fill  negative-diagnostic-case NRC lookup; if unavailable, negative
                                           #     diagnostic cases leave the expected response as a to-be-completed
                                           #     placeholder and are listed in Open Points, never guessed.
+  # Columns beside the 21 DOORS attributes, never imported (output-format.md,
+  # reference columns). Column A, `Requirement ID`, is always written. QA fills
+  # isValid / Reason for Invalid; a re-run reads them back and leaves accepted
+  # cases untouched (workflow-discipline §8).
+  reference_columns:
+    validity_review: false         # <-- confirm  trailing isValid + Reason for Invalid (no-fabrication.md)
+  # Stimulus and observation means of THIS bench, confirmed row by row in the
+  # Phase-1 catalogue (qualification-test-patterns §3.2) and cached here so the
+  # next feature only confirms new items. Never seeded by analogy.
+  bench_catalogue: {}              # <-- learned  item -> { kind, set_by, read_in, manual_steps,
+                                    #                        series_sw: true|false, debug_sw: true|false, source }
+                                    #   e.g. <Sig>: { kind: signal, set_by: "CANoe panel <Panel> / <Control>",
+                                    #                 read_in: "CANoe Trace", manual_steps: "...", series_sw: true,
+                                    #                 debug_sw: true, source: comm_database }

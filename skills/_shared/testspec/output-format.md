@@ -19,17 +19,19 @@ position of two columns differs** — see below.
 Get this backwards and the workbook won't align with the DOORS import filter —
 confirm which skill is running before writing the header row.
 
-## Optional reference columns (declared in config, never ad hoc)
+## Reference columns (beside the 21, never imported)
 
-A project may want columns beside the 21 that DOORS never imports — a linking
-key for the reviewer, and a review verdict. Declare them once in the running
-skill's config block (for SWE.5, `integration_test.reference_columns` in
-`ai_test_project.yaml`) instead of re-requesting them per run:
+Columns DOORS never imports: an ID column that links each row to what it
+tests — **always written** — and the validity columns for QA's validation,
+declared once in the running skill's config block
+(`integration_test.reference_columns` or `qualification_test.reference_columns`
+in `ai_test_project.yaml`) instead of re-requested per run:
 
 | Key | Column(s) | Position | Content |
 |---|---|---|---|
-| `arch_requirement_id` | `Architecture Requirement ID` | **before** the 21 (column A) | the ID of the architecture object the row traces to — the same ID as in `Traceability`; empty on a heading row that has no object of its own |
-| `validity_review` | `isValid`, `Reason for Invalid` | **after** the 21 | the validity policy in [no-fabrication.md](no-fabrication.md) |
+| — always (SWE.5) | `Architecture Requirement ID` | **before** the 21 (column A) | the ID of the architecture object the row traces to — the same ID as in `Traceability`; empty on a heading row that has no object of its own |
+| — always (SWE.6) | `Requirement ID` | **before** the 21 (column A) | the ID of the requirement the row traces to — every ID, separated by newlines, for a merged case; empty on a heading row |
+| `validity_review` | `isValid`, `Reason for Invalid` | **after** the 21 | the validity policy in [no-fabrication.md](no-fabrication.md); QA's verdict, read back on a re-run (workflow-discipline.md §8) |
 
 The 21 attributes stay **contiguous and in schema order** between them. State
 the import consequence once — in the run summary, and as one Open Points row —
@@ -84,7 +86,11 @@ the requirement text). For SWE.5 also: the interface, its data type, the
 (integration-test-patterns.md §9), which module's section the row sits under,
 whether the row is the **primary** or a **mirror** (§3), and which range the
 Min/Mid/Max values came from — the documented `Range:` or the implementation
-type's limits (§5.2). The engineer creates the DOORS links by hand from this
+type's limits (§5.2). For SWE.6 also: each merged requirement with the
+result step that checks it, the reference specification, version and section a
+value or procedure came from (qualification-test-patterns.md §3.1), the
+catalogue row (`CID`) behind each means, and any fault-injection variable
+named from the code — marked `from code`, with file and line (§0). The engineer creates the DOORS links by hand from this
 sheet — it must be complete and readable on its own.
 
 **A case with no object of its own.** A pattern sometimes requires a case that
