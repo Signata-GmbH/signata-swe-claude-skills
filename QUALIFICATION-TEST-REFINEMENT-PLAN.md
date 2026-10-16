@@ -1,8 +1,10 @@
 # qualification-test (SWE.6) — refinement plan from the QA validation
 
 **Status:** QA answered (§4); implemented 2026-10-06 on branch
-`fix/swe6-validation-feedback-2026-10` (§6). Next: re-run the same feature and
-compare against the 37 / 77 baseline.
+`fix/swe6-validation-feedback-2026-10` (§6). The re-run was validated by QA —
+every case accepted, with two rewritten examples showing the expected case
+design; implemented 2026-10-16 on branch `fix/swe6-qa-stepped-cases-2026-10`
+(§7). Next: re-run the same feature and compare with QA's examples.
 
 **Source:** the QA validation of a generated SWE.6 workbook for one CAN
 feature — 37 concrete cases accepted, 77 rejected. The detailed feedback is
@@ -114,4 +116,33 @@ manifest templates, README and USING-THE-BETA.
 Still open:
 
 - **The supplied specifications stay out of Git** — they are OEM documents.
+
+## 7. Second QA round — case design (2026-10-16)
+
+**Source:** QA validated the re-run workbook of the same CAN feature. Every
+case was marked valid — grounding, attributes, traceability and Open Points
+were accepted — and QA rewrote two cases (a supply-voltage boundary
+requirement and a received-message length requirement) beside the generated
+ones to show how they write cases. The workbook stays out of Git (§1).
+
+| # | QA's example shows | Rule on `main` that produced the generated form | Implemented as |
+|---|---|---|---|
+| R1 | One case per requirement; the boundary points are **steps** of it, alternating valid and invalid values and ending on a nominal one (recovery is checked too) | §4 logical parent with one child per value; §5 value in the title; §6 one case per point | §4 parent only for variants; §5 no value in a stepped title; §6 points are steps, ordered to show recovery |
+| R2 | Every step has its own expected value | §7 exactly one result marked pass/fail (from Q3 in §6) | §7 every result is a check; the case passes when all hold. **Supersedes Q3**, by the engineer's decision |
+| R3 | Action *n* is a stimulus, result *n* verifies it; no observation steps among the actions, no `-` results | §7 action/result templates ("Record …" as an action) | §7 numbered stimuli, one `Verify …` per action |
+| R4 | Preconditions set a baseline **and verify it** on the bus; the common bench setup is not repeated | §7 "required ECU state" only | §7 preconditions as set-and-verify steps; bench setup left to `atsTestEnvironment`/`atcRemark` |
+| R5 | Postconditions restore the baseline and verify it | §7 "how the system is left" | §7 restore-and-verify steps |
+| R6 | Means in plain words inside the step (which panel or generator block, which value); no bracket tag, no `Manual:` line, no Open Point notes | §7 `[means]` tag plus `Manual:` line (from Q1/Q2 in §6) | §7 the step itself is the manual instruction, from the confirmed catalogue; remarks only in Open Points/Traceability. Keeps Q2's intent (runnable by hand), drops its separate line |
+| R7 | The outcome is read on a signal the ECU sends (a timeout flag), not an XCP qualifier | §0 allows XCP as a boundary observation; no preference stated | §7 observe on the bus first; XCP only where no sent signal shows it |
+| R8 | Requirements that vary **one stimulus** and read **one signal** share a case (valid / longer / shorter message length) | §7 merges only for the same stimulus with different observations | §7 second merge kind, still proposed at Phase 1; `Requirement ID` lists every requirement a step verifies (engineer's decision) |
+| R9 | A stepped case that goes out of range is `positive` | §6/§8 `negative` outside the range | §8 `positive` for specified behaviour, out-of-range reaction included; `negative` for a wholly invalid stimulus. Self-check 6 counts out-of-range steps as negative coverage |
+| R10 | Enumerated values as `Text(raw)` | `raw (Text)` | §7 notation |
+
+QA confirmed that, for a message whose length is too short, the timeout flag
+is the expected observation; where no input gives the timeout time, the
+result checks the end state without a window and the time stays an Open Point
+(§7).
+
+Self-checks: `workflow-discipline.md` §6 items 3, 6, 18, 22, 23 revised; item
+28 added. Integration-test keeps one marked pass/fail result per case.
 

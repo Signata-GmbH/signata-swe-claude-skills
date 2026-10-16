@@ -59,8 +59,8 @@ fulfilled — the verification criterion SWE.1 asks every requirement to carry.
 It is an input, not decoration, exactly as on the architecture side
 (integration-test-patterns.md §1.3):
 
-- **It names the pass criterion.** The one result marked as pass/fail (§7)
-  implements it — the measurement, tolerance or observation it states. Where a
+- **It names the pass criterion.** The case's results (§7) implement it — the
+  measurement, tolerance or observation it states. Where a
   generated case cannot follow it, say so in Open Points instead of
   substituting another criterion.
 - **It can rule the test level out.** A criterion that asks for a review, an
@@ -181,8 +181,9 @@ Set by | Read in | Manual steps | Series SW | Debug SW | Answer | Status`
   control that sets signal `<Sig>`") and the engineer names it — **never
   invent a panel or control name**.
 - **Manual steps** — how an operator does it by hand, step by step (open which
-  panel, which control, which value, which button). The generated cases repeat
-  these steps, so a case can be run manually as well as automated.
+  panel, which control, which value, which button). The generated steps are
+  written from these, in plain words (§7), so a case can be run manually as
+  well as automated.
 - **Series SW / Debug SW** — whether the item exists on each software. An XCP
   or A2L variable may exist on Debug SW only; a case for a feature tested on
   Series SW (§8, `atcRemark`) may not depend on it.
@@ -212,6 +213,11 @@ test group  (atsType = no testcase)
   children.
 - In a concrete child, `atcPreconditions`/`atcActions`/`atcResult` may be left
   blank where unchanged from the parent.
+- **A logical parent is for variants, not for values.** Use parent and
+  children where the variants need different setups or trace to different
+  requirements (one case per message, per DID, per operating mode). Values of
+  one parameter under the same setup — boundary points, equivalence-class
+  representatives — are the **steps of one case** (§6), never children.
 - Every Object Heading / Object Text must be unique within the module.
 
 ## 5. Title convention
@@ -219,17 +225,39 @@ test group  (atsType = no testcase)
 `TC_<what is being verified>`, followed where parameterised by the value in
 square brackets, e.g. `TC_PosActuator_A1_ON_angle_with_in_range
 [EP_phiActuator = 16.3°]`. The title states intent, not mechanism. No leading
-number.
+number. A stepped case (§6) carries no value in its title — its steps hold the
+values.
 
 ## 6. Boundary value rule
 
 For a parameter given as `Name / Value / Min-Max / Resolution`:
 
-| Point | Value | `atsType` |
+| Point | Value | Expected |
 |---|---|---|
-| At the boundary | `boundary` | positive |
-| One resolution step inside | `boundary ∓ Resolution` | positive |
-| One resolution step outside | `boundary ± Resolution` | negative |
+| At the boundary | `boundary` | the specified value |
+| One resolution step inside | `boundary ∓ Resolution` | the specified value |
+| One resolution step outside | `boundary ± Resolution` | the reaction the requirement specifies outside the range (clamped value, substitute value, error flag) |
+
+**The points are the steps of one case, not separate cases.** For one parameter
+of one requirement, write **one** case: each action sets one point, and the
+result with the same number gives what is expected at that point. Order the
+steps so the case also shows the software **recovers** from an invalid value:
+start inside the range, alternate between valid and invalid points, and end on
+a valid nominal value. For example, for a range `Min`–`Max` clamped outside:
+
+```
+Actions                     Results
+1. Set <Qty> = Min.         1. Verify signal <Sig> in message <Msg> = Min.
+2. Set <Qty> = Max − Res.   2. Verify ... = Max − Res.
+3. Set <Qty> = Max.         3. Verify ... = Max.
+4. Set <Qty> = Min − Res.   4. Verify ... = Min (clamped).
+5. Set <Qty> = Max + Res.   5. Verify ... = Max (clamped).
+6. Set <Qty> = <nominal>.   6. Verify ... = <nominal>.
+```
+
+The case is `positive` (§8) — it checks specified behaviour, the out-of-range
+reaction included — and `atsTestDesignTechnique` carries both the
+requirements-based and the boundary-value technique.
 
 Apply only where a parameter with a stated resolution exists in
 `docs.signals_params` — or, for a bus signal, in `docs.comm_database`, where the
@@ -245,55 +273,84 @@ signal *reportable*, not settable — a signal the ECU *sends* cannot be set to
 its boundary. For such a dependent quantity (a measured current, a computed
 angle, a reported status), drive the **source** to an operating point that
 puts it at the boundary, and capture the source and the reported signal
-together; the pass criterion compares the two within the stated resolution. If
+together; the result compares the two within the stated resolution. If
 no settable source drives it, the boundary is an Open Point.
 
 ## 7. Writing the steps
 
-- `atcPreconditions` — required ECU state, numbered or dash-prefixed. A
-  precondition must not contradict the case's own actions (a precondition
-  "signal `<Sig>` absent" for a case whose first action sets `<Sig>`).
-- `atcActions` — numbered, one action per number; actions sharing a number run
-  in parallel.
-- `atcResult` — numbered to match actions. **Exactly one result marked as the
-  pass/fail criterion.**
-- `atcPostconditions` — how the system is left.
+A case is a sequence of **stimulus → check** pairs that an operator runs top
+to bottom.
+
+- `atcPreconditions` — numbered steps that bring the ECU into the case's
+  **baseline and verify it**: every value set is followed by a step checking
+  it on the observation point.
+  ```
+  1. ECU is awake (normal operation).
+  2. Set the supply voltage = <nominal> V.
+  3. Verify signal <Sig> in message <Msg> = <nominal>.
+  ```
+  The bench setup common to every case (software flashed, tools connected,
+  rest-bus simulation running with its default values) is not repeated in each
+  case — `atsTestEnvironment` and `atcRemark` carry it. A precondition must not
+  contradict the case's own actions (a precondition "signal `<Sig>` absent"
+  for a case whose first action sets `<Sig>`).
+- `atcActions` — numbered **stimuli**, one per number; actions sharing a number
+  run in parallel. Observing is not an action: no "Record `<X>`" or "Read
+  `<X>`" step — what is read, and where, is the result's job.
+- `atcResult` — **one result per action, same number**, each a check:
+  `Verify <kind> <item> = <value>`. **Every result is a pass/fail check**; the
+  case passes only when every result holds. No placeholder result (`-`) and no
+  separate pass/fail marker. An action with nothing to check is either a
+  precondition or part of the next action.
+- `atcPostconditions` — numbered steps that **restore the baseline** from the
+  preconditions **and verify it**, the same way.
 - Two test cases distinguishable only by title are redundant — merge them; the
   distinction must be visible in `atcPreconditions`/`atcActions`.
 - Expected results must be unambiguous: name the exact variable and value
   (`"CDD_Sent_XCP_Angle_g_u16 is updated to 163"`), never a vague description.
+  An enumerated value is written as the database text with the raw value in
+  brackets: `<Text>(<raw>)`, e.g. `Active(1)`.
+- **No remarks inside a step.** Open Point numbers, "to be confirmed", source
+  notes and explanations belong in `Open Points` and `Traceability`, never in
+  a precondition, action, result or postcondition.
 
-**Every action names its means.** Each `atcActions` entry opens with the means
-from the catalogue (§3.2) in square brackets, then the item with its kind, then
-the value:
+**Every action names its means — in plain words.** The step is the manual
+instruction itself: the tool, panel or generator block and the control from
+the confirmed catalogue (§3.2), the item with its kind, and the value — so the
+case can be run by hand as well as automated, with no separate `Manual:` line
+and no bracket tag:
 
 ```
-1. [CANoe panel <Panel> / <Control>] Set signal <Sig> (message <Msg>) to <value>.
-   Manual: open panel <Panel>, enter <value> in <Control>, press <Button>.
-2. [XCP] Write variable <Var> = <value>.
-3. [Rest-bus simulation] Stop sending message <Msg>.
-4. [Diagnostic tester] Send 22 <byte1> <byte2>.
+1. Set the supply voltage = <value> V.
+2. Set the DLC of message <Msg> = <n> in <generator block>.
+3. Stop sending message <Msg> from <panel>; send it periodically from <generator block>.
+4. Set signal <Sig> in message <Msg> = <value> in <panel>.
+5. Write XCP variable <Var> = <value>.
+6. Send diagnostic request 22 <byte1> <byte2>.
 ```
 
-- The `Manual:` line repeats the catalogue row's manual steps, so the case can
-  be run by hand. Leave it out only where the means is already a single manual
-  action (a diagnostic request typed into the tester).
+- **Never invent a panel, block or control name.** A means the catalogue has
+  not confirmed is not used; the case that needs it is an Open Point (§3.2).
 - **Never write a state as an action.** "ECU is in normal mode" or "the fault is
   active" is not something an operator does. Either it is a precondition, or
-  the action says how it is brought about (`[XCP] Write variable <Var> =
+  the action says how it is brought about (`Write XCP variable <Var> =
   <value>`).
-- A bare identifier ("Record `<X>`") is never enough: say whether `<X>` is a
-  message, signal or variable, and where it is recorded.
+- A bare identifier is never enough: say whether it is a message, signal or
+  variable.
 
-**Every result names what is observed and where.** Each `atcResult` entry opens
-with the observation means from the catalogue, then the item, then the
-expected value:
+**Every result names what is observed.** Each `atcResult` entry is a check of
+one observable item, with its kind and the expected value:
 
 ```
-1. [CANoe Trace] Message <Msg> is sent every <cycle> ms; signal <Sig> = <value>.
-2. [XCP measurement] Variable <Var> = <value>.
+1. Verify signal <Sig> in message <Msg> = <value>.
+2. Verify message <Msg> is sent every <cycle> ms.
+3. Verify XCP variable <Var> = <value>.
 ```
 
+- **Observe on the bus first.** Where a signal the ECU sends shows the
+  behaviour — the value itself, a timeout or error flag, a status — check that
+  signal. Use an XCP variable only where no sent signal shows it. A bus signal
+  is there on Series SW, and one signal can serve every step of a sweep.
 - **An internal state is not an observation.** "The ECU uses the substitute
   value" or "the mode is active" cannot be checked; name the signal or the
   A2L variable that shows it. If none exists, the requirement is an Open
@@ -304,17 +361,27 @@ expected value:
   ≥ N ms", "within N cycles") uses a cycle time, timeout or timing from a
   supplied input — the communication database, the requirement, a cited
   specification — and cites it. Never pick a window because it looks
-  reasonable.
+  reasonable. Where no input gives the time, the result checks the end state
+  ("changes to `<value>`") without a window, and the missing time is an Open
+  Point.
 
-**Merged requirements — one case, one pass/fail result.** Requirements that
-are outcomes of the **same stimulus setup** (the same preconditions and
-actions, different observations) may share one case. A merge is **proposed**
-in the Phase-1 proposed-cases table, listing the requirements it covers, and
-made only once confirmed. The merged case still has exactly one result marked
-as the pass/fail criterion: it covers every merged requirement together, and
-the case passes or fails as a whole — the verdict is kept on the test case,
-not per requirement. `Traceability` lists each merged requirement, with the
-clause and the result step that checks it.
+**Merged requirements — one case.** Requirements may share one case in two
+situations:
+
+- **Same stimulus, different observations** — they are outcomes of the same
+  preconditions and actions.
+- **One stimulus varied, same observation** — each requirement covers part of
+  the range of one input (e.g. a valid, a longer-than-specified and a
+  shorter-than-specified length of one message), and one signal shows the
+  outcome for all of them. The case is a stepped case (§6) with a step for
+  each requirement's values.
+
+A merge is **proposed** in the Phase-1 proposed-cases table, listing the
+requirements it covers, and made only once confirmed. The verdict is kept on
+the test case: it passes only when every result holds. `Requirement ID` lists
+**every** requirement a step verifies — including one the case covers only
+because its stimulus range reaches it — and `Traceability` lists each, with
+its clause and the result steps that check it.
 
 ## 8. Attributes specific to this skill
 
@@ -325,7 +392,7 @@ clause and the result step that checks it.
 | `atsClassification` | Per `attributes.classification_rule`, derived from the linked requirement's safety/security/regulatory/OBD attributes where the governing matrix defines that mapping — state your reasoning in Open Points whenever the case falls to error-severity judgement (A/B/C) rather than a rule-driven class |
 | `atsTestKind` | `Functional test` by default; the robustness/EMC wording for robustness cases; `Performance test` for timing/resource cases |
 | `atsTestDesignTechnique` | `RequirementsBased` always; add `BoundaryValueAnalysis` for boundary cases, `EquivalenceClasses` for class representatives, `ErrorGuessing` for cases with no requirement link. Multi-valued. |
-| `atsType` | `positive` inside the specified range, `negative` outside it or for error guessing, `qualitative` for non-functional cases |
+| `atsType` | `positive` for a case that checks specified behaviour — including a stepped case (§6) whose steps go outside the range to check the specified reaction there; `negative` for a case whose stimulus as a whole is invalid (a lost message, an injected fault) or for error guessing; `qualitative` for non-functional cases |
 
 ## 9. Diagnostic feature templates
 
