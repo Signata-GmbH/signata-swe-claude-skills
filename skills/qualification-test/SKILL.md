@@ -121,8 +121,10 @@ catalogue as its own sheet, workflow-discipline §5). **STOP.**
 Only after acknowledgement. First **re-hash every input** (workflow-discipline
 §2) — anything changed since pre-flight is a stop, not a mixed baseline. Apply
 the structure, title convention, boundary-
-value rule, the writing rules (every action names its means, every result
-what is observed and where), and (for diagnostic features) the DID/RID templates from
+value rule (the points of one parameter are the steps of one case), the
+writing rules (preconditions and postconditions set and verify the baseline;
+every action a stimulus naming its means in plain words; every result a check
+of an observable item, on the bus where possible), and (for diagnostic features) the DID/RID templates from
 [qualification-test-patterns.md](../_shared/testspec/qualification-test-patterns.md)
 §4–§9. Every symbol/value traced to a supplied input (workflow-discipline §4);
 an unresolved one goes to Open Points, never a guess. For a re-run, read QA's

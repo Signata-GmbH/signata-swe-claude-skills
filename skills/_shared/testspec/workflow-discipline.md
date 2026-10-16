@@ -381,13 +381,17 @@ row:
 1. Every mandatory attribute filled, values from the allowed set.
 2. Every concrete test case linked to a requirement/architecture object, or
    `atsReference` populated with a stated origin.
-3. Actions and results numbered and correspond; exactly one pass/fail result
-   marked per case.
+3. Actions and results numbered and correspond. integration-test: exactly one
+   pass/fail result marked per case. qualification-test: one result per
+   action, every result a check, no placeholder result and no pass/fail marker
+   (qualification-test-patterns §7).
 4. No two test cases distinguishable only by title.
 5. Every symbol, file name, and value traceable to a supplied input — report
    the source of each.
 6. Positive/negative balance reported per requirement or interface; flag any
-   with no negative case.
+   with no negative case. For qualification-test, the out-of-range steps of a
+   stepped case (qualification-test-patterns §6) count as its negative
+   coverage.
 7. `atsState` = `in work` and `ID` empty on every row.
 8. Every in-scope requirement/interface either has a test case or appears in
    Open Points with a reason.
@@ -427,7 +431,7 @@ row:
 17. **Both skills** — every case's stimulus and observation means is available
     on the bench described by `docs.test_environment`, or is listed in Open
     Points (§4).
-18. **qualification-test only** — every case's pass/fail result implements its
+18. **qualification-test only** — every case's results implement its
     requirement's `aTestCriteria`, or an Open Point says why not; nothing in
     the workbook was derived from source code except fault-injection variable
     names, each marked `from code`; every bus-signal value, cycle
@@ -442,15 +446,17 @@ row:
 21. **Both skills** — `aChangeRequID` is empty on a first run, and on a re-run
     carries the change request of each new or changed object behind the case,
     or an Open Point says why not (§8).
-22. **qualification-test only** — every `atcActions` entry opens with a
-    confirmed means from the catalogue and names the item with its kind and
-    value; a manual-steps line where the means needs one; no action states a
-    condition instead of doing something (qualification-test-patterns §7).
-23. **qualification-test only** — every `atcResult` entry names the
-    observation means and an observable item (a signal, message or A2L
-    variable), never an internal state; no result reads a signal or message the
-    case's own actions removed; every observation window cites its source
-    (qualification-test-patterns §7).
+22. **qualification-test only** — every `atcActions` entry is a stimulus that
+    names, in plain words, a confirmed means from the catalogue, the item with
+    its kind and the value; no bracket tag and no `Manual:` line; no "Record" or
+    "Read" action; no action states a condition instead of doing something; no
+    Open Point number or remark inside any step (qualification-test-patterns
+    §7).
+23. **qualification-test only** — every `atcResult` entry checks an observable
+    item (a signal, message or A2L variable), never an internal state; a sent
+    bus signal is used wherever one shows the behaviour; no result reads a
+    signal or message the case's own actions removed; every observation window
+    cites its source (qualification-test-patterns §7).
 24. **Both skills** — no precondition contradicts the case's own actions.
 25. **qualification-test only** — every item a case sets or reads exists on
     the feature's `test_software`; every boundary value is on a settable
@@ -464,6 +470,12 @@ row:
 27. **Both skills, when the validity columns are configured** — on a re-run,
     every case QA marked `isValid = Yes` is unchanged, and no value or reason
     QA entered was altered (§8).
+28. **qualification-test only** — preconditions set the baseline and verify
+    it, postconditions restore it and verify it; the boundary points of one
+    parameter are the steps of one case, alternating valid and invalid and
+    ending on a valid nominal value, never separate cases; a merged case lists
+    every requirement a step verifies in `Requirement ID`
+    (qualification-test-patterns §4, §6, §7).
 
 ## 7. Traceability & Open Points (both skills, every run)
 
