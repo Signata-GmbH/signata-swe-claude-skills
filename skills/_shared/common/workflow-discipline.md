@@ -127,7 +127,7 @@ than an honest stop.
 ## 5. Phase-1 questions → workbook (offline-answerable)
 
 - Write the numbered questions to a **skill-namespaced** workbook
-  `20_AI/<MODULE>_Phase1_Questions_<Skill>.xlsx` (`<Skill>` = `UnitTest` /
+  `20_AI/<Skill>/<MODULE>/<MODULE>_Phase1_Questions_<Skill>.xlsx` (`<Skill>` = `UnitTest` /
   `CodeReview` / `CodeDev` / `CodeFix`) so the skills never clobber each other's
   questions. One row each: `QID | Requirement | Function | Question | AI Proposal |
   Answer(blank) | Status(open)`.

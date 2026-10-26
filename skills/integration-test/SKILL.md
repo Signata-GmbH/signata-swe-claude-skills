@@ -160,7 +160,7 @@ Per integration-test-patterns §1–§6 and workflow-discipline §1/§2/§4:
    produces, heading rows included, as the last question.
 Present the scope, the peer matrix, the mapping/interface analysis, the
 proposed-cases table, and numbered questions (written to
-`20_AI/<MODULE>_Phase1_Questions_IntegrationTest.xlsx`, workflow-discipline §5).
+`20_AI/IntegrationTest/<MODULE>/<MODULE>_Phase1_Questions_IntegrationTest.xlsx`, workflow-discipline §5).
 **STOP.**
 
 ## Step 5 — Phase 2 — Generation

@@ -78,7 +78,7 @@ Per workflow-discipline §2/§4/§6:
 6. **Gate Table (§6)** and **duplication table** — one row per asserted effect;
    drop duplicates of the existing suite.
 Present scope, analysis summary, Gate Table, duplication table, and the numbered
-questions (write them to `20_AI/<MODULE>_Phase1_Questions_UnitTest.xlsx`, §5).
+questions (write them to `20_AI/UnitTest/<MODULE>/<MODULE>_Phase1_Questions_UnitTest.xlsx`, §5).
 **STOP** (gate commit).
 
 ## Step 5 — Author the `.tst`

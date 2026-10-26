@@ -123,7 +123,7 @@ Per qualification-test-patterns §1–§3 and workflow-discipline §1/§2/§4:
 8. **Row-count gate** (workflow-discipline §5) — the number of rows that table
    produces, heading and logical-parent rows included, as the last question.
 Present all of the above and numbered questions (written to
-`20_AI/<FEATURE_SLUG>_Phase1_Questions_QualificationTest.xlsx`, with the
+`20_AI/QualificationTest/<FEATURE_SLUG>/<FEATURE_SLUG>_Phase1_Questions_QualificationTest.xlsx`, with the
 catalogue as its own sheet, workflow-discipline §5). Every question carries a
 concrete AI proposal that "Yes" accepts, or lists its options; the catalogue's
 `Answer` column is left empty (workflow-discipline §5). **STOP.**

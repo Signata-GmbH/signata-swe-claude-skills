@@ -330,7 +330,7 @@ Both manifests **inherit** `ai_test_project.yaml` (`release`, `variants`,
 ## 5. Phase-1 questions → workbook (offline-answerable)
 
 Identical mechanism to `common/workflow-discipline.md` §5: write numbered
-questions to `20_AI/<MODULE_or_FEATURE_SLUG>_Phase1_Questions_<Skill>.xlsx`
+questions to `20_AI/<Skill>/<MODULE_or_FEATURE_SLUG>/<MODULE_or_FEATURE_SLUG>_Phase1_Questions_<Skill>.xlsx`
 (`<Skill>` = `IntegrationTest` / `QualificationTest`), one row each:
 `QID | Requirement or Interface | Question | AI Proposal | Answer(blank) |
 Status(open) | Note`. If the workbook already exists, read it back first — rows
