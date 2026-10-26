@@ -22,6 +22,14 @@
   branch or is in flight elsewhere; otherwise `/project-init`, or bootstrap inline
   when already on the base branch) — never scaffold a competing copy on a feature
   branch.
+- **Per-skill working folder.** As soon as the module is known, ensure
+  `20_AI/<Skill>/<MODULE>/` exists (`<Skill>` = `CodeDev` / `CodeFix` /
+  `CodeReview` / `UnitTest`; create it with a `.gitkeep` if empty). Everything
+  this skill writes for the module — Phase-1 questions (§5), findings list, fix
+  report, reviewed output — goes there, and module-specific input files the
+  engineer supplies are kept there too, so `20_AI/` itself holds only the config,
+  `manifests/` and these skill folders. Never write module files directly under
+  `20_AI/`.
 - **Populate only your own workflow section.** The four sections
   (`code_dev` / `code_fix` / `code_review` / `unit_test`) are independent;
   another's `last_run` may be `null` and that is valid. `code-fix` *reads*

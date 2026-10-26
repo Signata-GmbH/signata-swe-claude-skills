@@ -24,6 +24,12 @@
   [project-config.md](project-config.md) §7. The **manifest** is per-module
   (`integration-test`) or per-feature (`qualification-test`) — scaffold +
   confirm it here (§3).
+- **Per-skill working folder.** As soon as the module/feature is known, ensure
+  `20_AI/<Skill>/<MODULE_or_FEATURE_SLUG>/` exists (`<Skill>` =
+  `IntegrationTest` / `QualificationTest`; create it with a `.gitkeep` if
+  empty). The Phase-1 questions (§5), the test-case workbook and any
+  module/feature-specific input the engineer supplies live there; never write
+  them directly under `20_AI/`.
 - `integration-test` and `qualification-test` never share a manifest — a module
   name and a feature name are different axes and can collide as strings
   (`Motor Control` the feature vs. a module named similarly), so their manifests

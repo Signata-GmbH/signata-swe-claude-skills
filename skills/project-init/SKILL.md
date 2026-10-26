@@ -93,7 +93,12 @@ Per project-config §6:
 1. Present the **complete resolved YAML** plus a provenance table
    (`derived from <path>` / `answered by engineer` / `N/A — reason`). **STOP for
    approval.**
-2. On approval write `20_AI/ai_project.yaml` — and nothing else.
+2. On approval write `20_AI/ai_project.yaml` and the empty skill folders
+   `20_AI/{CodeDev,CodeFix,CodeReview,UnitTest,IntegrationTest,QualificationTest}/`
+   (each with a `.gitkeep`) — nothing else. The module/feature subfolder
+   `20_AI/<Skill>/<module-or-feature>/` is created by each skill on its first
+   run for that target; its inputs and outputs are kept there so `20_AI/`
+   stays uncluttered.
 3. **Ask** whether to commit + push to `<base>`. Never commit or push without an
    explicit yes; if declined, print the exact commands.
 4. Hand off: config is repo-wide and one-time; next run `/code-dev`,
