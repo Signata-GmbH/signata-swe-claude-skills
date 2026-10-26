@@ -24,6 +24,12 @@
   [project-config.md](project-config.md) §7. The **manifest** is per-module
   (`integration-test`) or per-feature (`qualification-test`) — scaffold +
   confirm it here (§3).
+- **Per-skill working folder.** As soon as the module/feature is known, ensure
+  `20_AI/<Skill>/<MODULE_or_FEATURE_SLUG>/` exists (`<Skill>` =
+  `IntegrationTest` / `QualificationTest`; create it with a `.gitkeep` if
+  empty). The Phase-1 questions (§5), the test-case workbook and any
+  module/feature-specific input the engineer supplies live there; never write
+  them directly under `20_AI/`.
 - `integration-test` and `qualification-test` never share a manifest — a module
   name and a feature name are different axes and can collide as strings
   (`Motor Control` the feature vs. a module named similarly), so their manifests
@@ -196,6 +202,36 @@ This gate is fail-closed like §1.2: only an explicit engineer decision
 downgrades a STOP, and the decision is recorded in the run summary and in Open
 Points.
 
+### 1.4 Input placement — keep `20_AI/` uncluttered
+
+Two homes, nothing else directly under `20_AI/` besides `ai_project.yaml` (and
+`ai_test_project.yaml`), `manifests/` and the skill folders:
+
+- **Project-wide reference documents** (SW requirements, Signals & Parameters,
+  architecture, guidelines, checklists, …) → `20_AI/Shared/`. Large archives
+  that are gitignored for size (e.g. the CANoe configuration `.zip`) →
+  `20_AI/Shared/CANoe/`.
+- **Module/feature-specific files** (extra inputs, existing test-spec exports,
+  Phase-1 workbooks) → `20_AI/<Skill>/<MODULE>/` (see §0).
+
+After the pre-flight table is resolved, for every input the config/manifest
+**already names** (or this run just had confirmed), if the file sits outside its
+home — typically directly under `20_AI/` — **move it** there before continuing:
+
+- `git mv` when tracked, a plain move otherwise (an untracked or gitignored file
+  stays untracked/ignored). Never copy and leave a duplicate.
+- Never overwrite: if the destination exists, leave both and ask.
+- Only files inside `20_AI/` of this repository; a path outside it is never moved.
+- Update the config/manifest path to the new location. The project config is
+  shared and lives on the base branch: say that the path change must be merged
+  there (do not silently commit it).
+- **Notify the user** with one line per file: `moved <old> → <new>`. A file that
+  is merely *discovered* and not yet confirmed is not moved — §1.2's
+  never-auto-adopt rule still applies.
+- Ensure `20_AI/Shared/CANoe/` is gitignored (`20_AI/Shared/CANoe/*` plus
+  `!20_AI/Shared/CANoe/.gitkeep`) before a CANoe archive is placed there; add the
+  `.gitignore` lines if missing and say so.
+
 ## 2. Baseline pinning (the audit spine)
 
 There is no compiler and no build here, and the DOORS exports carry no git SHA,
@@ -307,6 +343,15 @@ Both manifests **inherit** `ai_test_project.yaml` (`release`, `variants`,
   [project-config.md](project-config.md)).
 - **No silent assumptions.** Every ambiguity, mismatch, or gap becomes a
   numbered Phase-1 question **or** an Open Points row — never a silent guess.
+- **Record who said it.** Every answer that settles a value, a mapping or a
+  decision is recorded with its source, in the same words wherever it
+  appears (config comment, manifest, Traceability, Open Points): *QA in the
+  workbook* (`QA <date>, Q-nn` / the validity reason), *engineer relaying QA*
+  (`QA via engineer <date>`), *engineer's own decision* (`engineer <date>`),
+  or *AI proposal accepted by …*. A value the engineer picked from an AI
+  proposal is never recorded as QA's; when QA later confirms it, the record
+  gains `confirmed by QA <date>` — it is not rewritten as if QA had proposed
+  it (no-fabrication.md).
 - **Executable on the bench.** Every case stimulates something and observes
   something — a debugger breakpoint and variable, an XCP measurement, a bus
   signal, a diagnostic request, a HIL I/O channel. With
@@ -321,12 +366,13 @@ Both manifests **inherit** `ai_test_project.yaml` (`release`, `variants`,
 ## 5. Phase-1 questions → workbook (offline-answerable)
 
 Identical mechanism to `common/workflow-discipline.md` §5: write numbered
-questions to `20_AI/<MODULE_or_FEATURE_SLUG>_Phase1_Questions_<Skill>.xlsx`
+questions to `20_AI/<Skill>/<MODULE_or_FEATURE_SLUG>/<MODULE_or_FEATURE_SLUG>_Phase1_Questions_<Skill>.xlsx`
 (`<Skill>` = `IntegrationTest` / `QualificationTest`), one row each:
 `QID | Requirement or Interface | Question | AI Proposal | Answer(blank) |
 Status(open) | Note`. If the workbook already exists, read it back first — rows
-with a non-empty `Answer` (or `Status` = `answered`/`deferred`/`withdrawn`) are
-resolved; re-emit only still-`open` rows under their existing `QID`s. Every
+with a non-empty `Answer` that maps to one outcome (below), or `Status` =
+`answered`/`deferred`/`withdrawn`, are resolved; re-emit only still-`open`
+rows under their existing `QID`s. Every
 question cites the source document + row/section it rests on.
 
 **`withdrawn`** — a question a later ruling made moot (a scope change, an input
@@ -356,6 +402,46 @@ rejected the result at validation three weeks later.
 Corollary: **end a question on the thing you are asking**, not on background
 you have already said you will handle anyway. Whatever a question closes with
 is what a short answer attaches to.
+
+**A short answer must have exactly one meaning.** Engineers answer most rows
+with "Yes", "No" or "ok", so write every question so that such an answer maps
+to one outcome:
+
+- **Every `AI Proposal` is concrete** — a value, a name, a mapping, a
+  decision — and the question is phrased so that **"Yes" accepts it**. Never
+  write "No proposal", and never a proposal that defers the content ("derived
+  on the bench — you confirm the factor", "value given by you"): a "Yes" to it
+  settles nothing.
+- **Where the AI cannot propose, list the options** in the question
+  ("A: `<x>`, B: `<y>`, C: unknown → Open Point") and the proposal names one of
+  them, with the reason. An open "Which …?" with no options gets answered "Yes".
+- **One yes/no per question, and "No" must mean the opposite of the
+  proposal.** "Is there a means for X, or does it go to Open Points?" has two
+  readings of "No"; ask "Proposal: X goes to Open Points (no means known).
+  Accept?" instead.
+
+*(Observed, one SWE.6 Phase-1 round: of 49 questions, five got "Yes" to a
+"Which …?" whose proposal was "No proposal" or deferred the value, and four got
+"No" to an either/or question. Each one needed a follow-up before generation.)*
+
+**Check the answers before Phase 2.** A non-empty `Answer` resolves its row
+only if it maps to one outcome under the rules above. Before generating:
+
+1. **Unresolved answers** — a "Yes" to an open question, an answer to only one
+   of its parts, a value with no unit — are listed, not interpreted.
+2. **Contradicting answers** — two answers that cannot both hold on the same
+   case (one puts a function on the Series software, another expects it absent
+   there) — are listed with both QIDs.
+3. If any item in 1–2 changes a case's stimulus, expected value, software or
+   direction, **ask it now** (a popup, when the engineer is present) — never
+   generate a case from one reading of it. Items that only touch an Open Point
+   are re-emitted as new `open` QIDs and generation proceeds.
+4. Record each follow-up answer in the row's `Note` with its source (§4), and
+   leave the engineer's `Answer` cell as they wrote it.
+
+The **catalogue's `Answer` column** is the engineer's too: it is left empty
+for them — a cached row says so in `Status`/`Source`, never in `Answer`
+(qualification-test-patterns §3.2).
 
 **qualification-test adds a second sheet, `Catalogue`** — the stimulus and
 observation means, one row per item, each answered on its own
@@ -425,9 +511,11 @@ row:
     an Open Point saying why not (integration-test-patterns.md §5.2).
 16. **Both skills** — column A holds the traced ID on every case row; the 21
     attributes sit contiguous and in schema order after it; where the validity
-    columns are configured, no `isValid` cell says `Yes`, every `No` names the
-    missing item and its Open Point, and the run summary states the `No` count;
-    the run summary carries the import note (output-format.md).
+    columns are configured, no `isValid` cell says `Yes` or `Question` (as
+    written by the skill), every `No` names the missing item and its Open
+    Point, every case row's `isValid` cell carries the `Yes,No,Question`
+    drop-down, and the run summary states the `No` count; the run summary
+    carries the import note (output-format.md).
 17. **Both skills** — every case's stimulus and observation means is available
     on the bench described by `docs.test_environment`, or is listed in Open
     Points (§4).
@@ -476,6 +564,19 @@ row:
     ending on a valid nominal value, never separate cases; a merged case lists
     every requirement a step verifies in `Requirement ID`
     (qualification-test-patterns §4, §6, §7).
+29. **qualification-test only** — every value a step writes or checks is a
+    concrete number with its unit; no symbol standing for a value to be noted
+    on the bench; every expected value derived from a scaling is written as
+    the formula with its units and one worked decimal example; every
+    comparison of two quantities with different resolution states a tolerance
+    of at least one step of the coarser (qualification-test-patterns §3, §7).
+30. **qualification-test only** — every state a case drives the ECU through
+    whose outputs another in-scope requirement specifies is checked at that
+    point, and that requirement is in the case's `Requirement ID`
+    (qualification-test-patterns §7).
+31. **Both skills** — every answer or value taken from the engineer or QA
+    carries its source as §4 defines it; nothing is attributed to QA that QA
+    has not written or confirmed.
 
 ## 7. Traceability & Open Points (both skills, every run)
 
@@ -576,13 +677,38 @@ with `last_run.review`, which holds what the skill wrote:
   Invalid`, cite the reason in `Traceability`, and show the old and new case
   side by side in the delta. A reason the inputs cannot answer, or one that is
   a question, becomes a Phase-1 question quoting it.
+- **`Question`** (QA) → QA cannot judge the case until the `Reason for
+  Invalid` is answered. Answer it from the inputs, then:
+  1. Write the **reply to QA** — one numbered item per case or group of cases,
+     each stating the answer, the change it implies (if any) and ending on the
+     one thing QA must confirm (§5 rules). Give it to the engineer to pass on;
+     it is the deliverable of this step.
+  2. **Do not rework the case yet.** The answer may show the question was a
+     misreading (no change), or the proposed change may not be what QA meant.
+     Rework only once QA's acceptance comes back, and record it as
+     `QA via engineer <date>` (§4).
+  3. A change the question **exposed** but did not ask for (a missing
+     tolerance, an ambiguous notation) is its own item in the reply — never
+     slipped into the rework of the asked one.
+  4. Once QA accepts, rework the case in place, cite the question and the
+     acceptance in `Traceability`; no re-validation is needed unless QA asks
+     for it. QA's `Question` and reason stay in the cells.
+- **A reworked case resting on a fact only QA's reason states** (a state value,
+  a scaling no input defines) → use it, record it as QA's statement, raise one
+  `Input hygiene` Open Point for the document that should define it, and put
+  it in the reply for QA to confirm.
 - **`No` the skill wrote** (unchanged since last run) → its own placeholder
   mark: resolve it if the inputs now settle the missing item, otherwise keep it.
 - **Blank** → not validated yet; treat as an ordinary case.
 - **Never change what QA entered** — a reworked case keeps QA's value and reason
   until QA changes them. Snapshot the column values in `last_run.review` so the
   next run can see what QA changed.
-- Any other value, or a column a reviewer added: ask, never map it.
+- Any other value, or a column a reviewer added: ask, never map it. The
+  drop-down (output-format.md) makes this rare; a workbook from before it
+  existed may carry `Valid` / `Invalid` — ask once, record the answer in
+  `last_run.review`, and do not ask again for that workbook. *(Observed: QA
+  typed `Valid`, `Invalid` and `Question`; the engineer confirmed Valid = Yes
+  and Invalid = No, and `Question` was adopted as a value.)*
 
 **In-place re-run** (output present, scope unchanged): recompute each in-scope
 requirement's/interface's hash and compare to `last_run`:

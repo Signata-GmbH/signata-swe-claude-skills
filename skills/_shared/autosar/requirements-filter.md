@@ -8,7 +8,7 @@
 
 ## Workbook
 
-- Path: `requirements.workbook` in `20_AI/ai_project.yaml` (e.g. `20_AI/SW_Requirements.xlsx`).
+- Path: `requirements.workbook` in `20_AI/ai_project.yaml` (e.g. `20_AI/Shared/SW_Requirements.xlsx`).
 - Sheet: `Sheet1` (the only sheet in the workbook).
 
 ## Filter rule — keep only rows where ALL hold

@@ -48,7 +48,7 @@ layout:
 
 # How in-scope requirements are SELECTED — differs by flavor.
 requirements:
-  workbook: 20_AI/SW_Requirements.xlsx   # <-- confirm
+  workbook: 20_AI/Shared/SW_Requirements.xlsx   # <-- confirm
   # autosar     -> by-module-filter : filter aFunctionModule + aVariant
   # nonautosar  -> explicit-id-list : no reliable module column; IDs are
   #                listed per-module in the manifest (or a release filter).
@@ -61,7 +61,7 @@ requirements:
 # PROJECT-WIDE documents only. Per-module documents (SDD, a module-specific
 # architecture section, per-run extras/instructions) live in the module manifest.
 docs:
-  root:             20_AI/               # <-- confirm  base folder inputs live in
+  root:             20_AI/Shared/        # <-- confirm  project-wide reference documents live here (not directly under 20_AI/)
   signals_params:   <path>              # <-- fill  Signals & Parameters (source of truth) — MANDATORY (all skills)
   architecture:     <path or N/A>        # <-- OPTIONAL but the skill asks explicitly (.pdf or .xlsx);
                                         #    project Architecture Design Document. N/A only via an explicit

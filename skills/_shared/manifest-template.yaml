@@ -51,7 +51,7 @@ code_dev:
   # -- both flavors --
   peer_anchors:       []            # <-- fill  style-reference modules (never modified)
   known_deferrals:    []            # <-- optional  seed the Deferred Items table
-  open_questions:     []            # <-- optional  seed Phase-1; mirrored to 20_AI/<MODULE>_Phase1_Questions_<Skill>.xlsx
+  open_questions:     []            # <-- optional  seed Phase-1; mirrored to 20_AI/<Skill>/<MODULE>/<MODULE>_Phase1_Questions_<Skill>.xlsx
 
   last_run:                         # SKILL-OWNED ledger
     run_id:           null          # <skill>-<MODULE>-<UTC start> (run-tracking.md §1); commits carry it as AI-Run:

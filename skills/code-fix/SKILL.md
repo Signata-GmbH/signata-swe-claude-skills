@@ -136,7 +136,7 @@ engineer placed in the repository are inputs: they go in the gate commit
 5. **Verdict** (§5) — **V1** code defect · **V2** requirement defect/ambiguity ·
    **V3** not this module (upstream / calibration / build-config / integration /
    bench or test-case defect) · **V4** not localisable.
-6. **Numbered questions** → `20_AI/<MODULE>_Phase1_Questions_CodeFix.xlsx` (§5).
+6. **Numbered questions** → `20_AI/CodeFix/<MODULE>/<MODULE>_Phase1_Questions_CodeFix.xlsx` (§5).
 7. **Present** the anchored expectation, the trace, the candidate table, the
    verdict, and the questions, and **STOP** (gate commit). **Write no
    `.c`/`.h`/`.mak`.**

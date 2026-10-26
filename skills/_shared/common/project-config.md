@@ -39,7 +39,7 @@ The local working tree is not evidence. Run all three checks and report them:
 Run `git fetch` first (or say you could not, and why) so these reflect reality.
 
 - **Present on `origin/<base>`** → **STOP creating.** Tell the engineer to
-  `git pull` / merge the base branch and re-run; then validate it (§5). Never
+  `git pull` / merge the base branch and re-run; then validate or update it (§5, §5.1). Never
   author a competing file.
 - **Present only on another branch** → **STOP creating.** Name the branch and the
   commit, and say the config is already in flight — it should be merged, not
@@ -88,7 +88,7 @@ Never conclude silently: show the evidence (the paths you found) and confirm.
   disk**; set the other flavor's fields to `N/A`. A root you cannot find is asked
   for, never invented (no-fabrication applies to config too).
 - **`requirements.workbook`** and **`docs.*`** — discover by globbing under
-  `docs.root` (default `20_AI/`); several candidates → pick-one popup; none →
+  `docs.root` (default `20_AI/Shared/`; also look at the top level of `20_AI/` for legacy placement — see workflow-discipline §1.4); several candidates → pick-one popup; none →
   ask for the path. `docs.architecture` follows the §1 *ask* tier of
   [workflow-discipline.md](workflow-discipline.md): explicitly offer it, and
   record `N/A` + reason only if the engineer declines. Never let one document
@@ -112,7 +112,7 @@ Use `AskUserQuestion` popups for the categorical choices (type, scoping,
 coverage, ASIL, and pick-one document choices); typed input only for genuinely
 free text (target, variants, a path discovery missed).
 
-## 5. If the config already exists — validate, never overwrite
+## 5. If the config already exists — validate, maintain, never overwrite
 
 Do not rewrite the file. Emit a validation table
 (`field | value | valid? | evidence / problem`) covering:
@@ -126,7 +126,37 @@ Do not rewrite the file. Emit a validation table
 
 Then offer to repair **only the invalid fields**, asking for each, and rewrite
 just those. Leave valid fields byte-identical — engineers may have hand-tuned
-them. If everything is valid, say so and stop; there is nothing to do.
+them.
+
+### 5.1 Maintenance — `/project-init` may be re-run at any time
+
+An existing config is not an error: re-running `project-init` is the supported
+way to **check, clean up and update** it (e.g. a non-AUTOSAR project such as
+SAPF changes its controller → `toolchain.target`, and perhaps
+`toolchain.compiler`, `layout.*`). After the validation table, ask what to do
+(`AskUserQuestion`, multi-select):
+
+- **Update values** — any field, re-asked with its current value shown:
+  `toolchain.*`, `safety.default_asil`, `requirements.variants` / `scoping`,
+  `coverage.unit_test`, `project.type` (loud confirmation: it switches the
+  flavor), `layout.*`, `docs.*` / `requirements.workbook` paths. Change only
+  the fields chosen; every other line stays byte-identical. A change to
+  `project.type`, `toolchain.*` or `safety.*` is called out as one that
+  invalidates earlier module work (manifests keep their pinned values) — say
+  so; do not rewrite manifests.
+- **Tidy `20_AI/`** — create any missing `20_AI/<Skill>/`, `20_AI/Shared/` and
+  `20_AI/Shared/CANoe/` folders (each with a `.gitkeep`), offer the CANoe
+  `.gitignore` lines, and offer to move registered inputs sitting outside their
+  home into it (`workflow-discipline.md` §1.4: `git mv` when tracked, never
+  overwrite, update the config path, list each `moved <old> → <new>`).
+- **Check `ai_test_project.yaml`** when present (see
+  `testspec/project-config.md`), by the same rules.
+- **Nothing** — all valid and tidy: say so and stop.
+
+Maintenance edits go through §6 (diff of the changed fields only, approval,
+then the commit question). The guard in §3 applies to **edits** too: an edit of
+the shared file belongs on `<base>` (or a branch that will be merged promptly),
+never silently on a feature branch.
 
 ## 6. Confirm → write → hand off (HARD GATE)
 

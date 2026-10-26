@@ -4,7 +4,10 @@
 `fix/swe6-validation-feedback-2026-10` (§6). The re-run was validated by QA —
 every case accepted, with two rewritten examples showing the expected case
 design; implemented 2026-10-16 on branch `fix/swe6-qa-stepped-cases-2026-10`
-(§7). Next: re-run the same feature and compare with QA's examples.
+(§7). A third round — QA's validation of a motor-control feature, plus what
+its Phase-1 answers showed — was implemented 2026-10-26 on branch
+`fix/swe6-qa-motor-control-2026-10` (§8). Next: re-run the same feature and
+compare with QA's examples.
 
 **Source:** the QA validation of a generated SWE.6 workbook for one CAN
 feature — 37 concrete cases accepted, 77 rejected. The detailed feedback is
@@ -146,3 +149,41 @@ result checks the end state without a window and the time stays an Open Point
 Self-checks: `workflow-discipline.md` §6 items 3, 6, 18, 22, 23 revised; item
 28 added. Integration-test keeps one marked pass/fail result per case.
 
+
+## 8. Third QA round — values, state outputs, answers (2026-10-26)
+
+**Source:** one SWE.6 run on a motor-control feature (64 requirements in
+scope, 23 case rows). QA validated the workbook: 17 cases valid, 1 invalid,
+5 marked `Question`. The run itself also showed where the Phase-1 questions
+produced answers that could not be used. Customer details stay out of Git (§1).
+
+### 8.1 QA's validation of the generated cases
+
+| # | QA's feedback | Cause on `main` | Implemented as |
+|---|---|---|---|
+| V1 | "`× 48` — is it hex?" on a channel-count check derived from a duty-cycle percentage | §7 asked for unambiguous results, not for derived values to be written out | patterns §7: a derived expected value is its formula with units and a worked decimal example; a comparison across resolutions states a tolerance of one step of the coarser side. Self-check 29 |
+| V2 | "What is R16 / R13?" — the case said "note the raw value for 16 V (R16), write R16 × 5 / 16" | an A2L item without a scaling was answered at Phase 1 with "derive it on the bench" | patterns §3: a scaling question per such item, with a concrete proposal; §7: every value is a number the operator can type, otherwise a marked placeholder and `isValid = No`. Self-check 29 |
+| V3 | Invalid: a direction-change case checked that the idle state occurs, but not the output pattern another requirement specifies for idle | §7 merges covered "same stimulus" and "one stimulus varied", not states passed through | patterns §7: third merge situation — a state a case passes through is checked against the outputs other in-scope requirements give it, marked by the bus signal for the state where one exists; proposed at Phase 1. Self-check 30 |
+| V4 | QA wrote `Valid` / `Invalid` / `Question` in `isValid` | the allowed values were `Yes` / `No` / blank, typed by hand | output-format: `isValid` is a `Yes,No,Question` drop-down (both skills); no-fabrication: the skill never writes `Question`; workflow-discipline §8: `Question` → written reply for QA, rework only after QA accepts, an exposed change is its own item in the reply; reworks resting on a fact only QA stated are recorded as QA's statement plus an `Input hygiene` Open Point (engineer's decision) |
+
+QA accepted the answers and the reworks (including a tolerance the question
+had exposed but not asked for); no re-validation was needed.
+
+### 8.2 What the run's Phase-1 answers showed
+
+| # | Observed | Implemented as |
+|---|---|---|
+| A1 | Five "Which …?" questions were answered "Yes" — their proposal was "No proposal" or deferred the value | workflow-discipline §5: every proposal concrete, "Yes" accepts it; otherwise the question lists options |
+| A2 | Four "Is there X, or does it go to Open Points?" questions were answered "No" — two readings | §5: one yes/no per question, "No" means the opposite of the proposal |
+| A3 | Two answers contradicted each other (a function accessible vs. not accessible on Series SW) | §5 and SKILL Step 5: check the answers for unresolved and contradicting ones before generation; ask what changes a case now |
+| A4 | A catalogue row came back unanswered: the question had been written into its `Answer` cell | patterns §3.2: `Answer` is the engineer's column, left empty; a means to be named is asked as a name |
+| A5 | A value the engineer picked from an AI proposal was recorded as "given by QA" in four places | workflow-discipline §4 "record who said it", no-fabrication. Self-check 31 |
+| A6 | The engineer suggested reading the code for a motor-direction mapping | patterns §0: decline in one sentence and search the supporting specifications — the mapping was settled from three of them, a fourth flagged as contradicting |
+| A7 | Values the feature's inputs left open (a direction, a task period, a supply read-back) were in other features' requirements, the system requirements and the architecture text | patterns §3: supporting specifications, cited not traced, disagreements as `Input hygiene` |
+| A8 | A requirement's timing (one task cycle of a few ms, a slope per ms) was finer than the fastest observation (a 10 ms DAQ event) | patterns §7: compare every stated timing with the fastest observation; finer → Open Point stating the false-fail risk |
+| A9 | The feature argument was not an `aFeature` value (twice in this project, each costing an aborted run) | patterns §1, SKILL: offer the nearest `aFeature` values with counts and modules |
+
+Changed files: `qualification-test/SKILL.md`, `integration-test/SKILL.md`
+(the `Question` value and the drop-down only), `qualification-test-patterns.md`
+(§0, §1, §3, §3.2, §7), `workflow-discipline.md` (§4, §5, §6 items 16 and
+29–31, §8), `no-fabrication.md`, `output-format.md`, STATUS.

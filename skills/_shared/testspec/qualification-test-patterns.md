@@ -37,12 +37,31 @@ A2L/variable list does not settle it. That name:
   expected reaction, not a debounce time or threshold. Those still come from
   the requirement and its specifications, or are Open Points.
 
+**When the engineer asks for a value "from the code".** An engineer stuck on
+a question may suggest reading the source ("check the code for which request
+drives forward"). Decline, say why in one sentence — the expected result would
+then be whatever the code does — and search the **supporting specifications**
+instead (§3): requirements of other features, the system requirements, the
+architecture text. Offer what they establish as the proposal, with each source
+and any source that contradicts it. *(Observed: a motor-direction mapping no
+in-feature input gave was settled from three specification sources — a
+direction-naming requirement, a sensor-direction requirement and the end-stop
+positions in the system requirements — with a fourth system requirement
+flagged as contradicting them.)*
+
 ## 1. Scope
 
 Select requirements where **all** hold:
 
 - `aFeature` = the target feature (must be in `qualification_test.valid_features`
-  — if not, stop and ask rather than proceeding on an unrecognized feature name)
+  — if not, stop and ask rather than proceeding on an unrecognized feature name).
+  Not cached and not an `aFeature` value in the export either → offer the
+  nearest `aFeature` values as a popup, each with its object count and the
+  `aFunctionModule` values its objects carry. If the argument looks like a
+  module (it names one, or a module's requirements are spread over several
+  features), say which features that module's requirements carry — the
+  engineer may want one of them, or one with `scope.requirement_ids`
+  narrowed to that module's objects.
 - `aTestability` = `test` — exclude `verification`, `test =>` and
   `verification =>` (owned by another test level)
 - `aStatusOfAnalysis` ∈ `attributes.status_filter`
@@ -92,6 +111,30 @@ source for each: `docs.signals_params`, `docs.a2l_or_varlist`, `docs.diagspec`,
 `docs.comm_database`, a reference specification (`docs.reference_specs`, §3.1), or an
 existing test case for this feature — never the source code (§0). Any identifier that cannot be resolved goes to Open Points —
 never invented, never a guessed variant of one you can see.
+
+**Supporting specifications.** Where the feature's own inputs do not settle a
+value, a mapping or a stimulus (which request moves the actuator which way,
+which supply value the ECU reports for a set voltage, which task period
+applies), search the specifications that are already supplied for other
+purposes: **requirements of other features** in the same export, the **system
+requirements** export, and the **architecture** text. Use what they state,
+cite the object ID in `Traceability` as *supporting* — the case never traces
+to it — and raise one `Input hygiene` Open Point where two of them disagree.
+Offer anything they settle as the Phase-1 proposal, with its sources; it is
+still the engineer's to accept.
+
+**A2L items without a scaling.** An A2L `MEASUREMENT` or `CHARACTERISTIC` with
+`NO_COMPU_METHOD` has no physical unit. For every one a case writes or checks
+with a physical value, ask its scaling as its own Phase-1 question, with a
+**concrete** proposal ("1 mV per LSB, so 16 V = 16000") taken from a
+related item where one exists (the bus signal carrying the same quantity, a
+parameter's specified default compared against the same variable's other
+form). Never propose reading the raw value on the bench and scaling it there:
+it puts a symbol for an unknown number into the case (§7) and a "Yes" to it
+settles nothing (workflow-discipline §5). Unanswered → the value stays a
+placeholder and the case is `isValid = No`. *(Observed: "R16 × 5 / 16" —
+"note the raw value for 16 V, then write 5/16 of it" — was accepted at
+Phase 1 and then returned by QA as "What is R16?".)*
 
 **Bus signals come from the communication database.** For a signal on CAN, LIN
 or another bus, copy from `docs.comm_database` (DBC, LDF or ARXML system
@@ -189,6 +232,19 @@ Set by | Read in | Manual steps | Series SW | Debug SW | Answer | Status`
   Series SW (§8, `atcRemark`) may not depend on it.
 - **One answer per row.** Each row is answered on its own — never "confirm the
   whole table" as one question (workflow-discipline §5, one question per QID).
+- **`Answer` is the engineer's column — leave it empty.** A cached row shows
+  `confirmed` in `Status` and the cache in `Source`; a row with something
+  still to ask puts the question in `Manual steps` or `Item` and leaves
+  `Answer` blank. A pre-filled `Answer` cell reads as answered, and gets
+  skipped. *(Observed: a row asking whether a development message exists on
+  Series SW had the question written into `Answer`; it came back unanswered
+  while every other row was answered.)*
+- **A means the engineer must name is asked as a name.** Where `Set by` is
+  unknown (a mechanical block, a pin-voltage step), the row's AI proposal says
+  what is needed and the row asks "which device / procedure?"; an answer of
+  "yes" names nothing — the row stays `answered` but unconfirmed, the case
+  says the step in plain words without a device name, and the name is
+  re-emitted as a question (workflow-discipline §5).
 - **Cached for the project.** Means belong to the bench, not to a feature:
   confirmed rows are written to `qualification_test.bench_catalogue` in
   `ai_test_project.yaml`, and the next feature shows them as already confirmed
@@ -310,6 +366,23 @@ to bottom.
   (`"CDD_Sent_XCP_Angle_g_u16 is updated to 163"`), never a vague description.
   An enumerated value is written as the database text with the raw value in
   brackets: `<Text>(<raw>)`, e.g. `Active(1)`.
+- **Every value is a number the operator can type.** A step never holds a
+  symbol for a value to be noted on the bench and reused later ("note the
+  raw value R, then write R × 5 / 16"). Where the scaling that would give the
+  number is unknown, it is a Phase-1 question (§3); unanswered, the case
+  keeps a marked placeholder and is `isValid = No`.
+- **A derived expected value is written as its formula, with units and a
+  worked example.** When the expected value follows from another observed
+  value through a scaling, write the whole relation in decimal with its
+  units, plus one example: `<Var A> = <Var B> (%) × 4800 / 100 ticks,
+  e.g. 50 % = 2400` — never a bare factor such as `× 48`, which a reader
+  can take for hexadecimal or a typo. *(Observed: QA returned "× 48" as
+  "is it hex?")*
+- **A comparison across resolutions has a tolerance.** When the two sides
+  of a check resolve differently (a percentage in whole steps against a
+  counter in ticks, a 1 mV value against a 0.1 % one), state a tolerance of
+  at least one step of the coarser side — derived from the scalings, cited
+  in `Traceability`. An exact match would fail on rounding alone.
 - **No remarks inside a step.** Open Point numbers, "to be confirmed", source
   notes and explanations belong in `Open Points` and `Traceability`, never in
   a precondition, action, result or postcondition.
@@ -364,8 +437,18 @@ one observable item, with its kind and the expected value:
   reasonable. Where no input gives the time, the result checks the end state
   ("changes to `<value>`") without a window, and the missing time is an Open
   Point.
+- **The observation must be faster than the timing it checks.** Compare
+  every timing a requirement states (one task cycle, a slope per ms, a
+  window) with the fastest observation the bench offers for that item — the
+  message cycle in the communication database, the fastest XCP DAQ event in
+  the test environment. Where the requirement's timing is finer, the timing
+  clause is an Open Point; the case checks only what the sampling can
+  resolve (an order of states, an end value), and the Open Point says when
+  a short state can be missed between samples and fail the case falsely.
+  Take the task period from the architecture text where it states one
+  (§3, supporting specifications).
 
-**Merged requirements — one case.** Requirements may share one case in two
+**Merged requirements — one case.** Requirements may share one case in three
 situations:
 
 - **Same stimulus, different observations** — they are outcomes of the same
@@ -375,6 +458,18 @@ situations:
   shorter-than-specified length of one message), and one signal shows the
   outcome for all of them. The case is a stepped case (§6) with a step for
   each requirement's values.
+- **A state the case passes through** — the case drives the ECU through a
+  state (an idle phase in a direction change, a braking phase, a fault
+  state) whose outputs another in-scope requirement specifies. Checking that
+  the state *occurs* is not enough: the result also checks the outputs that
+  requirement gives for it, at that point, and the case traces that
+  requirement too. Mark the state with the signal the ECU sends for it where
+  one exists (bus first), the XCP state variable otherwise. When proposing
+  cases at Phase 1, list for each case the states it passes through and
+  match them against the in-scope requirements; each match is a proposed
+  merge. *(Observed: a case checking "idle occurs between forward and
+  reverse" was marked invalid by QA because it did not check the output
+  channel pattern the idle-state requirement specifies.)*
 
 A merge is **proposed** in the Phase-1 proposed-cases table, listing the
 requirements it covers, and made only once confirmed. The verdict is kept on

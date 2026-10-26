@@ -9,7 +9,7 @@
 
 ## Workbook
 
-- Path: `requirements.workbook` in `20_AI/ai_project.yaml` (e.g. `20_AI/SW_Requirements.xlsx`).
+- Path: `requirements.workbook` in `20_AI/ai_project.yaml` (e.g. `20_AI/Shared/SW_Requirements.xlsx`).
 - Each row has an `ID` column (`SW_Req-<n>`) and a `Requirements` column
   (section-numbered text). It is binary `.xlsx` — read it with `openpyxl` (via the
   project venv if one is configured), not a plain file reader.

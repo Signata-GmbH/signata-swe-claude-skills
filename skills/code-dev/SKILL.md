@@ -82,7 +82,7 @@ Pin the revision (§2). Run the **pre-flight** input check (§1). Then:
 3. **Cross-check coverage** — every interface ↔ a requirement; log every mismatch.
 4. **Action × Precondition × Source-signal map** (§6/§7) — one row per action, with
    gates in order, source→mapping→wire encoding, and literal failure behaviour.
-5. **Numbered questions** → `20_AI/<MODULE>_Phase1_Questions_CodeDev.xlsx` (§5).
+5. **Numbered questions** → `20_AI/CodeDev/<MODULE>/<MODULE>_Phase1_Questions_CodeDev.xlsx` (§5).
 6. **Present** the requirement table, coverage cross-check, action map, and
    question list, and **STOP** (gate commit — the questions workbook is in it).
    **Write no `.c`/`.h`/`.mak` until every question is answered.** If answers

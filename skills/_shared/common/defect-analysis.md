@@ -223,7 +223,7 @@ The fix ships with a plan that closes the loop back to the original evidence:
   line. For V2/V3/V4 every section above the change table is still produced —
   the report is the deliverable, the diff is optional.
 - **The code change itself** (V1, or an authorised V2), minimal per §6.
-- **Phase-1 questions** → `20_AI/<MODULE>_Phase1_Questions_CodeFix.xlsx`
+- **Phase-1 questions** → `20_AI/CodeFix/<MODULE>/<MODULE>_Phase1_Questions_CodeFix.xlsx`
   (workflow-discipline §5 — same read-back-answers rule).
 
 ## 10. Honesty rules specific to debugging

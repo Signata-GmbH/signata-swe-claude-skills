@@ -103,7 +103,7 @@ table.
 
 ### 4.2 Discover, then confirm
 
-- **`docs.*`** — glob under `docs.root` (default `20_AI/`) for each document;
+- **`docs.*`** — glob under `docs.root` (default `20_AI/Shared/`; also look at the top level of `20_AI/` for legacy placement — see workflow-discipline §1.4) for each document;
   several candidates → pick-one popup; none → ask for the path. Every document
   may be `.pdf` or `.xlsx`. For `functional_architecture_export`, filenames are
   weak evidence — the same DOORS module exported twice from two views (one

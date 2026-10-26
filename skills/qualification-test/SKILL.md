@@ -25,6 +25,9 @@ before reading the config or any export — and never take it from the folder
 instead (an existing manifest, a previous run, a file name). Check it against
 `qualification_test.valid_features` once the config is loaded; a module name
 (an `aFunctionModule` value) is recognised as one and refused as a feature.
+A name that is neither cached nor an `aFeature` value in the export is not
+guessed at: offer the nearest `aFeature` values with their object counts and
+modules as a popup (qualification-test-patterns §1).
 
 **Run it from the SWE.3 project repository**, like the code skills — never from
 a vTestStudio project folder, which is usually outside Git (project-config §1).
@@ -95,12 +98,17 @@ Per qualification-test-patterns §1–§3 and workflow-discipline §1/§2/§4:
    qualification-test-patterns §1.1): followed, ruling the level out, or empty.
 3. **Existing coverage** split (covered / not covered / partially covered).
    On a re-run, read QA's validity verdicts in the previous output here
-   (workflow-discipline §8): cases marked `Yes` are kept, and every `Reason for
-   Invalid` the inputs cannot answer becomes a Phase-1 question.
+   (workflow-discipline §8): cases marked `Yes` are kept, every `Reason for
+   Invalid` the inputs cannot answer becomes a Phase-1 question, and every
+   `Question` gets a written reply for QA before its case is reworked.
 4. **Vocabulary resolution** — every signal/variable/parameter/state/error
    name, with its source; bus signals with their encoding, cycle time and
    timeout from the communication database (qualification-test-patterns §3) —
-   never from the source code.
+   never from the source code. What the feature's own inputs leave open is
+   searched in the supporting specifications (other features' requirements,
+   system requirements, architecture text); every A2L item used with a
+   physical value but without a scaling gets its own scaling question with a
+   concrete proposal (§3).
 5. **Reference specifications** (qualification-test-patterns §3.1) — the
    sections read in each registered document, and any version difference
    between what a requirement cites and what was supplied.
@@ -109,16 +117,24 @@ Per qualification-test-patterns §1–§3 and workflow-discipline §1/§2/§4:
    whether it exists on Series/Debug SW; rows already in
    `qualification_test.bench_catalogue` shown as confirmed.
 7. **Proposed test cases** — one line each, no steps yet, with each proposed
-   merge of requirements (qualification-test-patterns §7).
+   merge of requirements (qualification-test-patterns §7) — including the
+   states each case passes through, matched against the in-scope requirements
+   that specify those states' outputs.
 8. **Row-count gate** (workflow-discipline §5) — the number of rows that table
    produces, heading and logical-parent rows included, as the last question.
 Present all of the above and numbered questions (written to
-`20_AI/<FEATURE_SLUG>_Phase1_Questions_QualificationTest.xlsx`, with the
-catalogue as its own sheet, workflow-discipline §5). **STOP.**
+`20_AI/QualificationTest/<FEATURE_SLUG>/<FEATURE_SLUG>_Phase1_Questions_QualificationTest.xlsx`, with the
+catalogue as its own sheet, workflow-discipline §5). Every question carries a
+concrete AI proposal that "Yes" accepts, or lists its options; the catalogue's
+`Answer` column is left empty (workflow-discipline §5). **STOP.**
 
 ## Step 5 — Phase 2 — Generation
 
-Only after acknowledgement. First **re-hash every input** (workflow-discipline
+Only after acknowledgement. First **check the answers** (workflow-discipline
+§5): list every answer that does not resolve its question and every pair of
+answers that contradict each other, and ask now whatever changes a case's
+stimulus, expected value, software or direction; record each follow-up with
+its source (§4). Then **re-hash every input** (workflow-discipline
 §2) — anything changed since pre-flight is a stop, not a mixed baseline. Apply
 the structure, title convention, boundary-
 value rule (the points of one parameter are the steps of one case), the
@@ -127,8 +143,12 @@ every action a stimulus naming its means in plain words; every result a check
 of an observable item, on the bus where possible), and (for diagnostic features) the DID/RID templates from
 [qualification-test-patterns.md](../_shared/testspec/qualification-test-patterns.md)
 §4–§9. Every symbol/value traced to a supplied input (workflow-discipline §4);
-an unresolved one goes to Open Points, never a guess. For a re-run, read QA's
-validity verdicts first and leave accepted cases untouched, then run the
+an unresolved one goes to Open Points, never a guess. Every value a step
+writes or checks is a concrete number; a derived one is written as its formula
+with units and a worked example, with a tolerance where the two sides resolve
+differently (qualification-test-patterns §7). For a re-run, read QA's
+validity verdicts first and leave accepted cases untouched — a `Question`
+case is reworked only after QA has accepted the reply — then run the
 three checks of workflow-discipline §8 — previous output gone or edited
 since, scope changed (→ regeneration, not a delta), layout-only (→ re-render,
 no analysis) — then apply the in-place diff: new → add, changed → update the
@@ -139,7 +159,8 @@ mapped case in place, removed → flag.
 Run the checklist in workflow-discipline §6; fix failures or list them as Open
 Points. Write the 3-sheet workbook per
 [output-format.md](../_shared/testspec/output-format.md) (Object Text before
-Object Heading for this skill) to
+Object Heading for this skill), with the `Yes,No,Question` drop-down on
+`isValid`, to
 `20_AI/QualificationTest/<FEATURE_SLUG>_SWE6_TestCases.xlsx`. Print the
 workbook summary in chat plus the no-fabrication disclaimer.
 

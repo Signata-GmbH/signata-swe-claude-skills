@@ -31,7 +31,7 @@ in `ai_test_project.yaml`) instead of re-requested per run:
 |---|---|---|---|
 | — always (SWE.5) | `Architecture Requirement ID` | **before** the 21 (column A) | the ID of the architecture object the row traces to — the same ID as in `Traceability`; empty on a heading row that has no object of its own |
 | — always (SWE.6) | `Requirement ID` | **before** the 21 (column A) | the ID of the requirement the row traces to — every ID, separated by newlines, for a merged case; empty on a heading row |
-| `validity_review` | `isValid`, `Reason for Invalid` | **after** the 21 | the validity policy in [no-fabrication.md](no-fabrication.md); QA's verdict, read back on a re-run (workflow-discipline.md §8) |
+| `validity_review` | `isValid`, `Reason for Invalid` | **after** the 21 | the validity policy in [no-fabrication.md](no-fabrication.md); QA's verdict, read back on a re-run (workflow-discipline.md §8). `isValid` carries an Excel drop-down (data validation, list `Yes,No,Question`) on every case row, so QA picks a value instead of typing one |
 
 The 21 attributes stay **contiguous and in schema order** between them. State
 the import consequence once — in the run summary, and as one Open Points row —
