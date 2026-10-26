@@ -124,8 +124,9 @@ Per integration-test-patterns §1–§6 and workflow-discipline §1/§2/§4:
    content hash of every supplied export, and the source repo's revision (§2).
    Every symbol/value/breakpoint line is valid only at that baseline.
    On a re-run, read QA's validity verdicts in the previous output here
-   (workflow-discipline §8): cases marked `Yes` are kept, and every `Reason for
-   Invalid` the inputs cannot answer becomes a Phase-1 question.
+   (workflow-discipline §8): cases marked `Yes` are kept, every `Reason for
+   Invalid` the inputs cannot answer becomes a Phase-1 question, and every
+   `Question` gets a written reply for QA before its case is reworked.
 2. **Resolve the peers** (integration-test-patterns §2) — direction per port
    from its text, then the writer→reader pairing; reuse the cached
    `integration_test.peer_modules` if present, otherwise discover, confirm and
@@ -174,7 +175,8 @@ value traced to a supplied input, and every breakpoint line quoted from a `.c`
 file at the pinned revision (workflow-discipline §4, integration-test-patterns
 §9); an unresolved one goes to Open Points, never a guess.
 For a re-run, read QA's validity verdicts first and leave accepted cases
-untouched, then run the three checks of workflow-discipline §8 — previous
+untouched — a `Question` case is reworked only after QA has accepted the
+reply — then run the three checks of workflow-discipline §8 — previous
 output gone or edited since, scope changed (→ regeneration, not a delta),
 layout-only (→ re-render, no analysis) — then apply the in-place diff: new →
 add, changed → update the mapped case in place, removed → flag.
@@ -184,7 +186,8 @@ add, changed → update the mapped case in place, removed → flag.
 Run the checklist in workflow-discipline §6; fix failures or list them as Open
 Points. Write the 3-sheet workbook per
 [output-format.md](../_shared/testspec/output-format.md) (Object Heading before
-Object Text for this skill) to
+Object Text for this skill), with the `Yes,No,Question` drop-down on
+`isValid`, to
 `20_AI/IntegrationTest/<MODULE>_SWE5_TestCases.xlsx`. Print the workbook
 summary in chat plus the no-fabrication disclaimer.
 

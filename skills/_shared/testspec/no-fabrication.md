@@ -28,8 +28,14 @@
 - Set `atsState` to `agreed` — that is a post-review value only a human sets.
 - Write `Yes` in a validity column (below) — nothing was built, flashed or
   executed, so nothing is known to work.
-- Change a validity value or reason QA entered — on a re-run, QA's `Yes`, `No`
-  and reasons stay as QA left them (workflow-discipline.md §8).
+- Change a validity value or reason QA entered — on a re-run, QA's `Yes`, `No`,
+  `Question` and reasons stay as QA left them (workflow-discipline.md §8).
+- Attribute an answer to someone who did not give it. "QA confirmed" means QA
+  wrote it in the workbook or the engineer said QA agreed; a value the
+  engineer picked from an AI proposal is "engineer, accepting the AI proposal"
+  until QA confirms it (workflow-discipline.md §4). *(Observed: a parameter
+  scaling the engineer picked from a proposal in a chat popup was recorded in
+  four places as "given by QA" before QA had seen it.)*
 - Report a test case as executed, passed, failed, or covered by execution — you
   have authored a draft by inspection, nothing has run.
 - Write to DOORS. The output is a workbook for an engineer to review and enter
@@ -68,6 +74,12 @@ authoring by inspection can only ever establish that it **cannot**:
   and the Open Point number.
 - **blank** — every other case. That is the reviewer's verdict to give.
 - **`Yes`** — **never**.
+- **`Question`** — **never**. It is QA's value for "I cannot judge this case
+  until you answer `Reason for Invalid`" (workflow-discipline.md §8).
+
+The column's drop-down offers exactly `Yes`, `No` and `Question`
+(output-format.md). QA uses all three; the skill writes only `No` or leaves
+the cell blank.
 
 State the number of `No` rows in the run summary, and say that blank means
 "for the reviewer", not "not checked": a fully grounded run has an all-blank
