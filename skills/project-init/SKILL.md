@@ -8,8 +8,9 @@ description: >-
   cannot derive (compiler, target, ASIL, variants), and refuses to create a
   second config if one already exists on the base branch or is in flight on
   another branch. Use when setting up a repo for the AI skills, or when asked to
-  create, initialise, check, or repair ai_project.yaml.
-argument-hint: "[--validate]"
+  create, initialise, check, clean up, update (e.g. a changed controller or
+  compiler), or repair ai_project.yaml. Safe to re-run at any time.
+argument-hint: "[--validate | --update]"
 ---
 
 # Project Init — per-repo AI config
@@ -19,10 +20,10 @@ Create the **one-per-repository** project config `20_AI/ai_project.yaml` that
 on the repo's base branch**, and commit the result — every engineer and every
 module then inherits the same project facts.
 
-**This skill writes exactly one file.** It never creates per-module manifests,
+**This skill writes the project config and the empty `20_AI/` folder skeleton (Step 7).** It never creates per-module manifests,
 never touches source, and never runs a toolchain.
 
-`--validate` (or an existing config) → validation/repair mode only.
+`--validate` → validate only. An existing config (or `--update`) → maintenance mode (Step 6): check, tidy `20_AI/` and update chosen fields. Safe to re-run at any time.
 
 ## Step 1 — Load the procedure
 
@@ -43,16 +44,17 @@ current branch + worktree cleanliness. Report what you concluded.
 Per project-config §2: `git fetch`, then check **local**, **`origin/<base>`**, and
 **all fetched branches** (`git log --all -- 20_AI/ai_project.yaml`).
 
-- Already on `origin/<base>` → **STOP.** Say to pull/merge and re-run; do not
-  author a competing file.
-- In flight on another branch → **STOP.** Name the branch + commit; it should be
-  merged, not duplicated.
-- Present locally → go to **Step 6** (validate / repair).
+- Present locally (pulled/merged, wherever it came from) → go to **Step 6**
+  (maintenance: validate / tidy / update). This is not a duplicate.
+- Absent locally but already on `origin/<base>` → **STOP.** Say to pull/merge and
+  re-run; do not author a competing file.
+- Absent locally but in flight on another branch → **STOP.** Name the branch +
+  commit; it should be merged, not duplicated.
 - Nowhere → continue.
 
 ## Step 4 — Base-branch guard (HARD GATE)
 
-Per project-config §3. On the base branch with a clean worktree → proceed.
+Per project-config §3 (applies to edits of an existing config too). On the base branch with a clean worktree → proceed.
 Otherwise **stop and ask**: switch to `<base>` (clean worktree only, plain
 `git switch`), create it here anyway (with the merge-it-promptly warning), or
 abort. Never switch, stash, or discard on your own.
@@ -77,14 +79,27 @@ Per project-config §4, scaffolding from
 **No `<PLACEHOLDER>` may survive** — every field ends as a confirmed value or
 `N/A` + a one-line reason.
 
-## Step 6 — Validate / repair mode (existing config)
+## Step 6 — Maintenance mode (existing config — run any time)
 
-Per project-config §5: never overwrite. Emit the validation table
+Per project-config §5 / §5.1: never overwrite. Emit the validation table
 (`field | value | valid? | evidence / problem`) — schema version, surviving
 placeholders, `project.type` vs what the repo actually looks like (a mismatch is
 a loud finding), every `layout.*` path exists, every document path is readable.
-Offer to repair **only** the invalid fields, leaving valid ones byte-identical.
-All valid → say so and stop.
+Then ask (multi-select) what to do:
+
+- **Update values** — re-ask the chosen fields with their current value shown
+  (e.g. `toolchain.target` / `toolchain.compiler` when a project such as SAPF
+  changes controller, `safety.default_asil`, variants, scoping, coverage,
+  `layout.*`, document paths, `project.type`). Only those lines change; the rest
+  stays byte-identical. Say when a change affects earlier module work
+  (`project.type`, `toolchain.*`, `safety.*`); do not rewrite manifests.
+- **Tidy `20_AI/`** — create the missing folder skeleton (Step 7 item 2) and
+  offer to move registered inputs sitting outside their home
+  (workflow-discipline §1.4), listing each `moved <old> → <new>`.
+- **Check `ai_test_project.yaml`** when present, by the same rules.
+
+Nothing to change and nothing to tidy → say so and stop. Otherwise run the Step 4 guard, then continue to
+Step 7 with only the changed fields shown as the diff.
 
 ## Step 7 — Confirm → write → hand off (HARD GATE)
 
@@ -93,7 +108,7 @@ Per project-config §6:
 1. Present the **complete resolved YAML** plus a provenance table
    (`derived from <path>` / `answered by engineer` / `N/A — reason`). **STOP for
    approval.**
-2. On approval write `20_AI/ai_project.yaml` and the empty skill folders
+2. On approval write `20_AI/ai_project.yaml` (in maintenance mode: only the changed fields) and the empty skill folders
    `20_AI/{CodeDev,CodeFix,CodeReview,UnitTest,IntegrationTest,QualificationTest}/`
    (each with a `.gitkeep`), plus `20_AI/Shared/` for project-wide reference
    documents (SW requirements, Functional_Architecture, …) and
@@ -107,7 +122,7 @@ Per project-config §6:
    stays uncluttered.
 3. **Ask** whether to commit + push to `<base>`. Never commit or push without an
    explicit yes; if declined, print the exact commands.
-4. Hand off: config is repo-wide and one-time; next run `/code-dev`,
+4. Hand off: config is repo-wide; re-run `/project-init` any time to check or update it. Next run `/code-dev`,
    `/code-review`, or `/unit-test` on a module to scaffold that module's manifest.
 
 ## Step 8 — Run summary
