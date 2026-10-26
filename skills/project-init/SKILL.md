@@ -95,7 +95,13 @@ Per project-config §6:
    approval.**
 2. On approval write `20_AI/ai_project.yaml` and the empty skill folders
    `20_AI/{CodeDev,CodeFix,CodeReview,UnitTest,IntegrationTest,QualificationTest}/`
-   (each with a `.gitkeep`) — nothing else. The module/feature subfolder
+   (each with a `.gitkeep`), plus `20_AI/Shared/` for project-wide reference
+   documents (SW requirements, Functional_Architecture, …) and
+   `20_AI/Shared/CANoe/` for the CANoe configuration archive — with the
+   `.gitignore` lines `20_AI/Shared/CANoe/*` and `!20_AI/Shared/CANoe/.gitkeep`
+   (size-ignored; show the lines and add them only with the engineer's yes) —
+   nothing else. Input documents found directly under `20_AI/` are offered for
+   moving into `20_AI/Shared/` (workflow-discipline §1.4). The module/feature subfolder
    `20_AI/<Skill>/<module-or-feature>/` is created by each skill on its first
    run for that target; its inputs and outputs are kept there so `20_AI/`
    stays uncluttered.

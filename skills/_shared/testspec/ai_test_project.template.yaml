@@ -85,7 +85,7 @@ attributes:
 # PROJECT-WIDE documents. Per-module/per-feature documents (existing test
 # cases for one module/feature, run-specific extras) live in the manifest.
 docs:
-  root:                 20_AI/               # <-- confirm  base folder inputs live in
+  root:                 20_AI/Shared/        # <-- confirm  project-wide reference documents live here (not directly under 20_AI/)
   # ---- SWE.5 test basis -------------------------------------------------
   # The Functional_Architecture DOORS export is the ONLY test basis for
   # integration-test — ONE module, which also contains the UserDefinedTypes
@@ -163,7 +163,7 @@ docs:
   # ---- both: the test bench -------------------------------------------------
   test_environment:     <path or N/A>        # <-- ask  what the bench can STIMULATE and OBSERVE: debugger, XCP, bus
                                               #     access / rest-bus simulation, diagnostic tester, HIL I/O channels,
-                                              #     and the CANoe configuration's panels and controls (workflow-discipline
+                                              #     and the CANoe configuration's panels and controls (archive it in 20_AI/Shared/CANoe/, gitignored) (workflow-discipline
                                               #     §4). Without it, SWE.6 asks every means in its Phase-1 catalogue
                                               #     (qualification-test-patterns §3.2). Mandatory once scripts are generated (v2).
   a2l_or_varlist:        <path or N/A>       # <-- fill  A2L file or code variable list — MANDATORY for SWE.6

@@ -202,6 +202,36 @@ This gate is fail-closed like §1.2: only an explicit engineer decision
 downgrades a STOP, and the decision is recorded in the run summary and in Open
 Points.
 
+### 1.4 Input placement — keep `20_AI/` uncluttered
+
+Two homes, nothing else directly under `20_AI/` besides `ai_project.yaml` (and
+`ai_test_project.yaml`), `manifests/` and the skill folders:
+
+- **Project-wide reference documents** (SW requirements, Signals & Parameters,
+  architecture, guidelines, checklists, …) → `20_AI/Shared/`. Large archives
+  that are gitignored for size (e.g. the CANoe configuration `.zip`) →
+  `20_AI/Shared/CANoe/`.
+- **Module/feature-specific files** (extra inputs, existing test-spec exports,
+  Phase-1 workbooks) → `20_AI/<Skill>/<MODULE>/` (see §0).
+
+After the pre-flight table is resolved, for every input the config/manifest
+**already names** (or this run just had confirmed), if the file sits outside its
+home — typically directly under `20_AI/` — **move it** there before continuing:
+
+- `git mv` when tracked, a plain move otherwise (an untracked or gitignored file
+  stays untracked/ignored). Never copy and leave a duplicate.
+- Never overwrite: if the destination exists, leave both and ask.
+- Only files inside `20_AI/` of this repository; a path outside it is never moved.
+- Update the config/manifest path to the new location. The project config is
+  shared and lives on the base branch: say that the path change must be merged
+  there (do not silently commit it).
+- **Notify the user** with one line per file: `moved <old> → <new>`. A file that
+  is merely *discovered* and not yet confirmed is not moved — §1.2's
+  never-auto-adopt rule still applies.
+- Ensure `20_AI/Shared/CANoe/` is gitignored (`20_AI/Shared/CANoe/*` plus
+  `!20_AI/Shared/CANoe/.gitkeep`) before a CANoe archive is placed there; add the
+  `.gitignore` lines if missing and say so.
+
 ## 2. Baseline pinning (the audit spine)
 
 There is no compiler and no build here, and the DOORS exports carry no git SHA,

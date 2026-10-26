@@ -88,7 +88,7 @@ Never conclude silently: show the evidence (the paths you found) and confirm.
   disk**; set the other flavor's fields to `N/A`. A root you cannot find is asked
   for, never invented (no-fabrication applies to config too).
 - **`requirements.workbook`** and **`docs.*`** — discover by globbing under
-  `docs.root` (default `20_AI/`); several candidates → pick-one popup; none →
+  `docs.root` (default `20_AI/Shared/`; also look at the top level of `20_AI/` for legacy placement — see workflow-discipline §1.4); several candidates → pick-one popup; none →
   ask for the path. `docs.architecture` follows the §1 *ask* tier of
   [workflow-discipline.md](workflow-discipline.md): explicitly offer it, and
   record `N/A` + reason only if the engineer declines. Never let one document
