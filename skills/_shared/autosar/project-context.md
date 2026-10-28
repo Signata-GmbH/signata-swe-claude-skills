@@ -21,8 +21,10 @@ Resolve these from `20_AI/ai_project.yaml` (and the module manifest) at run time
 
 ## Source & test layout (roots from `layout.*`; substitute `<MODULE>`/`<ENV>`)
 
-- Application source: `<layout.app_root>/<MODULE>/inc/<MODULE>.h`,
-  `.../src/<MODULE>.c` (some modules also have `<layout.app_root>/Common/...`).
+- Module source: `<module.path>/inc/<MODULE>.h`, `<module.path>/src/<MODULE>.c`
+  (`module.path` from the manifest — resolved by code-dev; `layout.app_root` is
+  only the *suggested* parent for application modules, BSW/CDD modules live
+  elsewhere). Some modules also have `<layout.app_root>/Common/...`.
 - **Agnosar-generated stub** (interface contract, DO NOT edit):
   `<layout.app_root>/Common/src/<MODULE>.c` — mirror its runnable prototypes,
   MemMap pragma pairs, and `PROTECTED REGION` markers verbatim.

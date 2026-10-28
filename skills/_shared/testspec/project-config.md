@@ -169,7 +169,7 @@ apart:
 | Fact | From `ai_project.yaml` | Used for |
 |---|---|---|
 | AUTOSAR or not | `project.type` | integration-test's AUTOSAR-only guard |
-| Application source root | `layout.app_root` | finding the module's `.c` files |
+| Application source root | `layout.app_root` | a *hint* only — the module's folder is `module.path`, resolved per common/module-location (BSW/CDD modules live elsewhere) |
 | RTE headers | `layout.rte_inc` | RTE symbols and enum literals — set `docs.rte_type_headers: N/A` |
 | SW requirements export | `requirements.workbook` | SWE.6 test basis — write `docs.requirements_workbook: ai_project` |
 

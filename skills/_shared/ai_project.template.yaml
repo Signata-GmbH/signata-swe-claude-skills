@@ -37,7 +37,7 @@ safety:
 # Source-tree roots. These differ between projects; skills READ them.
 # Fill the column matching project.type; set the others to N/A.
 layout:
-  app_root:  <APP_ROOT>          # <-- fill   autosar: 00_SW/02_App   | nonautosar: 00_SW/01_APPL
+  app_root:  <APP_ROOT>          # application layer only; NOT where every module lives (see common/module-location.md). <-- fill   autosar: 00_SW/02_App   | nonautosar: 00_SW/01_APPL
   rte_inc:   <RTE_INC or N/A>    # <-- fill   autosar: 00_SW/01_BSW/Rte/inc   | nonautosar: N/A
   vcast_env: <VCAST_ENV>         # <-- fill   autosar: 00_SW/06_Test/unit/VectorCAST_UnitTest/environment
                                  #            nonautosar: 10_Test/Unit_Test/environment

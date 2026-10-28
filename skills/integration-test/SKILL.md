@@ -95,7 +95,9 @@ Per workflow-discipline §3, in this order:
 4. **Discover only the inputs whose config entry is unset**
    (workflow-discipline §1.2): existing test cases for this module only under
    `extend_existing`, never under `from_scratch`; the module's `.c` files in
-   `docs.source_repo`, found from its `Rte_` call sites; RTE headers if needed.
+   `docs.source_repo`, found from its `Rte_` call sites and `module.path` resolved
+   per [../_shared/common/module-location.md](../_shared/common/module-location.md)
+   (the module may sit outside `layout.app_root`; ask rather than assume); RTE headers if needed.
    A discovered file is a proposal, never registered on its own, and a recorded
    `N/A` is never re-opened. Offer the test environment description, the OS
    and RTE configuration and the debug build if they are not configured

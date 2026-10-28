@@ -45,7 +45,8 @@ Always load:
 [../_shared/common/unittest-design.md](../_shared/common/unittest-design.md),
 [../_shared/common/vectorcast-syntax.md](../_shared/common/vectorcast-syntax.md),
 [../_shared/common/run-tracking.md](../_shared/common/run-tracking.md),
-[../_shared/common/no-fabrication.md](../_shared/common/no-fabrication.md).
+[../_shared/common/no-fabrication.md](../_shared/common/no-fabrication.md),
+[../_shared/common/module-location.md](../_shared/common/module-location.md).
 
 Then, by `project.type`:
 - **autosar** → [../_shared/autosar/project-context.md](../_shared/autosar/project-context.md)
@@ -59,7 +60,7 @@ Per workflow-discipline §3: compute derivable values (`module.upper`,
 `unit_test.env`, layout paths from config), read
 `20_AI/manifests/<MODULE>.yaml` (scaffold from
 [../_shared/manifest-template.yaml](../_shared/manifest-template.yaml) if absent),
-discover the input docs, and **confirm the resolved inputs** (popup for the
+resolve `module.path` per [../_shared/common/module-location.md](../_shared/common/module-location.md) (manifest → repo-wide search → ask the engineer), discover the input docs, and **confirm the resolved inputs** (popup for the
 categorical choices: subprograms scope, requirement filter / `sw_req_ids`).
 **Stop and wait** for confirmation (gate commit). Remember §0 — this skill may be the first to
 run for the module; never assume code-gen ran.
