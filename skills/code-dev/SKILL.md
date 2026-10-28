@@ -39,6 +39,7 @@ bootstrap inline when already on the base branch. Note `project.type`.
 ## Step 2 — Load the discipline
 
 Always load
+[../_shared/common/module-location.md](../_shared/common/module-location.md),
 [../_shared/common/workflow-discipline.md](../_shared/common/workflow-discipline.md),
 [../_shared/common/run-tracking.md](../_shared/common/run-tracking.md)
 and [../_shared/common/no-fabrication.md](../_shared/common/no-fabrication.md).
@@ -57,25 +58,33 @@ Scaffold/validate `20_AI/manifests/<MODULE>.yaml` (workflow-discipline §3); con
 scope (`related_modules` + `expected_row_count` for AUTOSAR, `sw_req_ids` for
 non-AUTOSAR), peer anchors, and seed deferrals/questions.
 
-**Task-mode guard — never overwrite validated code silently.** Detect whether an
-implementation already exists at `layout.app_root/<MODULE>/`, then decide
-`task_mode` by that **and the requirement scope**:
-- **No existing implementation** → `task_mode: new-module`.
-- **Existing implementation + ALL requirements in scope** → this is a from-scratch
-  regenerate of a validated module. **WARN that it would overwrite existing
-  reviewed/tested code and ASK** whether to (a) develop from scratch
-  (`regenerate` — destructive; the git original is preserved for diff) or (b) treat
-  it as an update. **Do not default to overwrite.**
-- **Existing implementation + a specific / subset requirement scope** → treat as a
-  **follow-up / change / update** (`task_mode: feature-or-update`): modify only what
-  the new or updated requirements demand; never regenerate the whole module.
+**Module location — find it, never assume `layout.app_root`.** Load [../_shared/common/module-location.md](../_shared/common/module-location.md)
+and resolve `module.path` per it: manifest → repo-wide search (with near-match
+listing) → **if not found, ask the engineer for the path**, offering a
+pattern-based suggestion with evidence. Record it in the manifest.
 
-Record the confirmed `task_mode`. **Stop for confirmation** (gate commit).
+**Task-mode guard — never overwrite validated code silently.** Decide
+`task_mode` from what location resolution found **and the requirement scope**:
+- **No existing implementation** (location was supplied by the engineer) →
+  `task_mode: new-module`; create the files at the confirmed `module.path`.
+- **Existing implementation (any location)** → **do not create a new module or
+  new files over it.** Treat the run as an **evaluation of the current version**:
+  Phase 1 reads the existing code against the requirements and the other inputs,
+  and Phase 2 *proposes* targeted changes (`task_mode: feature-or-update`):
+  modify only what the requirements demand; never regenerate the whole module.
+  This holds whether the scope is all requirements or a subset.
+- **Existing implementation + engineer explicitly asks to develop from scratch**
+  → warn that it would overwrite reviewed/tested code, and only after an explicit
+  confirmation record `task_mode: regenerate` (destructive; the git original is
+  preserved for diff). **Never default to this.**
+
+Record the confirmed `module.path` and `task_mode`. **Stop for confirmation**
+(gate commit).
 
 ## Step 4 — Phase 1: understand & align (NO code)
 
 Pin the revision (§2). Run the **pre-flight** input check (§1). Then:
-1. **Read the stub/interface** — runnables + cycle times (AUTOSAR) or the module
+1. **Read the existing implementation (if any) and the stub/interface** — runnables + cycle times (AUTOSAR) or the module
    shape + `_cfg.h` boundary (non-AUTOSAR); list every I/O path.
 2. **Read requirements** (flavor's filter/scope); numbered table
    `ID | intent | target function | signals/APIs`.

@@ -42,7 +42,8 @@ Always load
 [../_shared/common/review-quality.md](../_shared/common/review-quality.md),
 [../_shared/common/workflow-discipline.md](../_shared/common/workflow-discipline.md),
 [../_shared/common/run-tracking.md](../_shared/common/run-tracking.md),
-[../_shared/common/no-fabrication.md](../_shared/common/no-fabrication.md).
+[../_shared/common/no-fabrication.md](../_shared/common/no-fabrication.md),
+[../_shared/common/module-location.md](../_shared/common/module-location.md).
 
 Then, by `project.type`:
 - **autosar** → [../_shared/autosar/review-flavor.md](../_shared/autosar/review-flavor.md)
@@ -57,7 +58,7 @@ Then, by `project.type`:
 ## Step 3 — Manifest + scope confirmation (HARD GATE)
 
 Scaffold/validate `20_AI/manifests/<MODULE>.yaml` (workflow-discipline §3).
-Confirm the review target files, review mode (full/diff), and the in-scope
+Resolve `module.path` per [../_shared/common/module-location.md](../_shared/common/module-location.md) (manifest → repo-wide search → ask the engineer; never assume the app layer). Confirm the review target files, review mode (full/diff), and the in-scope
 requirements (flavor's filter/scope). **AUTOSAR only:** run the Phase-0
 domain-model derivation gate (autosar/review-flavor). Remember §0 — the module
 may **not** have been produced by code-gen; review whatever code is present, and

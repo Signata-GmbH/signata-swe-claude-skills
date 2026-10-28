@@ -109,8 +109,9 @@ input check (§1) for the code-fix column, and pin the revision (§2) —
 filtered set: identify the requirements the symptom touches (flavor's
 filter/scope) and confirm that list. Confirm the target files.
 
-**Existence guard.** No implementation at `layout.app_root/<MODULE>/` → this is
-not a fix; stop and route to `/code-dev`.
+**Existence guard.** Resolve `module.path` per [../_shared/common/module-location.md](../_shared/common/module-location.md) (manifest → repo-wide
+search → ask the engineer). No implementation at the resolved path, confirmed by
+the engineer → this is not a fix; stop and route to `/code-dev`.
 
 Apply the **evidence gate** (defect-analysis §2): observed-vs-expected **+** at
 least one artifact or a statically traceable reproduction condition **+** the

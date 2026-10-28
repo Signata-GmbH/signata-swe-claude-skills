@@ -15,7 +15,7 @@
 - **AUTOSAR vocabulary is expected**, not a smell: `Rte_Read_*/Write_*/Call_*`,
   `Dem_*`, `NvM_*`, `Std_ReturnType`, MemMap sections, runnables. Recommend AUTOSAR
   idioms where appropriate.
-- Review target is the **user-implemented** `.c`/`.h` under `<layout.app_root>/<MODULE>/`,
+- Review target is the **user-implemented** `.c`/`.h` under `<module.path>/` (resolved per common/module-location; not necessarily under `layout.app_root`),
   **not** the Agnosar-generated stub under `<layout.app_root>/Common/`. Generated
   files are exempt from header/structure/naming findings — note and skip.
 

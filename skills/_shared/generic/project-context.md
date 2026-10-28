@@ -32,7 +32,14 @@
   `motor3ph_*` library APIs — never PWM/ADC/IO registers directly.
 - **Consumed APIs:** MCAL under `00_SW/04_MCAL/`, libraries under
   `00_SW/03_LIBRARIES/` (swtimer, filters, mathlib…), sibling modules under
-  `layout.app_root`. Read from their headers, never re-invent signatures.
+  `layout.app_root` (or wherever common/module-location resolves them). Read from their headers, never re-invent signatures.
+
+## Module location
+
+A module's folder is **`module.path`** from the manifest, resolved per
+[../common/module-location.md](../common/module-location.md) — not assumed to be
+`layout.app_root/<MODULE>/`. Typical files: `<MODULE>.c`, `<MODULE>.h`,
+`<MODULE>_cfg.h`, flat or with its own `inc/`/`src/`.
 
 ## Execution model
 

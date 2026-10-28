@@ -30,6 +30,9 @@ module:
   upper:       <MODULE_UPPER>       # derived    e.g. FUSA_POSDET | SAPF_MODE
   asil:        inherit              # inherit project default, or override e.g. ASIL-B(D)
   cycle_times: <CYCLE_TIMES>        # <-- fill   e.g. "10 ms cyclic + Init (once)"
+  path:        <MODULE_PATH>        # module folder (autosar: parent of inc/ src/ mak/; nonautosar: folder holding <MODULE>.c/.h/_cfg.h), repo-relative. code-dev resolves it
+                                    #   (search, else asks the engineer) and writes it back; the layer
+                                    #   (App / BSW / CDD ...) is NOT assumed from layout.app_root
 
 # PER-MODULE documents (extend/override the project-wide docs in ai_project.yaml).
 docs:
