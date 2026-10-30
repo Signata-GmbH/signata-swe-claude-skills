@@ -113,7 +113,15 @@ Per qualification-test-patterns §1–§3 and workflow-discipline §1/§2/§4:
    searched in the supporting specifications (other features' requirements,
    system requirements, architecture text); every A2L item used with a
    physical value but without a scaling gets its own scaling question with a
-   concrete proposal (§3).
+   concrete proposal (§3). The **parameter table**: every calibration or
+   timing parameter the proposed cases rest on, its value and source, and
+   how the bench establishes it — read, set, fixed-in-build, or none (→ the
+   cases using it are `isValid = No`); one verdict per parameter, applied to
+   every case (§3, parameter provenance). The **criterion conflicts**: every
+   criterion step a Phase-1 answer or a run finding contradicts (the answer
+   wins, the step is dropped), and every error-guessing expectation in a
+   criterion, each as its own question with the criterion's expectation as
+   the proposal (§1.1).
 5. **Reference specifications** (qualification-test-patterns §3.1) — the
    sections read in each registered document, and any version difference
    between what a requirement cites and what was supplied; for a
@@ -162,9 +170,12 @@ its source (§4). Then **re-hash every input** (workflow-discipline
 §2) — anything changed since pre-flight is a stop, not a mixed baseline. Apply
 the structure, title convention, boundary-
 value rule (the points of one parameter are the steps of one case), the
-writing rules (preconditions and postconditions set and verify the baseline;
-every action a stimulus naming its means in plain words; every result a check
-of an observable item, on the bus where possible), the scenario-family cases
+writing rules (preconditions and postconditions set and verify the baseline,
+every parameter with its provenance step; every action a stimulus naming its
+means in plain words; every result a check of **one** observable item, in the
+requirement's unit first, on the bus where possible, a borrowed bound naming
+its source inline, a named state followed by its defining outputs), the
+scenario-family cases
 (§10) and the timing cases (§11) as confirmed at the gate, and (for diagnostic
 features) the DID/RID templates from
 [qualification-test-patterns.md](../_shared/testspec/qualification-test-patterns.md)

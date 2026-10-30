@@ -69,9 +69,12 @@ columns), `isValid` says whether a case can be executed **as written** — and
 authoring by inspection can only ever establish that it **cannot**:
 
 - **`No`** — only where you *know* the case cannot run as written: a symbol,
-  breakpoint line, observed variable or expected value is still a placeholder.
-  `Reason for Invalid` names the missing item, the file that would resolve it,
-  and the Open Point number.
+  breakpoint, observed variable or expected value is still a placeholder; a
+  parameter the result rests on has no stated provenance
+  (qualification-test-patterns §3); an expected result rests on an
+  unconfirmed error-guessing assumption, or on a step the run's own Open
+  Points doubt (§1.1). `Reason for Invalid` names the missing or doubted
+  item, the file or answer that would resolve it, and the Open Point number.
 - **blank** — every other case. That is the reviewer's verdict to give.
 - **`Yes`** — **never**.
 - **`Question`** — **never**. It is QA's value for "I cannot judge this case

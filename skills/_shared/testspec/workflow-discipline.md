@@ -619,6 +619,24 @@ row:
     per port saying which shapes do not apply and why; every P-10d case checks
     both that the timeout is indicated and that it is not indicated early
     (integration-test-patterns §7, P-10).
+37. **qualification-test only** — no step in a case contradicts a recorded
+    engineer or QA answer, and no step the run's own Open Points doubt sits in
+    a case not marked `isValid = No`; every such conflict is on the
+    `Requirements Hygiene` sheet (qualification-test-patterns §1.1).
+38. **qualification-test only** — every calibration or timing parameter an
+    expected result rests on has a precondition stating how its value is
+    established (read, set or fixed-in-build with source); a parameter judged
+    inaccessible is treated the same in every case that uses it
+    (qualification-test-patterns §3, parameter provenance).
+39. **qualification-test only** — every result line checks one observable;
+    a named state is followed by its defining outputs as their own lines;
+    every value leads with the requirement's unit; every bound borrowed from
+    another requirement or parameter names its source and its direction in
+    the result text (qualification-test-patterns §7).
+40. **qualification-test only** — every expected result that comes from an
+    error-guessing line of the criterion rather than from requirement text or
+    a specification was confirmed at Phase 1, or the case is `isValid = No`
+    with a `Decision` Open Point (qualification-test-patterns §1.1).
 
 ## 7. Traceability & Open Points (both skills, every run)
 
