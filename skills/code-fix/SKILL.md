@@ -12,7 +12,7 @@ description: >-
   upstream, or bench defect) and propose no change. Analysis by inspection only
   — never claims a reproduction, build, or test result. Use when asked to debug,
   fix, or root-cause an issue, bug, defect, or failing test in a module.
-argument-hint: [module] [issue-id]
+argument-hint: "[module] [issue-id]"
 ---
 
 # Code Fix

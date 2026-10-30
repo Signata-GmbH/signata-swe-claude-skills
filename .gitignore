@@ -3,3 +3,6 @@
 *.xlsx
 *.xlsm
 ~$*
+
+# macOS metadata — the plugin validator refuses a folder containing it
+.DS_Store
