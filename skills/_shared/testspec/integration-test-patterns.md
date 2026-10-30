@@ -7,20 +7,23 @@
 
 ## 0. AUTOSAR-only guard (v1)
 
-The only validated pattern here is **RTE-debugger-based, white-box**: the
-Debug SW is flashed to the target ECU, breakpoints are set on RTE calls,
-variables are edited, and the value is observed at the receiving end. This
-only makes sense where the module has `Rte_Write`/`Rte_Read`/`Rte_Call`
-symbols to hang a breakpoint on.
+The only validated pattern here is **RTE-debugger-based**: the Debug SW is
+flashed to the target ECU, breakpoints are set on RTE calls, variables are
+edited, and the value is observed at the receiving end. This only makes sense
+where the module has `Rte_Write`/`Rte_Read`/`Rte_Call` symbols to hang a
+breakpoint on. The cases are **designed from the architecture alone** — the
+DOORS export, the ARXML and the RTE headers generated from it — and name each
+breakpoint by RTE symbol and module; the debugger is the means of execution,
+not a licence to read the implementation (§9).
 
-If the target module shows **no** RTE symbols to work from — no
-`Rte_Write`/`Rte_Read`/`Rte_Call` call in its `.c` files in `docs.source_repo`
-(§9), no ARXML/`Rte_*.h` entry for it, no `Rte_Write`/`Rte_Read` calls in the
-Signals & Parameters export, and (in `extend_existing` mode only, §0.1) no
-existing RTE-pattern test case — **stop** and say plainly that this skill only
-supports RTE-based integration testing in its current version, rather than
-inventing a black-box equivalent. Where the source repo carries its own
-`20_AI/ai_project.yaml`, its `project.type: nonautosar` settles it: stop.
+If the target module shows **no** RTE symbols to work from — no port on its
+ARXML software component, no `Rte_Write`/`Rte_Read`/`Rte_Call` symbol for it
+in the RTE headers (§9), no `Rte_Write`/`Rte_Read` calls in the Signals &
+Parameters export, and (in `extend_existing` mode only, §0.1) no existing
+RTE-pattern test case — **stop** and say plainly that this skill only supports
+RTE-based integration testing in its current version, rather than inventing a
+black-box equivalent. Where this repository's `20_AI/ai_project.yaml` says
+`project.type: nonautosar`, that settles it: stop.
 
 ## 0.1 Authoring mode — decided once, before any discovery
 
@@ -34,7 +37,7 @@ document discovery — quoting `docs.integration_test_spec_export` as evidence.
 - **`extend_existing`** — `docs.integration_test_spec_export` points at the
   project's SWE.5 export. It is the coverage baseline (§5.1), the source of
   heading spellings (§3, §4), and a secondary source of symbols and enum
-  literals behind the RTE headers and the code.
+  literals behind the ARXML and the RTE headers.
 - **`from_scratch`** — `docs.integration_test_spec_export` is `N/A`. This is a
   first-class mode, not a degraded one:
   - the coverage baseline is empty — every interface is "no test cases", every
@@ -44,8 +47,8 @@ document discovery — quoting `docs.integration_test_spec_export` as evidence.
     architecture `1.4.1.<n>` spelling (§4);
   - group headings that follow a pattern form (`Watch Dog for <Module>`, the
     task-configuration heading) are marked as derived in Traceability;
-  - symbols, breakpoint lines, checkpoint names and enum literals come from
-    `docs.rte_type_headers`, the ARXML and `docs.source_repo` only (§9).
+  - symbols, checkpoint names, runnable names and enum literals come from
+    the ARXML and `docs.rte_type_headers` only (§9).
     **Wherever this file names "an existing test case" as a source, that source
     does not exist in this mode** — an item with no other source is an Open
     Point;
@@ -101,8 +104,8 @@ Two traps at the `1.4` level:
 - The element name in `1.4.1.<n>.<m>.<k>` is the **architecture's** name for it
   (often just `Data`) and is frequently **not** the element name in the RTE
   symbol (`Rte_Read_R_Mot_Mov_Data_Mot_Mov_Data` — element `Mot_Mov_Data`, not
-  `Data`). Take the RTE symbol from the RTE headers and the code (§9), never
-  by concatenating the architecture's names.
+  `Data`). Take the RTE symbol from the ARXML port and the RTE header (§9),
+  never by concatenating the architecture's names.
 - An object's `aFunctionModule` can disagree with the section it sits under
   (a port under `FUSA_MotCtrl` carrying `aFunctionModule = FUSA_ParkLckCtrl`).
   Use the **section** for ownership and the **attribute** for the scope filter,
@@ -145,7 +148,8 @@ watchdog supervision checkpoints are the standing case (`aFunctionModule =
 WdgM` under `1.4.1.<n>.<m>`), and `Os`, `Dem`, `NvM` and `Dcm` behave the same
 way where a project uses them. An object like this belongs to the run **when
 its section number is a child of the target module's own section**, because
-that is the only module whose code calls it.
+the architecture places the checkpoint in that module's supervised entity (the
+ARXML lists it under that software component).
 
 Scope it by **section prefix, not by a blanket allowance on the
 `aFunctionModule` value**. Allowing `WdgM` globally would pull every module's
@@ -183,14 +187,23 @@ explicit decision (**Depth**, below, and §3).
 **Direction** — the port's **name prefix** is authoritative, because it is also
 the spelling the test-spec module uses for its headings:
 
-- `P_<Element>` → **write (provide) side** — `Rte_Write_P_<port>_<element>(...)`
-  in the writing module's `.c`.
-- `R_<Element>` → **read (require) side** — `Rte_Read_R_<port>_<element>(...)`
-  in the reading module's `.c`.
+- `P_<Element>` → **write (provide) side** — the writing module's
+  `Rte_Write_P_<port>_<element>` symbol (an ARXML `P-PORT-PROTOTYPE`).
+- `R_<Element>` → **read (require) side** — the reading module's
+  `Rte_Read_R_<port>_<element>` symbol (an ARXML `R-PORT-PROTOTYPE`).
 - A checkpoint name (`SE01_<Module>_Log_Start_CP`) → watchdog supervision (P-03).
 - A bare API name (`Ftm_Pwm_Ip_...`, `Aec_Ip_Spi...`) or a port whose text reads
   *"This client port is used…"* → **client/server**, `Rte_Call_...` (P-06), not
   a data flow.
+- A port whose **far end is the basic software, not another application
+  module** — its data element is mapped to a system signal or signal group in
+  the ARXML data mapping (the port feeds or is fed by a bus message), it is a
+  mode-switch or service port (`Rte_Switch_…`, `Rte_Mode_…`, a `ComM`/`EcuM`/
+  `IoHwAb` service interface), or its text reads *"This port sends the CAN
+  message…"* / *"…received from the bus…"* → **application ↔ basic-software
+  integration** (P-10). The peer is the service named by the ARXML (`Com` with
+  the I-PDU, `ComM`, `EcuM`, `E2E`), never an application module; it gets no
+  section and no mirror.
 
 Cross-check the prefix against the text (*"This port sends…"* vs *"This port
 receives…"*). They usually agree; where they don't, the prefix wins and the
@@ -206,9 +219,15 @@ other end:
    its `1.4.1.<n>.<m>.<k>` child). Name match + type mismatch is an Open Point,
    not a resolved pair.
 3. Direction must be opposite: a `P_` port pairs only with an `R_` port.
+3a. Confirm with the **ARXML composition**: an `ASSEMBLY-SW-CONNECTOR` joining
+   the two port prototypes is the design model's own statement of the pairing.
+   A pair the architecture text implies but the composition does not connect,
+   or a connector the architecture text does not mention, is an `Input
+   hygiene` Open Point — the architecture and its model disagree — and the
+   pair is a Phase-1 question, never a pick.
 4. Casing drifts (`Mot_Mov_Data_st` vs `Mot_Mov_Data_St`) — match
-   case-insensitively, but take the spelling you emit from the RTE header and
-   the code (§9), and note the variant in Open Points.
+   case-insensitively, but take the spelling you emit from the ARXML and the
+   RTE header (§9), and note the variant in Open Points.
 5. **Exactly one candidate** → resolved. **Several, or none** → a numbered
    Phase-1 question. Never pick the closest-looking module. For "none", run a
    near-match search first (a single transposed or extra character is common —
@@ -223,9 +242,9 @@ manifest's `scope.peer_depth`):
 
 - **`target_ports`** (default) — only the interfaces the **target** module is
   an end of. Each peer is **named, not authored**: it appears inside every case
-  as the far end — a P-01 case must name the `Rte_Write` line in the writer's
-  `.c` and the `Rte_Read` line in the reader's — but it gets no section, no
-  heading row, and no case sourced from its own objects.
+  as the far end — a P-01 case must name the writer's `Rte_Write` symbol and
+  the reader's `Rte_Read` symbol, each with its module — but it gets no
+  section, no heading row, and no case sourced from its own objects.
 - **`peer_ports`** — also every interface the target's **direct** peers are an
   end of. Their own far ends (peers of peers) are in turn named, not authored.
   This is one extra hop, not a transitive closure, and it is typically an order
@@ -253,8 +272,8 @@ the manifest's `scope.interfaces`. Never multiply silently.
 Report the result as a **peer matrix** at the Phase-1 gate, and cache the
 pairings in `ai_test_project.yaml` `integration_test.peer_modules`:
 
-| Interface | Data type | Writer module / `.c` | `Rte_Write` line | Reader module / `.c` | `Rte_Read` line | Far ends of this target port | Projected cases | Existing cases (`extend_existing` only) |
-|---|---|---|---|---|---|---|---|---|
+| Interface | Data type | Writer module (ARXML SWC) | `Rte_Write` symbol | Reader module (ARXML SWC) | `Rte_Read` symbol | ARXML connector | Far ends of this target port | Projected cases | Existing cases (`extend_existing` only) |
+|---|---|---|---|---|---|---|---|---|---|
 
 ## 3. Mirroring: a second copy under the peer's section (off by default)
 
@@ -380,13 +399,17 @@ The unit of an integration test case is **the interface**. Build the list from,
 in order of preference: (1) the architecture's `1.4` port objects of every
 module authored from (§1.2, §2 Depth); (2) in `extend_existing` mode only, the
 existing test-case section headings — each port heading and each connection
-heading; (3) ARXML/RTE headers and the `.c` call sites in `docs.source_repo`.
+heading; (3) the ARXML (ports, connectors, runnables) and the RTE headers.
 For each interface report its name, writer/reader modules, `Rte_*` symbols,
-`.c` files, data type, and — in `extend_existing` mode — how many existing test
-cases it already has.
+data type, and — in `extend_existing` mode — how many existing test cases it
+already has.
 
 Then split into: already covered, no test cases (your scope), and interfaces
-found in the architecture but not resolvable to RTE symbols. Check the standing
+found in the architecture but not resolvable to RTE symbols. List the
+**basic-software-facing** ports (§2, P-10) separately, each with the system
+signal / signal group, I-PDU and message it maps to in the ARXML data mapping
+and the communication database, and the attributes the P-10 cases will use
+(cycle, fast cycle, repetitions, delay, timeout, E2E protection). Check the standing
 obligations: does every module authored from have a `Watch Dog for <module>`
 group, a task-configuration group, and a heading for every interface it is an
 end of (plus a connection heading per mirror, when mirroring is on).
@@ -432,9 +455,9 @@ Do not derive all five from one range.
   that is not a whole number on an integer type (`0..255` → `127`,
   `-32768..32767` → `0`); a floating-point type takes the exact midpoint. Say
   which range you used, per interface, in the Traceability sheet — the engineer
-  needs to see the choice, not discover it. A constant in the source code
-  (`<MODULE>_..._MIN/MAX`) may **confirm** a range but never supplies one on its
-  own: testing the code against its own constant proves nothing.
+  needs to see the choice, not discover it. The source code is never consulted
+  for a range (§9): a constant in the implementation is part of the thing under
+  test, not a source of expected values.
 - **Min-1 / Max+1 — always the IMPLEMENTATION TYPE's limits**, never the
   documented range, even when the documented range is narrower. These two cases
   exist to exercise what the type does at its edges, so for a `uint8` member
@@ -496,8 +519,9 @@ Do not derive all five from one range.
   the two it came from. Neither available → no negative case, and an Open Point.
   The number is entered as-is; if it is not representable in the enum's base
   type, the wrap rule above applies. Never support the case with a claim about
-  the reader's code (a missing `default:`) that you have not read
-  (no-fabrication.md).
+  the reader's implementation (a missing `default:`): the code is not read
+  (§9), and the reaction to an invalid literal comes from the architecture
+  text or is an Open Point (no-fabrication.md).
 
 ## 6. `aTestCriteria` → pattern
 
@@ -509,6 +533,11 @@ Do not derive all five from one range.
 | "Check for the alarm configuration for all the TASK …" | **P-05** |
 | "These are the client ports … check for the value in the respective server function" | **P-06** |
 | "Execute the DID and check for the server function is hit" | **P-07** |
+| "Check the CAN message / signal is transmitted…", "…the message is sent with the updated values", "…the signals are updated in the same frame" | **P-10a** (coherent transmission) |
+| "Check the message is sent on change…", "…fast cycle…", "…repetitions…" | **P-10b** (transmission trigger) |
+| "Check after reset / wake-up / mode change the message starts…", "…counter starts at…", "…IPDU group…" | **P-10c** (start-up and mode switch) |
+| "Check the timeout of the received message…", "…RTE status / E2E status on timeout…", "…substitute value…" | **P-10d** (reception timeout) |
+| "Check the E2E counter / CRC of the sent message…" | **P-10e** (E2E at the hand-off) |
 | "review" / "This can only be reviewed" / "Review of SW Architecture" / "The flow needs to be verified by the testing team" / "The Sequence to be checked by the Test Team" | **P-08** — no debugger test case |
 | "Can be checked by XCP only" / "using the XCP variable" | **P-08**, noting XCP as the required means |
 
@@ -518,18 +547,20 @@ match on meaning, and never copy a misspelling into a generated case.
 **P-08 is never applied silently.** A `review`-type `aTestCriteria` suppresses
 a whole object, so before emitting P-08, check whether the object nevertheless
 has a concrete, observable symbol in a supplied input — an `Rte_Call_*`,
-`Rte_Write_*` or `Rte_Read_*` in the code, or a driver API the module actually
-calls. If it does, the criterion and the code disagree, and that is a
-**Phase-1 question**, not a decision to take alone. The default proposal in
-that question is **author the case**: `aTestCriteria` is often older than the
-code. An object that maps to P-08 *and* has no resolvable symbol needs no
-question — Open Points is enough.
+`Rte_Write_*` or `Rte_Read_*` on the component's ARXML ports or in its RTE
+header, or a called API the architecture lists as a port. If it does, the
+criterion and the port list disagree, and that is a **Phase-1 question**, not
+a decision to take alone. The default proposal in that question is **author
+the case**: `aTestCriteria` is often older than the port list. An object that
+maps to P-08 *and* has no resolvable symbol needs no question — Open Points is
+enough.
 
 Observed failure (FUSA_MotDrv, 2026-10-05): `Ftm_Pwm_Ip_FastUpdatePwmDuty`
 (6227), `Ftm_Pwm_Ip_UnMaskOutputChannels` (6230) and the two WdgM checkpoint
 ports (5847 / 5904) were all suppressed to heading rows on `aTestCriteria =
-"review"` / `"1. Review the flow"`. All four are called directly from
-`CDD_MotDrv.c` — the symbols were in hand and nothing was unresolved. The QA
+"review"` / `"1. Review the flow"`. All four had symbols on the component's
+ports in the ARXML and RTE header — the symbols were in hand and nothing was
+unresolved. The QA
 engineer rejected all three heading rows at validation with "TestCases need to
 Design for this interfaces".
 
@@ -538,7 +569,7 @@ Design for this interfaces".
 Pick the pattern that fits; do not invent a new one without saying so.
 
 **P-01 — RTE data flow, writer to reader.** The dominant pattern. Both
-breakpoints are named, and each names its own module's file.
+breakpoints are named, each by its RTE symbol and its own module.
 
 ```
 Object Heading (group):  P_<Element>            (or R_<Element>)
@@ -550,31 +581,33 @@ atcPreconditions:
 - Flash the ECU
 
 atcActions:
-1. Set the Breakpoint at line <the Rte_Write call, verbatim from <writer>.c> in <writer>.c
-2. Edit the variable <writer-side variable> with <value>.
-3. Set the Breakpoint at line <the Rte_Read call, verbatim from <reader>.c> in <reader>.c
+1. Set the Breakpoint at the call Rte_Write_P_<port>_<element> in module <WriterSwc>
+2. Edit the argument of Rte_Write_P_<port>_<element> (<member>, for a struct) with <value>.
+3. Set the Breakpoint at the call Rte_Read_R_<port>_<element> in module <ReaderSwc>
 4. Verify the value
 
 atcResult:
 1. Breakpoint should be hit.
-2. <writer-side variable> should be update to <displayed-at-writer> value.
+2. The argument of Rte_Write_P_<port>_<element> should be update to <displayed-at-writer> value.
 3. Breakpoint Should be hit.
-4. <reader-side variable> should be update to <displayed-at-reader> value.
+4. The out-parameter of Rte_Read_R_<port>_<element> should be update to <displayed-at-reader> value.
 
 atcPostconditions:
 - System Shall be stable
 - Delete all Breakpoints
 ```
 
-Both breakpoint lines are quoted **verbatim from the `.c` file** at the pinned
-source revision, argument expression included — e.g.
-`Rte_Write_P_<port>_<element>(<arg>);` and
-`if( E_OK == Rte_Read_R_<port>_<element>( &<reader-side variable> ) )` are the
-*shapes* to look for, not text to fill in (§9). The writer-side and reader-side
-variables are the ones those lines name: the argument of `Rte_Write`, the
-out-parameter of `Rte_Read`. The line **number** goes in Traceability with the
-source revision, not into `atcActions` — it goes stale with the next edit to
-the file, while the quoted line stays findable.
+Both breakpoints are named by **RTE symbol and module** (§9): the symbol as
+the RTE header spells it, the module as the ARXML software component
+(`module_name_mapping.arxml_swc`). No file name, no line number and no
+variable name from the implementation appears anywhere in the case: the tester
+sets a symbol breakpoint on the call, or locates it in the module at execution
+time, so the case stays valid across code revisions and never carries an
+assumption about how the module is written. The values edited and observed are
+described by **role** — the argument of `Rte_Write`, the out-parameter of
+`Rte_Read`, the member of either for a struct — which the debugger shows at the
+breakpoint. `Traceability` cites the ARXML port and the RTE header the symbol
+was confirmed in.
 
 `<displayed-at-…>` is the value that end's variable shows (§5.2). For an
 in-range value it equals `<value>`. Where `<value>` is not representable in
@@ -596,14 +629,13 @@ supervision checkpoint the module registers (start and end):
 
 ```
 Object Text:  Test case to verify the <SE0n_<Module>_Log_Start_CP>
-atcActions:   1. Set the Breakpoint at line
-              (void)Rte_Call_ApplocalSupervision_WdgM_SE<n>_<checkpoint>_CheckpointReached();
+atcActions:   1. Set the Breakpoint at the call Rte_Call_<SupervisionPort>_<checkpoint>_CheckpointReached in module <Swc>
 atcResult:    1. Breakpoint should hit and Watch Dog should Reset.
 ```
 
-Checkpoint names come from the RTE headers, and the breakpoint line is the
-`Rte_Call_…_CheckpointReached` call quoted from the module's `.c` (§9) — never
-constructed from the module name.
+Checkpoint names come from the ARXML (the supervised entity's checkpoints
+under the component) and the `Rte_Call_…_CheckpointReached` symbol from the
+RTE header (§9) — never constructed from the module name.
 
 **P-04 — negative / boundary value.** The Min-1 and Max+1 members of the
 5-value set, and the enum negative case (§5.2). `atsType = negative`. The
@@ -614,78 +646,82 @@ non-functional objects. Two shapes, grouped under a task-configuration section
 heading per module.
 
 *Initialization* — the test is that the Init runnable runs at start-up: break
-inside it, restart the debugger, see the breakpoint hit. That is the shape
-whatever the runnable does, counter, flag or neither (the engineer's stated
-convention, FUSA_MotDrv Q-19):
+on it, restart the debugger, see the breakpoint hit and the runnable return.
+That is the shape whatever the runnable does, counter, flag or neither (the
+engineer's stated convention, FUSA_MotDrv Q-19):
 
 ```
 Object Text:  Test case to verify the Initialization of <Module>
-atcActions:   1. Set the Breakpoint at line <the last statement of the Init runnable, verbatim from <module>.c> in <module>.c
+atcActions:   1. Set the Breakpoint at the entry of runnable <InitRunnable> in module <Swc>
               2. Restart the debugger.
-atcResult:    1. Breakpoint should be hit in the Init condition, confirming the initialization of <Module> is executed.
+              3. Run to the return of <InitRunnable>.
+atcResult:    1. Breakpoint should be hit at start-up, confirming the initialization of <Module> is triggered.
+              2. <InitRunnable> should return, confirming the initialization of <Module> is executed.
 ```
 
-Break on the **last** statement of the Init runnable — the line where the
-module marks itself initialised (`<Module>_IsInitialized_… = TRUE;`), if it has
-one — so that a hit means the whole runnable ran. Do not add a step checking
-that flag's value at the breakpoint: a breakpoint stops *before* its line
-executes, so the flag still shows its old value there. The Init runnable often
-has no `1.3.1.<n>.1.<m>` object of its own; trace the case to the nearest
-ancestor (output-format.md, a case with no object of its own).
+The runnable's name is the architecture's `1.3.1.<n>.1.<m>` object, confirmed
+against the ARXML `RUNNABLE-ENTITY` and its `SYMBOL` (the function the RTE
+calls, §9). Break at the **entry** and run to the **return** — the
+architecture-only equivalent of the earlier "break on the last statement"
+convention, which needed the code to find that statement. Do not add a step
+checking an initialised flag: the implementation's variable names are not
+read (§9). The Init runnable often has no `1.3.1.<n>.1.<m>` object of its
+own; trace the case to the nearest ancestor (output-format.md, a case with no
+object of its own).
 
 *Cyclic runnable* — the runnable is called at its period:
 
 ```
 Object Text:  Testcase to verify the Runnable time for <Module> for every <n>msec.
-atcActions:   1. Set the Breakpoint at line <the cyclic observable's update, verbatim from <module>.c> in <module>.c
-              2. Add the Variable <cyclic observable> in Watch window and Verify.
+atcActions:   1. Set the Breakpoint at the entry of runnable <CyclicRunnable> in module <Swc>
+              2. Resume and record the timestamps of <k> consecutive hits (debugger trace or OS timestamp).
 atcResult:    1. Breakpoint should be hit
-              2. <cyclic observable> should be update every <n>ms.
+              2. Consecutive hits should be <n> ms apart (tolerance: one tick of the task's counter, from the architecture text; otherwise an Open Point).
 ```
 
-The cyclic observable is whatever the runnable updates on every call — usually
-a counter — and it is **found in the `.c` file, never constructed** from the
-module name and the period: real names follow no single convention (`_2ms_` vs
-`_2msec_`, `_ctr_u32` vs `_counter`). The `<Module>_Init_counter` /
-`<Module>_Cyclic_<n>msec_counter` names of earlier versions of this pattern
-belonged to one legacy stub and exist in no current module; using them is a
-fabrication (no-fabrication.md). If the cyclic runnable updates nothing
-observable, the case is a Phase-1 question, not an invented counter.
+The period is checked from **consecutive hits of the runnable's entry**, never
+from a counter or flag named in the implementation: the code is not read (§9),
+and the `<Module>_Cyclic_<n>msec_counter` names of earlier versions of this
+pattern belonged to one legacy stub and exist in no current module — using
+them is a fabrication (no-fabrication.md). Where the engineer prefers to watch
+a variable, it must be one the architecture text or an A2L names; otherwise the
+hits are the observation.
 
 The period comes from the architecture object's own text ("This runnable should
-be called from 2msec Task_FUSA_2ms"). An identifier or trace id in the code that
-contradicts it (a `…_1msec…` name inside a 2 ms runnable) never overrides the
-architecture text — use the architecture period and raise the mismatch in Open
-Points. In `extend_existing` mode, existing cases contain period mismatches
-between action and result; do not copy one, and flag any you relied on.
+be called from 2msec Task_FUSA_2ms"). An ARXML `TIMING-EVENT` that contradicts
+it never overrides the architecture text — use the architecture period and
+raise the mismatch in Open Points. In `extend_existing` mode, existing cases
+contain period mismatches between action and result; do not copy one, and flag
+any you relied on.
 
-**Check the task and the period against the OS configuration.** The
-architecture text states the intent; the OS and RTE configuration
-(`docs.os_config`) states what was built. Before writing a P-05 case, find
-there:
+**Check the period and the trigger against the ARXML.** The architecture text
+states the intent; the SWC description states what the RTE was generated for.
+Before writing a P-05 case, find there:
 
-- **which task runs the runnable** — the RTE's event-to-task mapping (e.g.
-  `RteEventToTaskMapping` in the ECUC configuration), or the generated task body
-  that calls the runnable;
-- **how often that task runs** — the runnable's `TIMING-EVENT` period in its
-  SWC description, and the alarm or schedule table that activates the task,
-  converted to time with the counter's own tick length. Never assume one tick
-  is one millisecond; a tick length you cannot resolve is an Open Point;
-- **for the Init runnable**, that it is triggered by an init event and called
-  at start-up.
+- **the runnable** — the `RUNNABLE-ENTITY` whose `SYMBOL` the case breaks on;
+- **its trigger** — a `TIMING-EVENT` with its `PERIOD` for a cyclic runnable,
+  an `INIT-EVENT` (or the project's start-up event) for the Init runnable;
+- **the period** — the `TIMING-EVENT` period in seconds, converted to the
+  architecture's unit.
 
-Cite what you found in Traceability. Where the configuration agrees with the
-architecture, the case stands as written. Where it disagrees — another task or
-another period — write the case to the **architecture**, which is the test
-basis (the case should then fail on the bench, and that is the point), and
-raise the mismatch as an `Input hygiene` Open Point for both the architect and
-the integrator. Without `docs.os_config`, write the case from the architecture
-text alone and say once in Open Points that no task or period was checked
-against the configuration.
+Cite what you found in Traceability. Where the ARXML agrees with the
+architecture, the case stands as written. Where it disagrees — another period,
+no timing event, a runnable the architecture lists but the ARXML lacks — write
+the case to the **architecture**, which is the test basis (the case should then
+fail on the bench, and that is the point), and raise the mismatch as an `Input
+hygiene` Open Point for the architect and the integrator. **Which OS task runs
+the runnable is not checked here**: the OS configuration (ECUC tasks, alarms,
+event-to-task mapping) and the generated OS/RTE code are implementation and
+configuration artefacts, not architecture (§9); the task shows itself on the
+bench when the breakpoint hits, and checking it belongs to the execution layer
+(v2). Where the architecture text names the task, carry the name into the
+case text as the architect's statement.
 
 **P-06 — client/server port.** `Rte_Call_<port>_<operation>` at the caller, the
-server runnable entered at the other end. Breakpoint at the call, breakpoint in
-the server function, verify the argument passed.
+server runnable entered at the other end. Breakpoint at the call in the caller
+module, breakpoint at the entry of the server runnable (its ARXML
+`RUNNABLE-ENTITY` symbol, named with the server module), verify the argument
+passed.
 
 **P-07 — diagnostic DID / routine.** Only for the diagnostic modules
 (`DiagReadData`, `DiagWriteData`, `DiagRoutineCtrl`) and only when
@@ -693,13 +729,14 @@ the server function, verify the argument passed.
 
 ```
 atcActions:  1. Send DiagRequest DID <XX XX> from Diagnostic console.
-             2. Set the Breakpoint at line <server function signature>
+             2. Set the Breakpoint at the entry of runnable <ServerRunnable> in module <Swc>
 atcResult:   1. DID Should be Positive Response <SID+0x40> <XX XX> XX XX XX.
              2. Breakpoint should be hit.
 ```
 
-The DID comes from the DiagSpec and the server-function line from the `.c`
-(§9) — or, in `extend_existing` mode, from an existing case. Note that SWE.6
+The DID comes from the DiagSpec and the server runnable from the ARXML (the
+operation's `RUNNABLE-ENTITY`, §9) — or, in `extend_existing` mode, from an
+existing case. Note that SWE.6
 covers diagnostics far more thoroughly — a diagnostic interface here is tested
 only as an interface.
 
@@ -713,99 +750,230 @@ only (output-format.md).
 **P-09 — OS trace / timing measurement.** Rare. Only generate if the engineer
 asks for it explicitly in this run's instructions.
 
+**P-10 — application ↔ basic-software integration.** P-01 tests a value
+passed between two application modules. P-10 tests the **hand-off between an
+application module and the basic software** — the communication stack (`Com`),
+network and ECU state management (`ComM`, `EcuM`), end-to-end protection — at
+the ports §2 identifies as basic-software-facing. The stimulus is applied with
+the debugger at the module's RTE call, exactly as in P-01; the observation is
+the **bus**, in the trace tool, decoded with the communication database. The
+expected behaviour comes from the ARXML — the data mapping that ties the port's
+data element to a system signal or signal group, the I-PDU and its timing, the
+receiver's `ALIVE-TIMEOUT`, the `END-TO-END-PROTECTION` entry — and from the
+communication database's message attributes (cycle, fast cycle, repetitions,
+delay, timeout). Nothing is taken from the Com or CanNm configuration code.
+Enabled by `integration_test.bsw_service_patterns` (default on); the manifest's
+`scope.bsw_service_patterns` overrides it per module. *(Observed: of nineteen
+customer HiL findings on one release, four were defects at this hand-off — a
+frame sent before all its signals were written, two error flags set in one
+frame, a message counter reset twice at start-up, a reception timeout taken
+from the module's own cycle instead of the stack's — and no test level had a
+pattern for them.)*
+
+Five shapes. Each case names the port's `Rte_` symbol with its module, the
+message and the signals from the communication database, and the ARXML object
+it rests on in `Traceability`. All five keep the P-01 preconditions and
+postconditions, with one precondition added: `- Bus trace connected and
+decoding with <communication database>`.
+
+*P-10a — coherent transmission of a signal group.* For a `P_` port whose data
+element is a struct (or several elements) mapped to one I-PDU:
+
+```
+Object Heading (group):  P_<Element>
+Object Text (case):      Test case to verify the <Element> is transmitted coherently in message <Msg>.
+atcActions:   1. Set the Breakpoint at the call Rte_Write_P_<port>_<element> in module <Swc>
+              2. Edit every member of the argument of Rte_Write_P_<port>_<element> with <m1> = <v1>, <m2> = <v2>, … (all values different from the current frame).
+              3. Resume.
+atcResult:    1. Breakpoint should be hit.
+              2. The argument should show <m1> = <v1>, <m2> = <v2>, ….
+              3. The first frame of message <Msg> after resume should carry signal <S1> = <v1>, <S2> = <v2>, … all in that same frame; no frame carries a mix of old and new values.
+```
+
+The member → signal mapping is the ARXML `SENDER-RECEIVER-TO-SIGNAL-GROUP-MAPPING`
+(or per-signal mapping) and the message layout is the communication
+database. Where the port's elements map to **several** I-PDUs, one case per
+I-PDU, and an Open Point if the architecture text implies they belong
+together. Values: one in-range value per member from §5.2's Mid, stated in
+the case.
+
+*P-10b — transmission trigger and repetition.* For a `P_` port whose message
+has an on-change or fast-cycle behaviour in the database
+(`GenMsgSendType` / `GenMsgCycleTimeFast`, `GenMsgNrOfRepetition`,
+`GenMsgDelayTime`) or a `TRIGGERED` / `ON-CHANGE` transmission mode in the
+ARXML:
+
+```
+Object Text:  Test case to verify the transmission of message <Msg> on change of <Element>.
+atcActions:   1. Set the Breakpoint at the call Rte_Write_P_<port>_<element> in module <Swc>
+              2. Edit the argument of Rte_Write_P_<port>_<element> with <value> (different from the current frame).
+              3. Resume and record the timestamps of message <Msg> for <cycle × 3> ms.
+atcResult:    1. Breakpoint should be hit.
+              2. The argument should show <value>.
+              3. Message <Msg> should be sent <n> times <fast> ms apart starting no later than <delay> ms after resume, every frame carrying <S> = <value>, then return to the <cycle> ms cycle. (<n>, <fast>, <delay>, <cycle> quoted from the database; tolerance from the OEM communication specification or an Open Point.)
+```
+
+*P-10c — start-up and mode switch.* For a module that controls a
+communication mode or message group through a mode-switch or service port
+(`Rte_Switch_<port>_<mode>`, a `ComM` user request, an I-PDU group control
+operation), or for a transmitted message with a counter whose initial value
+the database or the ARXML defines:
+
+```
+Object Text:  Test case to verify message <Msg> starts once after <reset | wake-up | mode <M>>.
+atcActions:   1. Set the Breakpoint at the call Rte_Switch_<port>_<mode> in module <Swc>   (omit for a plain reset)
+              2. <Reset the ECU | apply the wake-up | resume so the mode switch executes>.
+              3. Record the first five frames of message <Msg>.
+atcResult:    1. Breakpoint should be hit once (and once only) per <reset | wake-up | mode change>.
+              2. Message <Msg> should start within <t> ms of step 2 (<t> from the architecture text or the requirement; otherwise checked as "starts", with an Open Point).
+              3. Signal <Counter> in message <Msg> should read <init>, <init+1>, <init+2>, … with no value repeated and no value skipped; signal <S> should carry its initial value <v0> from the database.
+```
+
+*P-10d — reception timeout and indication.* For an `R_` port whose receiver
+has an `ALIVE-TIMEOUT` in the ARXML or whose message has a timeout in the
+database:
+
+```
+Object Text:  Test case to verify the timeout of <Element> (message <Msg>) is indicated after <T> ms.
+atcActions:   1. Set the Breakpoint at the call Rte_Read_R_<port>_<element> in module <Swc>
+              2. Stop message <Msg> on the bus from the rest-bus simulation at t0; resume.
+              3. Observe the return value of Rte_Read_R_<port>_<element> at each hit until t0 + <T + tol> ms.
+              4. Observe signal <OutSig> in message <OutMsg> (the module's output that reflects the timeout) until t0 + <T + tol> ms.
+atcResult:    1. Breakpoint should be hit every <cycle> ms.
+              2. —
+              3. The return value should be RTE_E_OK (data valid) at every hit before t0 + <T − tol> ms, and RTE_E_TIMEOUT (or the E2E/qualifier status the ARXML names) at every hit after t0 + <T> ms.
+              4. <OutSig> should keep its last valid value until t0 + <T − tol> ms and change to <timeout value> between t0 + <T − tol> and t0 + <T + tol> ms — never earlier.
+```
+
+`<T>` is the `ALIVE-TIMEOUT` of the port's `RECEIVER-COM-SPEC` or the
+database's timeout attribute, `<tol>` the tolerance the OEM communication
+specification or the architecture text gives; both quoted. The "never
+earlier" check is the point of the case: a module that treats *no new frame
+this cycle* as a timeout fails it. Where the module has no output that
+reflects the timeout, step 4 is dropped and the case rests on step 3.
+
+*P-10e — end-to-end protection at the hand-off.* For a transmitted message
+with an `END-TO-END-PROTECTION` entry in the ARXML (or a counter and CRC signal
+in the database):
+
+```
+Object Text:  Test case to verify the E2E counter and CRC of message <Msg> on transmission of <Element>.
+atcActions:   1. Set the Breakpoint at the call Rte_Write_P_<port>_<element> in module <Swc>
+              2. Edit the argument of Rte_Write_P_<port>_<element> with <value>; resume; repeat for <k> hits.
+atcResult:    1. Breakpoint should be hit <k> times.
+              2. In every frame of message <Msg>, signal <Counter> should increment by one modulo <range> per frame (no repeat, no skip) and signal <CRC> should be valid for the frame's payload under profile <profile> with data ID <id> (<range>, <profile>, <id> from the ARXML E2E entry).
+```
+
+Rules for all five: a value, cycle, timeout or tolerance that no ARXML entry,
+database attribute or specification gives is an Open Point, never assumed; a
+port whose far end is the basic software but matches none of the five shapes
+is listed in Open Points with the reason; the trace resolution must be finer
+than the timing measured (one message cycle at least), else the timing clause
+is an Open Point. SWE.6's §11 timing cases measure the same bus behaviour
+black-box; P-10 differs in that the stimulus is applied at the module's RTE
+call, so a failure locates the defect at the hand-off rather than somewhere
+behind the bus.
+
 ## 8. Attributes specific to this skill
 
 | Attribute | Value |
 |---|---|
-| `atcPreconditions` | The three-line P-01 block, verbatim, unless the pattern states otherwise |
+| `atcPreconditions` | The three-line P-01 block, verbatim, unless the pattern states otherwise; P-10 adds the bus-trace line |
 | `atcPostconditions` | `- System Shall be stable` / `- Delete all Breakpoints` |
 | `atcRemark` | `Debug SW` |
 | `aFeature` | Carried from the architecture object. On a mirrored case, carry the feature of the **object the case traces to**, not the section it sits under |
 | `atsTestKind` | `Interface test` |
 | `atsTestDesignTechnique` | `InterfaceTesting` |
-| `atsType` | `positive` or `negative` (§5.2) |
+| `atsType` | `positive` or `negative` (§5.2); P-10d is `negative` (the stimulus is a lost message), the other P-10 shapes `positive` |
 
-## 9. Symbols and breakpoint lines
+## 9. Symbols and breakpoints — the architecture only, never the code
 
-Every `Rte_` symbol, source file name, struct member and enum value must come
-from a supplied input, and two different things come from two different
-sources:
+**The test basis for SWE.5 is the architectural design.** Every `Rte_` symbol,
+runnable name, struct member and enum value in a case comes from one of two
+architecture artefacts, and from nothing else:
 
-- **Symbols** — `Rte_` names, type names, struct members, enum literals,
-  checkpoint names — come from the RTE headers (`docs.rte_type_headers`, or the
-  source repo's own `layout.rte_inc`) and the ARXML.
-- **Breakpoint lines and observed variables** come from the module's **`.c`
-  files** in `docs.source_repo`. A header carries no executable line and no
-  observable variable, so a case whose `atcActions` names a `.h` file is wrong.
-  Quote the `.c` line verbatim, argument expression included, and record the
-  file, the line number and the source revision in Traceability.
+- **The ARXML** (`docs.arxml`) — the software-component descriptions (ports,
+  interfaces and their data elements, runnables with their `SYMBOL` and their
+  timing/init/operation-invoked events, supervised entities and checkpoints),
+  the composition (the connectors that pair a `P-PORT-PROTOTYPE` with an
+  `R-PORT-PROTOTYPE`), and the system or ECU extract (the data mapping from
+  port elements to system signals and signal groups, the I-PDUs and their
+  timing, receiver `ALIVE-TIMEOUT`s, `END-TO-END-PROTECTION` entries — P-10),
+  plus the data types, `COMPU-METHOD`s and `DATA-CONSTR`s behind them. It is
+  the formal model of the architecture. The **communication database**
+  (`docs.comm_database`) supplies the message layout and attributes P-10
+  observes on the bus; it is a design artefact too, never a substitute for the
+  ARXML on the RTE side.
+- **The RTE headers** (`docs.rte_type_headers`, or the repository's own
+  `layout.rte_inc`) — `Rte_<Swc>.h` and `Rte_Type.h`, generated from that model.
+  They give the exact spelling of every `Rte_Write_*`, `Rte_Read_*`,
+  `Rte_Call_*` symbol and every enum literal, and the width of every
+  implementation type (§5.2).
 
-The two spellings differ legitimately: code usually calls the RTE's short-name
-macro (`Rte_Read_R_<port>_<element>`), which the header defines over the
-component-prefixed name (`Rte_Read_<Swc>_R_<port>_<element>`). Quote the `.c`
-spelling in `atcActions`; the header is what confirms the symbol exists.
+**What is never read** — in this repository or anywhere else: the module's
+`.c` files, the generated OS/RTE `.c` files, the ECUC configuration, the ELF
+and the linker map. Three reasons, each sufficient on its own:
 
-If the call appears on **several** lines of the `.c`, list them and ask which
-one the case breaks on — never pick the first. In `extend_existing` mode an
-existing case may show which line a project usually breaks on; it never
-replaces reading the `.c` at the pinned revision.
+1. **It is the thing under test.** A breakpoint line, a variable name or a
+   constant taken from the implementation puts the implementation's own
+   understanding of the interface into the expected result; a module that
+   misread the contract then passes its own test. Engineering writes SWE.5
+   cases from the architecture documents for exactly this reason.
+2. **It couples the case to one code revision.** A quoted line goes stale with
+   the next edit; a symbol named with its module stays findable.
+3. **It inverts the authority.** When the code and the architecture disagreed,
+   the earlier practice used the code spelling and raised the architecture.
+   The architecture is the test basis; the case is written to it, and a
+   disagreement is a finding for the bench and the architect, not a reason to
+   follow the code.
 
-Do not construct a symbol by analogy (workflow-discipline §4 /
-no-fabrication.md). Do not reproduce inconsistent casing seen in the
-architecture text — take the spelling from the RTE headers and the code, and
-note the variant in Open Points.
+There is **no degraded mode**: a run never needs the code, so nothing is
+flagged for its absence. An engineer who asks for a line number or a variable
+name "from the code" is declined in one sentence — the expected result would
+then be whatever the code does — and offered the symbol-level step, exactly as
+qualification-test-patterns §0 handles the same request.
 
-**Observed variables exist in the debug build.** A variable named in the `.c`
-file can still be missing from the software on the target: a file-scope
-`static` may live in a register or be removed by the optimiser, and code behind
-a configuration switch may not be compiled at all. With `docs.debug_build` —
-the Debug SW's ELF with symbols and/or its linker map file — look up every
-variable a case edits or watches (P-01's writer-side and reader-side
-variables, the P-05 observable):
+**Naming a breakpoint.** Every breakpoint is written as *the call `<symbol>` in
+module `<Swc>`* (P-01, P-03, P-06, P-07) or *the entry of runnable `<name>` in
+module `<Swc>`* (P-05, P-06 server side). `<Swc>` is the ARXML component
+short-name (`module_name_mapping.arxml_swc`). `<symbol>` is the spelling the RTE
+header defines: the component-prefixed name
+(`Rte_Read_<Swc>_R_<port>_<element>`) and, where the header also defines the
+short-name macro (`Rte_Read_R_<port>_<element>`), that one — quote the
+short-name macro where it exists, since that is the call the module makes, and
+record both in Traceability. The tester sets a symbol breakpoint, or locates
+the call inside the module at execution time. No `.c` or `.h` file name and no
+line number is written anywhere in the case.
 
-- **found, global** → cite the build file in Traceability;
-- **found, file-scope** (a local symbol in the ELF) → cite it, and note on the
-  case that the debugger may need the variable qualified by its file to show
-  it;
-- **not found** → the case cannot be run as written: an Open Point naming the
-  variable and the build, and `isValid = No` where the validity columns are
-  configured.
-
-Read the symbol table with whatever the environment offers — a text search of
-the map file, `readelf -s`/`nm`, a Python ELF reader. If nothing can read it,
-say so; never assume a symbol is present. Before trusting the build, check that
-it matches the pinned revision: a build file older than the newest commit that
-touched the module's `.c` files (`git log -1 --format=%cI -- <files>`) answers
-the question for different code — say so and ask whether to use it. The build
-output is usually not under Git; pin it by `git hash-object` like any other
-input (workflow-discipline §2). Without `docs.debug_build`, say once in Open
-Points that no observed variable was checked against a build.
+**Naming a value.** The edited and observed values are described by **role** —
+the argument of `Rte_Write`, the out-parameter of `Rte_Read`, the argument of
+`Rte_Call`, the member of one of these for a struct — never by an identifier
+from the implementation. The debugger shows the role at the breakpoint; the
+role does not change when a developer renames a local.
 
 **Several copies of a generated header.** A project folder often holds more
 than one `Rte_*.h` of the same name (a copy under `20_AI/`, the BSW tree, a
 generator output folder) with different hashes, because generators stamp
 timestamps, copyright years and input-file lists. Compare their **exported
-symbol sets**, not their bytes. Identical sets → use the copy inside
-`docs.source_repo` at the pinned revision (else the configured one) and note
-the others once. Differing sets → a Phase-1 question naming the symbols that
-differ.
+symbol sets**, not their bytes. Identical sets → use the configured copy
+(`layout.rte_inc` in this repository by default) and note the others once.
+Differing sets → a Phase-1 question naming the symbols that differ. The same
+applies to several copies of a component's ARXML.
 
-**Without the code — a degraded run.** `docs.source_repo` is `.` — the
-repository the skill runs in — by default, and a path to the SWE.3 repo in the
-fallback setup (project-config.md §1). Only a recorded engineer decision sets
-it to `N/A` (workflow-discipline §1.1), and such a run is **degraded** — say so
-on the first line of the run summary. In a degraded run every breakpoint names the RTE symbol only, marked as
-a placeholder (`<line in <file>.c — not resolved: no source repo>`), the P-05
-observables stay unresolved, and every such case is flagged as not executable as
-written (output-format.md, validity columns) with an Open Point. Never derive a
-`.c` file name from an ARXML component name and present it as known.
+**The architecture text and its model disagree.** Where the architecture
+names a symbol differently from the ARXML and the RTE header, the case must
+still name a symbol the debugger can resolve: use the **ARXML/RTE-header**
+spelling in the case, cite both spellings in Traceability, and raise the
+architecture text as an **architecture defect to be corrected**, addressed to
+the architecture owner — not a naming variant normalized quietly in a footnote.
+A disagreement in *behaviour* (a period, a direction, a connector) is handled
+the other way round: the case is written to the architecture text, the test
+basis, and the model is raised (§7, P-05). Observed and ruled on (FUSA_MotDrv,
+2026-10-05): architecture `1.4.1.1.3` said `SE01_MotDrv_Log_Stop_CP` where the
+RTE header and the ARXML said `Log_End_CP`; engineer ruling, "Architecture
+should be corrected."
 
-**A different identifier is not a casing variant.** Where the architecture
-names a symbol differently from the code, and the code, the RTE headers and the
-ARXML all agree against it, use the **code** spelling in the test case and
-raise the architecture as the outlier — an **architecture defect to be
-corrected**, addressed to the architecture owner, not a naming variant
-normalized quietly in a footnote. Observed and ruled on (FUSA_MotDrv,
-2026-10-05): architecture `1.4.1.1.3` says `SE01_MotDrv_Log_Stop_CP` where the
-code, the RTE header and the ARXML all say `Log_End_CP`; engineer ruling,
-"Architecture should be corrected."
+Do not construct a symbol by analogy (workflow-discipline §4 /
+no-fabrication.md). Do not reproduce inconsistent casing seen in the
+architecture text — take the spelling from the ARXML and the RTE header, and
+note the variant in Open Points.

@@ -81,17 +81,25 @@ skill — framed by the configured reference columns, if any, and nothing else.
 **Sheet 2 — `Traceability`.** One row per generated test case: proposed title,
 the requirement/architecture object it covers (and, for SWE.6, which clause of
 the requirement text). For SWE.5 also: the interface, its data type, the
-**writer** module/file and the **reader** module/file, each breakpoint's
-**`.c` file and line number** with the **source revision** they were read at
-(integration-test-patterns.md §9), which module's section the row sits under,
+**writer** module and the **reader** module (ARXML component names), each
+breakpoint's **RTE or runnable symbol** and the ARXML port or RTE header it
+was confirmed in — never a source file or line number
+(integration-test-patterns.md §9) — and, for a P-10 case, the **message,
+I-PDU and system signal** from the ARXML data mapping and the database
+attribute or ARXML parameter (cycle, repetitions, `ALIVE-TIMEOUT`, E2E
+profile) the expected value rests on, with its tolerance source (§7, P-10),
+which module's section the row sits under,
 whether the row is the **primary** or a **mirror** (§3), and which range the
 Min/Mid/Max values came from — the documented `Range:` or the implementation
 type's limits (§5.2). For SWE.6 also: each merged requirement with the
 result step that checks it, the reference specification, version and section a
 value or procedure came from (qualification-test-patterns.md §3.1), the
-catalogue row (`CID`) behind each means, and any fault-injection variable
-named from the code — marked `from code`, with file and line (§0). The engineer creates the DOORS links by hand from this
-sheet — it must be complete and readable on its own.
+catalogue row (`CID`) behind each means, the **scenario family** the case
+belongs to (qualification-test-patterns.md §10) and, for a timing case, the
+database attribute it measures with its tolerance source (§11), and any
+fault-injection variable named from the code — marked `from code`, with file
+and line (§0). The engineer creates the DOORS links by hand from this sheet —
+it must be complete and readable on its own.
 
 **A case with no object of its own.** A pattern sometimes requires a case that
 has no architecture or requirement object to trace to — the standing example is

@@ -33,14 +33,16 @@ docs:
                                             #     (exemplars + coverage baseline), plus the slice of every peer that
                                             #     gets a section. N/A under from_scratch (patterns §0.1) — never
                                             #     filled by a file discovered in the folder.
-  rte_headers: <path or N/A>       # <-- fill  this module's Rte_<Module>.h / ARXML slice — the Rte_Write/Rte_Read
-                                    #     symbol and the element name, which the architecture does not give, and
+  rte_headers: <path or N/A>       # <-- fill  this module's Rte_<Swc>.h — the Rte_Write/Rte_Read/Rte_Call symbol
+                                    #     spelling and the element name, which the architecture does not give, and
                                     #     every type whose width the Min-1/Max+1 wrap depends on. N/A when read
-                                    #     from the source repo's layout.rte_inc. PROJECT-WIDE datatype/enum
+                                    #     from this repository's layout.rte_inc. PROJECT-WIDE datatype/enum
                                     #     definitions are NOT here — they live in docs.rte_type_headers (patterns §5.2)
-  source_files: []                 # <-- confirm  the .c files breakpoint lines are read from, relative to
-                                    #     docs.source_repo.path — the target's and each named peer's
-                                    #     (patterns §9). Discovered from the Rte_ call sites, then confirmed.
+  arxml_swc: <path or N/A>         # <-- fill  this module's software-component description (ports, runnables with
+                                    #     SYMBOL and events, checkpoints) when it is not covered by the project-wide
+                                    #     docs.arxml (patterns §9). The composition (connectors) is project-wide.
+  # The module's .c files are NOT an input: breakpoints are named by RTE/runnable
+  # symbol and module from the ARXML and RTE headers (patterns §9).
   extra: []                        # optional additional documents for a run
   run_instructions: ""             # optional free-text custom instructions for a run
 
@@ -50,6 +52,7 @@ scope:
   interfaces: []                   # optional — restrict this run to a subset; [] = all interfaces in scope
                                     #   (also records a fan-out answer: which writer→reader pairs to author)
   peer_depth: null                 # optional override of integration_test.peer_depth (target_ports | peer_ports)
+  bsw_service_patterns: null       # optional override of integration_test.bsw_service_patterns (true | false)
   peer_module_mirroring: null      # optional override of integration_test.peer_module_mirroring
 
 last_run:                          # SKILL-OWNED ledger
@@ -60,13 +63,8 @@ last_run:                          # SKILL-OWNED ledger
   skill_version:    null
   release_id:       null           # release.id the run was authored against (baseline pinning)
   variants:         []
-  input_hashes:     {}             # supplied file -> git hash-object result
-  source_repo:                     # the SWE.3 repo as read this run (workflow-discipline §2)
-    path:   null
-    sha:    null                   # git -C <path> rev-parse HEAD
-    dirty:  null                   # worktree had uncommitted changes (confirmed by the engineer)
-    files:  {}                     # .c/.h/.arxml read -> git hash-object result
-    degraded: false                # true = run without a source repo by engineer waiver (patterns §9)
+  input_hashes:     {}             # supplied file -> git hash-object result — exports, every .arxml and every
+                                    #   RTE header read (workflow-discipline §2); no source revision, no .c file
   scope:                           # the scope this run was made at — if the next run's differs, it is a
                                     #   regeneration, not a per-interface delta (workflow-discipline §8)
     modules_authored:      []

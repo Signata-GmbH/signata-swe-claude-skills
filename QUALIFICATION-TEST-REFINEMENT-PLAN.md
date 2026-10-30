@@ -6,8 +6,10 @@ every case accepted, with two rewritten examples showing the expected case
 design; implemented 2026-10-16 on branch `fix/swe6-qa-stepped-cases-2026-10`
 (§7). A third round — QA's validation of a motor-control feature, plus what
 its Phase-1 answers showed — was implemented 2026-10-26 on branch
-`fix/swe6-qa-motor-control-2026-10` (§8). Next: re-run the same feature and
-compare with QA's examples.
+`fix/swe6-qa-motor-control-2026-10` (§8). A fourth round — the analysis of
+nineteen customer HiL findings on one release — was implemented 2026-10-30 on
+branch `feat/swe5-arch-only-swe6-scenarios` (§9). Next: the blind test
+described in §9.4.
 
 **Source:** the QA validation of a generated SWE.6 workbook for one CAN
 feature — 37 concrete cases accepted, 77 rejected. The detailed feedback is
@@ -187,3 +189,49 @@ Changed files: `qualification-test/SKILL.md`, `integration-test/SKILL.md`
 (the `Question` value and the drop-down only), `qualification-test-patterns.md`
 (§0, §1, §3, §3.2, §7), `workflow-discipline.md` (§4, §5, §6 items 16 and
 29–31, §8), `no-fabrication.md`, `output-format.md`, STATUS.
+
+## 9. Fourth round — customer HiL findings (2026-10-30)
+
+**Source:** the customer's HiL acceptance test of one release raised nineteen
+problem tickets (an internal Jira extract of 12 October; the detailed list is
+kept out of Git, as before). Each was classified by where the defect sits and
+by which test level should have caught it.
+
+### 9.1 What the classification showed
+
+| Bucket | Tickets | What it says about the skills |
+|---|---|---|
+| Sequences at the bus boundary — start-up counters and NM state, suppression exit, a fault arriving while the actuator moves, recovery after the fault, repeated or reversed requests | 12 | Requirement-by-requirement cases check settled states; none had driven these sequences. Every one was visible in the frames the ECU sends. |
+| Timing measurements — time to first output, timeout detection window, cycle time and burst count, payload coherency on change | 4 (overlapping) | The bus database already carries the attributes; no case measured them. One had an existing DOORS case that was either not run on the release or did not fail. |
+| Requirements that were missing, unreleased (`ready for implementation`, `to review`), contradictory between documents (a delay of 500 vs 1000 ms, a threshold of 4 vs 5, a tolerance of ±5 vs ±10 %) or changed after the release | 6 | The 12 October run had already raised several as Open Points; they needed a standing place and an owner. |
+| Module-to-module interface mismatches of the SWE.5 kind | 0 | Four tickets had an integration flavour (application ↔ basic-software bus layer: coherent signal writes, single start-up of message groups, timeout semantics), none of which the RTE value-pass-through pattern tests, with or without code. |
+
+### 9.2 Changes made
+
+| # | Change | Where |
+|---|---|---|
+| R1 | Eight **scenario families** checked at Phase 1; each applies (with cases) or is declined with a reason; family marked in Proposed Cases and Traceability; repetition count for start-up/exit sequences confirmed at the gate | `qualification-test-patterns.md` §10, SKILL Step 4.8, self-check 32 |
+| R2 | **Timing cases from the communication database**: cycle time, fast cycle / repetitions / delay, payload coherency on change, two-sided timeout detection, time to first frame; tolerance always sourced, stricter of two used | §11, SKILL Step 4.9, self-check 33, config `comm_database` comment |
+| R3 | **Spec-governed features**: the OEM specification is a mandatory input for features it defines (E2E, NM, diagnostics, bus); every state/timing/error rule cites its section | §3.1, `qualification_test.spec_governed_features`, workflow-discipline §1.1, self-check 35 |
+| R4 | **Requirements Hygiene sheet** at Phase 1 — status lag, parameter/threshold/tolerance conflicts, cited-but-absent, changed after release, no verification criterion — each row with an owner; mirrored to Open Points | §12, SKILL Step 4.6, workflow-discipline §5/§7, self-check 34 |
+| R5 | (SWE.5, same branch) the integration-test skill no longer reads source code — README decision 17 | `integration-test-patterns.md` §9 and throughout |
+| R6 | (SWE.5, same branch) **pattern P-10, application ↔ basic-software integration** — five shapes per basic-software-facing port, stimulated at the RTE call, observed on the bus, expected values from the ARXML data mapping / timing / `ALIVE-TIMEOUT` / E2E entries and the database attributes — README decision 19 | `integration-test-patterns.md` §2, §5.1, §6, §7 P-10, §9; self-check 36; `integration_test.bsw_service_patterns` |
+
+### 9.3 Deliberately not done
+
+- No change to how an existing DOORS case is executed per release — a test
+  management question, not a generation one.
+
+**P-10 was first parked, then built the same day** at the project lead's
+request (maximum coverage over caution). It has no validated case template
+from the engineers yet; the PoC run on the planned modules is its first
+validation, and the five shapes should be reviewed by QA like any other
+pattern before they are relied on.
+
+### 9.4 How to validate this round
+
+A blind test, not a reproduction run: run `/qualification-test` on the
+communication, end-to-end protection and mode-management features using only
+the inputs that existed before the customer test, **without** the ticket list,
+and count how many of the nineteen scenarios appear as cases. The 12 October
+cross-feature run cannot answer that, because it was given the tickets.
