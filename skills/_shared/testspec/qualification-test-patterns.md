@@ -171,6 +171,22 @@ every case still traces to a requirement.
   specification serves every CAN feature), so they are listed in
   `ai_test_project.yaml` under `docs.reference_specs` — title, version, path —
   never per feature.
+- **Mandatory for a spec-governed feature.** Some features' behaviour is
+  *defined* by an OEM or standard specification and merely transcribed by the
+  SW requirements: end-to-end protection (counter and checksum rules, the
+  receiver state machine, recovery after a gap, when an error is documented),
+  network management (the state machine, the first state after wake-up,
+  minimum active times, timeouts), diagnostics, bus communication. For a
+  feature listed in `qualification_test.spec_governed_features`, the named
+  document is a **mandatory input**: a run without it stops at the gate like
+  any other mandatory input (workflow-discipline §1.1), because the cases need
+  the state machine, the timings and the error-handling rules the requirement
+  only points at. Every state, timing and error-handling rule a case checks
+  then cites the specification's section beside the requirement. *(Observed:
+  of nineteen customer HiL findings on one release, the network-management
+  start-up state, the end-to-end recovery after a reception gap and the rule
+  for documenting a changed error type were each decided by the OEM
+  specification, not by the SW requirement that cited it.)*
 - **Asked at the start of every run** (Step 3, the input confirmation). Read
   the in-scope requirements, list every document they cite, and match each
   against the registered list. Show both in the inputs table: the registered
@@ -520,3 +536,131 @@ Use only when the target feature is diagnostic. Slots come from
 If the DiagSpec's cover sheet notes an exception for services `0x22`/`0x2E`
 (the service table not applying to them), take the per-DID matrices as
 authoritative for those two services and flag the exception in Open Points.
+
+## 10. Scenario families — the sequences requirements-based cases miss
+
+A requirement-by-requirement case checks one behaviour in a settled state.
+Customer HiL testing exercises **sequences**: what the software does on the
+way into a state, on the way out, under a fault that arrives mid-operation, and
+when a request is repeated or reversed. *(Observed: of nineteen customer HiL
+findings on one release, twelve were start-up, mute-exit, fault-during-motion
+or repeated-request sequences that no internal case had driven; every one of
+them was visible on the bus.)* So every run checks the feature against the
+scenario families below, in Phase 1, before cases are proposed.
+
+| Family | What the cases drive | Typical observations |
+|---|---|---|
+| **F1 Start-up and wake-up** | each wake-up source (ignition, bus, request); an expected input absent from the start | the first frames the ECU sends — message counter sequence, network-management state, initial signal values; time from wake-up to the first valid output; the timeout flag for the absent input |
+| **F2 Shutdown and timeouts** | loss of each received message and of the ignition signal, one at a time and all at once | detection within the specified window (not before, not after); what the ECU stops sending and in what order; the state of the network-management frames |
+| **F3 Suppression entry and exit** (mute, transmission off, bus-off) | entering by each path the requirements name; leaving by each path (command, network stop, ignition) | outputs during suppression; on exit, re-initialisation of counters, debounce timers and error flags; the first frame after exit |
+| **F4 Fault injection during an operation** | a counter, checksum, timeout or qualifier fault on a command while the actuator moves or a request is pending | the command on the faulty frame is not executed; error flags set coherently (never two in one frame unless specified); the movement's outcome |
+| **F5 Fault recovery** | the first valid frames after each fault of F4, after a short and after a long gap | the number of frames until the flag clears; no secondary error raised by the recovery itself; the flag transition order |
+| **F6 Repeated, reversed and overlapping requests** | short request pulses; a new request during settling; the opposite request mid-movement; a request during an autonomous action | the reported position/state at each step; which request wins; no stuck state |
+| **F7 Autonomous and safety reactions from each starting state** | the triggering condition from every initial state the requirements distinguish (engaged, disengaged, intermediate, just restarted) | the reaction happens from each state, or the requirement says why not; abort when the trigger disappears |
+| **F8 Operating-voltage edges** | the supply crossing each threshold the requirements name, both directions, slowly and as a step | flags and derating reported for the specified debounce, not for one cycle; recovery above the threshold |
+
+Rules:
+
+- **At Phase 1, list the families against the feature.** For each family say
+  whether it applies — from the in-scope requirements, the governing
+  specification (§3.1) and the supporting specifications (§3) — and, where it
+  applies, which requirements it exercises and the cases proposed for it. A
+  family that does not apply gets one line in Open Points with the reason;
+  none is skipped silently. The project may narrow or extend the list
+  (`qualification_test.scenario_families`).
+- **Every scenario case still traces to requirements.** The family is a
+  design lens, not a test basis: each step's check comes from a requirement or
+  the governing specification, and `Requirement ID` lists every requirement a
+  step verifies (§7, merged requirements). A sequence no requirement and no
+  specification describes is a Phase-1 question or an Open Point — never a
+  procedure written from how such systems usually behave (no-fabrication.md).
+- **The states passed through are checked.** A scenario case drives the ECU
+  through several states; at each one, the outputs the in-scope requirements
+  specify for that state are checked (§7, "a state the case passes through").
+- **Observe on the bus.** Every family above is visible in the frames the ECU
+  sends — counters, states, flags, positions, timestamps — which is why
+  customer testing finds them. Use an XCP variable only where no sent signal
+  shows the behaviour (§7).
+- **Repeat where the finding is sporadic.** A start-up or exit sequence
+  (F1, F3) is run the number of times the engineer confirms at Phase 1 — the
+  proposal is 10 — and the case fails if any repetition fails; the count is in
+  the case text, not in a remark.
+- **Mark the family** in the proposed-cases table and in `Traceability`.
+  `atsTestDesignTechnique` keeps the project's allowed values
+  (`RequirementsBased`, plus the boundary or equivalence technique where it
+  applies); `atsType` is `negative` for F4 and F5 and for an F2 loss case,
+  `positive` otherwise (§8).
+
+## 11. Timing and cycle-time cases from the communication database
+
+Timing findings are the easiest to miss by inspection and the easiest to
+measure on a bench. For every message in the feature's scope, generate the
+cases the database attributes support, with `atsTestKind = Performance test`:
+
+| Case | For | Measures | Pass criterion source |
+|---|---|---|---|
+| **Cycle time** | each message the ECU transmits | the spacing of `k` consecutive frames in steady state | the message's cycle time in `docs.comm_database`; tolerance from the OEM communication specification (§3.1) or the requirement — never assumed |
+| **Fast cycle on change** | each transmitted message with a fast-cycle attribute (e.g. `GenMsgCycleTimeFast`, `GenMsgNrOfRepetition`, `GenMsgDelayTime`) | after one signal change: the number of repeated frames, their spacing, the delay before the first | the database attributes, quoted by name and value |
+| **Payload coherency on change** | each transmitted message carrying several signals the ECU updates on one event | the first frame after the event carries every changed signal at its new value | the requirement that defines the event's outputs; a frame with a partial update fails |
+| **Timeout detection** | each received message with a timeout the requirements or the database define | with the message stopped: the flag is set no earlier than `T − tol` and no later than `T + tol`; with the message interrupted for `T − tol` it is not set | the timeout value and its tolerance, each with its source; where two documents give two tolerances, the stricter one is used and the difference goes to `Requirements Hygiene` (§12) |
+| **Time to first frame** | wake-up and start-up (F1) | the time from the wake-up stimulus to the first frame of each transmitted message, and to the first valid value where a requirement states it | the requirement or system requirement that states the limit |
+
+Rules:
+
+- **Numbers come from the database and the specification, named.** Each case
+  quotes the attribute (`cycle time 200 ms`, `fast cycle 20 ms, 5
+  repetitions, delay 10 ms`) and the tolerance with its document, version and
+  section in `Traceability`. Without a tolerance from an input, the case
+  checks the nominal value and the missing tolerance is an Open Point; no
+  tolerance is assumed.
+- **Both sides of a timeout.** A detection case alone passes an
+  implementation that detects too early; the "not before `T − tol`" step is
+  mandatory where the tolerance is known.
+- **The observation is faster than the timing** (§7): the trace timestamp
+  resolution and the message cycle are compared with the timing measured, and
+  a timing the bench cannot resolve is an Open Point.
+- **Mark the attribute** measured in the proposed-cases table and in
+  `Traceability` so the engineer can see which attributes have no case.
+
+## 12. Requirements hygiene — findings about the inputs, reported to their owner
+
+Many customer findings are not test gaps: the requirement was missing,
+unreleased, contradicted by another document or changed after the release.
+A run sees these while reading its inputs, and reports them at Phase 1 on the
+`Requirements Hygiene` sheet of the Phase-1 workbook (workflow-discipline §5),
+one row per finding: `RID | Finding | Documents | Values seen | Proposal |
+Owner | Status`. The sheet is mirrored into the final workbook's Open Points
+under `Input hygiene`. Check, every run:
+
+- **Status lags the software.** A requirement outside
+  `attributes.status_filter` (`to review`, `ready for implementation`) whose
+  behaviour the ECU demonstrably shows — it is cited by an in-scope
+  requirement, by a ticket in `docs.extra`, or its signal is in the database
+  the ECU transmits — is reported with its status. The run does not author
+  from it (the filter stands), but the owner must know the test spec cannot
+  cover a behaviour the software already has.
+- **Parameter and threshold conflicts.** A value that differs between the
+  requirement text, Signals & Parameters, the communication database and the
+  governing specification (a delay of 500 ms in one and 1000 ms in another, an
+  error threshold of 4 against an expectation of 5) is reported with every
+  value and its source. The case follows one of them — the governing
+  specification first, then the requirement, then the parameter list — and
+  says which in `Traceability`.
+- **Tolerance conflicts.** A tolerance that differs between the requirement
+  and the specification it implements (±10 % against ±5 %) is reported; the
+  stricter one is used (§11).
+- **Cited but absent.** A requirement, parameter or document another input
+  cites that is not in the export, not registered or not supplied.
+- **Changed after the release under test.** A requirement whose
+  `aChangeRequID` or status changed after `release.id`, where the export shows
+  it; the test case is authored to the version in the export and the change is
+  reported.
+- **No verification criterion** (§1.1) — reported here as before, one row per
+  requirement.
+
+Each row names an **owner** — requirements engineer, system engineer,
+architect, database owner — so the sheet can be split and passed on without
+the test engineer rewriting it. A finding becomes a Phase-1 **question** only
+where it changes a case's value, and then it carries a concrete proposal that
+"Yes" accepts (workflow-discipline §5); otherwise it is a finding, and the case
+is written as the rules above say.

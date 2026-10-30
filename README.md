@@ -287,29 +287,31 @@ run — the SWE.3 project repository — but differ from them in three ways:
   never read — the DOORS baseline, attribute values, test documents — and reads
   what `ai_project.yaml` already holds (`project.type`, the RTE layout, the
   requirements workbook) instead of copying it.
-- **They read the code but never build it — and SWE.6 does not read it at
-  all.** `integration-test` takes its breakpoint lines from the `.c` files: a
-  debugger breakpoint needs an executable line, and only a `.c` file has one.
-  `qualification-test` is black-box: an expected result taken from the code
-  would test the code against itself.
-- **Their audit spine** is `release.id` + `variants` (the DOORS baseline), a
-  content hash of every supplied export, and — for `integration-test` — the
-  repository's `HEAD` and the blob hash of every `.c`/`.h` read.
-  `_shared/testspec/workflow-discipline.md` §2 is the test-spec equivalent of
-  `common/workflow-discipline.md` §2.
+- **Neither reads the source code.** `integration-test` designs its cases
+  from the architecture — the Functional_Architecture export, the ARXML and
+  the RTE headers generated from it — and names every breakpoint by RTE symbol
+  and module, never by a line in a `.c` file: SWE.5's test basis is the
+  architectural design, and a case built from the implementation would test
+  the code against itself. `qualification-test` is black-box against the
+  requirements for the same reason.
+- **Their audit spine** is `release.id` + `variants` (the DOORS baseline) and
+  a content hash of every supplied input — exports, ARXML, RTE headers, A2L,
+  database. `_shared/testspec/workflow-discipline.md` §2 is the test-spec
+  equivalent of `common/workflow-discipline.md` §2.
 
 **Why the SWE.3 repository, not the vTestStudio project folder.** The
 vTestStudio folder is usually outside version control, and everything the
 skills guarantee — one shared config, an append-only run history, in-place
 updates with the previous version recoverable — rests on Git. In the SWE.3
-repository the code `integration-test` needs is local, and the requirements
-export, A2L and ARXML are shared with the code skills as one copy each. The
+repository the ARXML and RTE headers `integration-test` needs are local, and
+the requirements export, A2L and ARXML are shared with the code skills as one
+copy each. The
 vTestStudio folder becomes an external path (`vteststudio.project`), reserved
 for v2 script generation: scripts will be written into this repository first,
 as the versioned master copy, and copied across only on confirmation. A team
 whose QA engineers cannot commit to the SWE.3 repo uses a separate Git
-repository for test artefacts instead, pointing `docs.source_repo` at the SWE.3
-repo; a folder outside Git is not supported.
+repository for test artefacts instead, pointing `docs.arxml` and the RTE
+headers into the SWE.3 repo; a folder outside Git is not supported.
 
 Everything else about the shape is deliberately the same: a hard Phase-1→
 Phase-2 gate, fail-closed input acquisition, a row-count confirmation gate at the end of Phase 1, a
@@ -357,15 +359,26 @@ coverage baseline, heading spellings proposed and confirmed, and a legacy
 test-case workbook sitting in the folder is never read — a recorded `N/A` is a
 resolved input, not a gap for discovery to fill.
 
+**Two kinds of far end.** Most of a module's ports pair with another
+application module and are tested with the RTE data-flow patterns. Ports whose
+far end is the basic software — the data element is mapped to a bus signal in
+the ARXML, or the port is a mode-switch or service port — are tested with P-10:
+the debugger applies the stimulus at the module's `Rte_Write`/`Rte_Read`/
+`Rte_Switch` call and the bus trace shows whether the communication stack
+received a coherent frame, repeated it as configured, started the message once,
+indicated a lost message at the configured timeout and not earlier, and kept
+the E2E counter and CRC in order.
+
 **A module is never tested alone — but it is authored alone by default.** An
 integration test case exercises one interface across two modules — one writes
-it (`Rte_Write`, breakpoint in the writer's `.c`), the other reads it
-(`Rte_Read`, breakpoint in the reader's `.c`) — so every case names the **peer
+it (`Rte_Write`, breakpoint at the writer's call), the other reads it
+(`Rte_Read`, breakpoint at the reader's call) — so every case names the **peer
 module** at the other end of the target's port. Direction comes from the port's
 name prefix (`P_` writes, `R_` reads, cross-checked against "This port sends…"
 / "This port receives…"), pairing from the name with that prefix stripped
-(`P_Mot_Mov_Data` ↔ `R_Mot_Mov_Data`) confirmed by the data type, and an
-ambiguous pairing becomes a Phase-1 question rather than a pick. One module can
+(`P_Mot_Mov_Data` ↔ `R_Mot_Mov_Data`) confirmed by the data type and by the
+ARXML composition's connector, and an ambiguous pairing becomes a Phase-1
+question rather than a pick. One module can
 carry four spellings — its `aFunctionModule`, its architecture section heading,
 its ARXML component name and its test-spec heading (`FUSA_MotDrv` /
 `FUSA_CDD_MotDrv` / `CDD_MotDrv` / `Mot_Drv`) — any of them is accepted as the
@@ -411,8 +424,11 @@ for a module with no RTE symbols to work from.
 | 12 | **A separate `_shared/testspec/` pack + `ai_test_project.yaml`** for `integration-test`/`qualification-test`, not a third `project.type` flavor | Their test basis, inputs and output are DOORS test specifications, not code, so the SWE.3 flavor mechanism genuinely doesn't apply. A parallel pack keeps the two domains from growing irrelevant conditionals into each other's shared files. (Originally they were also meant to run in a different repo, the vTestStudio project folder; decision 15 moved them into the SWE.3 repository.) |
 | 13 | **Excel-only v1; AUTOSAR-only `integration-test`** | The vTestStudio `.vtt`/CAPL automation-script generation the user ultimately wants is deferred to v2 rather than attempted without a validated pattern. `integration-test`'s only validated pattern is RTE-debugger breakpoint testing, so it stops on a module with no RTE symbols rather than inventing a black-box equivalent. |
 | 14 | **`code-fix` as a fifth SWE.3 skill, not a mode of `code-dev`** | The fix workflow inverts the input (evidence, not a requirement set), the allowed output (four verdicts — three of which forbid a diff), and the exit criterion (a verification plan the engineer runs, since nothing is reproducible here). Bolting a second entry path onto `code-dev` would double its branching for both workflows and leave the evidence gate nowhere to live; a separate orchestrator sharing `workflow-discipline`, `no-fabrication`, and both flavor packs keeps the guard-rails identical where they genuinely are identical. |
-| 15 | **Run `integration-test`/`qualification-test` from the SWE.3 project repository**, not the vTestStudio project folder | The vTestStudio folder is usually outside version control, and the skills' guarantees — one shared config, an append-only run history, recoverable in-place updates — rest on Git. In the SWE.3 repository the code `integration-test` reads is local and the requirements export, A2L and ARXML are one shared copy. The vTestStudio folder becomes an external path reserved for v2 script generation. `qualification-test` stays black-box: it takes nothing from the code beside it but, where the A2L does not settle it, the name of a fault-injection variable — never a value or an expected result. |
+| 15 | **Run `integration-test`/`qualification-test` from the SWE.3 project repository**, not the vTestStudio project folder | The vTestStudio folder is usually outside version control, and the skills' guarantees — one shared config, an append-only run history, recoverable in-place updates — rest on Git. In the SWE.3 repository the ARXML and RTE headers `integration-test` reads are local and the requirements export, A2L and ARXML are one shared copy. The vTestStudio folder becomes an external path reserved for v2 script generation. Neither skill reads the code beside it (decision 17); `qualification-test` takes from it at most, where the A2L does not settle it, the name of a fault-injection variable — never a value or an expected result. |
 | 16 | **Skills commit their own files and time their own runs** (gate / code / final commits; event history; plugin hooks as backstop) | Manual commits were skipped, so ledgers and outputs drifted from git and runs could not be reconstructed; the code review produced an overwritten file on same-day re-runs and a new dated file otherwise. Auto-commits with run trailers, one living output per key and shell-clock event timestamps make every run reconstructable and give the team AI-active vs engineer-wait time. Hooks enforce what the model might forget, but never commit themselves. |
+| 17 | **SWE.5 cases are designed from the architecture only — the source code is never read** (2026-10-30) | Engineering writes integration test cases from the architecture documents, and ASPICE SWE.5 / ISO 26262-6 define integration testing as verifying the architectural design. The earlier practice quoted breakpoint lines from `.c` files at a pinned revision, treated a run without code as "degraded", and let the code win spelling disputes against the architecture — which couples cases to one revision and inverts the authority. Now every breakpoint is an RTE or runnable symbol named with its module, from the ARXML (the design model) and the RTE headers generated from it; values are described by role (the argument of `Rte_Write`, the out-parameter of `Rte_Read`); the OS configuration and the debug build are no longer inputs; there is no degraded mode. |
+| 18 | **SWE.6 adds scenario families, database-driven timing cases, spec-governed features and a requirements-hygiene sheet** (2026-10-30) | Nineteen customer HiL findings on one release were analysed: none would have been caught by the integration-test pattern, twelve were start-up, suppression-exit, fault-during-motion or repeated-request *sequences* that requirement-by-requirement cases had not driven, four were timing measurements the bus database already parameterises, and six traced to requirements that were unreleased, contradictory or changed. `qualification-test` now checks every feature against eight scenario families at Phase 1, generates cycle-time / fast-cycle / payload-coherency / timeout cases from the database attributes, treats the OEM specification as mandatory for features it governs (E2E, NM, diagnostics), and reports input defects on a `Requirements Hygiene` sheet addressed to their owners. |
+| 19 | **SWE.5 gains an application ↔ basic-software pattern (P-10)** (2026-10-30) | Four of the nineteen customer findings were defects at the hand-off between an application module and the communication stack — a frame sent before all its signals were written, two error flags in one frame, a message counter reset twice at start-up, a reception timeout taken from the module's own cycle — and the RTE value-pass-through pattern cannot see them. P-10 applies the stimulus with the debugger at the module's RTE call and observes the bus: coherent transmission of a signal group, transmission trigger and repetition, start-up and mode switch, reception timeout (indicated at the configured time and **not earlier**), E2E counter and CRC. Expected values come from the ARXML data mapping, I-PDU timing, `ALIVE-TIMEOUT` and E2E entries and from the communication database's message attributes — design artefacts, so the architecture-only rule (decision 17) holds. |
 
 ---
 

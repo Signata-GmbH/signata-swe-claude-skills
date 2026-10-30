@@ -9,7 +9,10 @@ description: >-
   the code is searched only for the name of a fault-injection variable, never
   for an expected result. v1 is Excel-only (no .vtt /
   vTestStudio automation-script generation). Handles requirements-based,
-  boundary-value, and diagnostic (UDS DID/RID) test cases. Author by
+  boundary-value, scenario-based (start-up, suppression exit, fault during an
+  operation, recovery, repeated requests, voltage edges), timing (cycle time,
+  fast cycle, timeout) and diagnostic (UDS DID/RID) test cases, and reports
+  requirements-hygiene findings to their owners. Author by
   inspection only — never claims a DOORS write or a test execution. Use when
   asked to generate, draft, or update SWE.6 qualification test cases for a
   feature.
@@ -80,9 +83,11 @@ if absent), discover the per-feature input docs whose config entry is unset
 communication database, the Test Plan and the test environment description if
 they are not configured (workflow-discipline §1.1), list the reference
 specifications the in-scope requirements cite — registered ones to be used,
-missing ones asked for (qualification-test-patterns §3.1) — and **confirm the
-resolved inputs** — including whether the target is a diagnostic feature (routes to §9
-of the patterns file). **Stop and wait**
+missing ones asked for; for a feature in
+`qualification_test.spec_governed_features` the named specification is
+**mandatory** and its absence a stop (qualification-test-patterns §3.1) — and
+**confirm the resolved inputs** — including whether the target is a diagnostic
+feature (routes to §9 of the patterns file). **Stop and wait**
 for confirmation. Remember workflow-discipline §0 — this may be the first
 skill ever run against this feature in this project.
 
@@ -111,20 +116,39 @@ Per qualification-test-patterns §1–§3 and workflow-discipline §1/§2/§4:
    concrete proposal (§3).
 5. **Reference specifications** (qualification-test-patterns §3.1) — the
    sections read in each registered document, and any version difference
-   between what a requirement cites and what was supplied.
-6. **Stimulus and observation catalogue** (qualification-test-patterns §3.2) —
+   between what a requirement cites and what was supplied; for a
+   spec-governed feature, the state machine, timings and error-handling rules
+   the cases will cite.
+6. **Requirements hygiene** (qualification-test-patterns §12) — one row per
+   finding about the inputs themselves: a status that lags the software, a
+   parameter, threshold or tolerance that differs between documents, a cited
+   item that is absent, a requirement changed after the release — each with
+   its owner. Written to the `Requirements Hygiene` sheet; a finding becomes a
+   question only where it changes a case's value.
+7. **Stimulus and observation catalogue** (qualification-test-patterns §3.2) —
    every item the cases will set or read, with its means, manual steps and
    whether it exists on Series/Debug SW; rows already in
    `qualification_test.bench_catalogue` shown as confirmed.
-7. **Proposed test cases** — one line each, no steps yet, with each proposed
-   merge of requirements (qualification-test-patterns §7) — including the
-   states each case passes through, matched against the in-scope requirements
-   that specify those states' outputs.
-8. **Row-count gate** (workflow-discipline §5) — the number of rows that table
-   produces, heading and logical-parent rows included, as the last question.
+8. **Scenario families** (qualification-test-patterns §10) — for each of the
+   eight families, whether it applies to this feature and from which
+   requirements and specification sections; the cases proposed per applicable
+   family; the repetition count proposed for start-up and exit sequences.
+9. **Timing cases** (qualification-test-patterns §11) — for each message in
+   scope, the database attributes (cycle, fast cycle, repetitions, delay,
+   timeout) and the tolerance source behind each proposed case; attributes
+   with no case named.
+10. **Proposed test cases** — one line each, no steps yet, each marked with
+   its scenario family or timing attribute, with each proposed merge of
+   requirements (qualification-test-patterns §7) — including the states each
+   case passes through, matched against the in-scope requirements that specify
+   those states' outputs.
+11. **Row-count gate** (workflow-discipline §5) — the number of rows that
+   table produces, heading and logical-parent rows included, as the last
+   question.
 Present all of the above and numbered questions (written to
 `20_AI/QualificationTest/<FEATURE_SLUG>/<FEATURE_SLUG>_Phase1_Questions_QualificationTest.xlsx`, with the
-catalogue as its own sheet, workflow-discipline §5). Every question carries a
+catalogue and the requirements-hygiene findings as their own sheets,
+workflow-discipline §5). Every question carries a
 concrete AI proposal that "Yes" accepts, or lists its options; the catalogue's
 `Answer` column is left empty (workflow-discipline §5). **STOP.**
 
@@ -140,9 +164,11 @@ the structure, title convention, boundary-
 value rule (the points of one parameter are the steps of one case), the
 writing rules (preconditions and postconditions set and verify the baseline;
 every action a stimulus naming its means in plain words; every result a check
-of an observable item, on the bus where possible), and (for diagnostic features) the DID/RID templates from
+of an observable item, on the bus where possible), the scenario-family cases
+(§10) and the timing cases (§11) as confirmed at the gate, and (for diagnostic
+features) the DID/RID templates from
 [qualification-test-patterns.md](../_shared/testspec/qualification-test-patterns.md)
-§4–§9. Every symbol/value traced to a supplied input (workflow-discipline §4);
+§4–§11. Every symbol/value traced to a supplied input (workflow-discipline §4);
 an unresolved one goes to Open Points, never a guess. Every value a step
 writes or checks is a concrete number; a derived one is written as its formula
 with units and a worked example, with a tolerance where the two sides resolve

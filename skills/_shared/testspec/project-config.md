@@ -30,8 +30,8 @@ cleanliness.
 **Where the skills run.** The default is the **SWE.3 project repository** —
 the same repo `code-dev`, `code-review` and `unit-test` run in. The one
 fallback, for a team whose QA engineers cannot commit there, is a **separate
-Git repository** for the test artefacts, with `docs.source_repo.path` pointing
-at the SWE.3 repo. A folder outside Git is neither — typically a vTestStudio
+Git repository** for the test artefacts, with `docs.arxml` and
+`docs.rte_type_headers` pointing into the SWE.3 repo. A folder outside Git is neither — typically a vTestStudio
 project folder, which is often not under version control. Stop there and say
 why: the one-config guard, the run history and the in-place updates all depend
 on Git. Tell the engineer to run the skill from the SWE.3 repository; the
@@ -91,10 +91,19 @@ from the "most common" spelling seen:**
 - `integration_test.peer_depth` and `integration_test.peer_module_mirroring`
   (integration-test-patterns.md §2–§3) — propose `target_ports` and `false`, and
   say that the other values typically multiply the output several times over.
+- `integration_test.bsw_service_patterns` (integration-test-patterns.md §7,
+  P-10) — propose `true`; say that the bus-observed patterns need the
+  communication database and a bus trace in the test environment.
 - `integration_test.reference_columns` and `qualification_test.reference_columns`
   — whether the project wants the validity columns beside the 21
   (output-format.md); propose off. The ID column (column A) is always written
   and is not asked.
+- `qualification_test.spec_governed_features` — which features' behaviour an
+  OEM or standard specification defines (E2E protection, network management,
+  diagnostics, bus communication), and which document for each. For these the
+  specification is a mandatory input (workflow-discipline.md §1.1). Propose
+  the list from the features whose requirements cite a document; the engineer
+  confirms. Write `{}` for "none" — a missing key means not asked yet.
 
 `integration_test.architecture_text_fallback` is **not** asked here: it starts
 as `stop` and changes only by an engineer decision at the export-completeness
@@ -113,13 +122,13 @@ table.
   `functional_architecture_export` at the view with the names and
   `functional_architecture_export_text_view` at the other, rather than treating
   them as separate documents.
-- **`docs.source_repo`** — `path: .` (this repository) in the default setup;
-  in the fallback setup, ask for the SWE.3 repo's path and confirm it is a git
-  working tree (`git -C <path> rev-parse --show-toplevel`). Ask for `ref` (the
-  revision test cases are authored against); `N/A` means "whatever is checked
-  out", pinned per run. Declining the code is allowed only as a recorded
-  decision with its reason, and makes every integration-test run degraded
-  (integration-test-patterns.md §9) — say so before writing it.
+- **`docs.arxml`** (integration-test) — the software-component descriptions
+  and the composition the RTE was generated from, usually already in this
+  repository (the RTE generator's input folder); propose those copies, and
+  where several copies of one component exist, compare their port and runnable
+  sets rather than their bytes (integration-test-patterns.md §9). It is a
+  mandatory SWE.5 input: there is no waiver and no degraded mode. The source
+  code is never an input and is not asked for.
 - **`docs.reference_specs`** (qualification-test) — starts empty; filled at
   the start of each run from the documents its requirements cite
   (qualification-test-patterns.md §3.1), and reused by every feature after.
@@ -128,13 +137,6 @@ table.
   is lost without it (workflow-discipline.md §1.1). In the SWE.3 repo the bus
   database (DBC/LDF/ARXML system extract) is often already under version
   control; propose that copy before asking for another.
-- **`docs.os_config`, `docs.debug_build`** (integration-test) — the OS/RTE
-  configuration is usually in this repository already: propose the ECUC ARXML
-  that defines the tasks and the event-to-task mapping, or the generated OS/RTE
-  sources, and confirm. The debug build is a build output, usually outside Git
-  and rebuilt often: ask for its usual location (the ELF and/or the map file of
-  the **Debug** SW, not the series build), and offer both explicitly, saying
-  what is not checked without them (workflow-discipline.md §1.1).
 - **`vteststudio.project`** — reserved for v2. Ask for the path only if the
   engineer knows it; otherwise `N/A`. Keep `write_access: false`.
 - **`qualification_test.valid_features`** — derive from the distinct `aFeature`
@@ -161,16 +163,14 @@ string, a path discovery missed).
 
 ### 4.3 Read from `ai_project.yaml`, never copy
 
-When `20_AI/ai_project.yaml` exists in the repository whose code is read (this
-one, or the SWE.3 repo in the fallback setup), these facts come from it **at
-run time** and are not written into this config, so the two files cannot drift
-apart:
+When `20_AI/ai_project.yaml` exists in this repository (or in the SWE.3 repo in
+the fallback setup), these facts come from it **at run time** and are not
+written into this config, so the two files cannot drift apart:
 
 | Fact | From `ai_project.yaml` | Used for |
 |---|---|---|
 | AUTOSAR or not | `project.type` | integration-test's AUTOSAR-only guard |
-| Application source root | `layout.app_root` | a *hint* only — the module's folder is `module.path`, resolved per common/module-location (BSW/CDD modules live elsewhere) |
-| RTE headers | `layout.rte_inc` | RTE symbols and enum literals — set `docs.rte_type_headers: N/A` |
+| RTE headers | `layout.rte_inc` | RTE symbol spelling and enum literals — set `docs.rte_type_headers: N/A` |
 | SW requirements export | `requirements.workbook` | SWE.6 test basis — write `docs.requirements_workbook: ai_project` |
 
 `release.variants` is **proposed** from `requirements.variants` and then
@@ -186,8 +186,11 @@ evidence / problem`) covering: `schema_version` present; no surviving
 `<PLACEHOLDER>`; every `docs.*` path (other than `N/A`) resolves to a readable
 file; every `N/A` carries its reason; `integration_test.authoring_mode` is set
 and agrees with `docs.integration_test_spec_export` (path ⇔ `extend_existing`,
-`N/A` ⇔ `from_scratch`); `docs.source_repo.path` is a git working tree (`.`
-in the default setup) and `ref`, if set, resolves in it; no fact that §4.3
+`N/A` ⇔ `from_scratch`); `docs.arxml` resolves to at least one readable ARXML
+file; no `docs.source_repo`, `docs.os_config` or `docs.debug_build` key
+survives from an older config (remove it and say why: the code is not an
+input); `qualification_test.spec_governed_features` is present (absent → never
+asked: ask once, record `{}` for "none"); no fact that §4.3
 reads from `ai_project.yaml` is duplicated here with a different value;
 `vteststudio.write_access` is `false` while v1 is the running version;
 `integration_test.peer_depth` and

@@ -4,20 +4,23 @@
 > the shared backbone for that pair — the same role
 > [../common/workflow-discipline.md](../common/workflow-discipline.md) plays for
 > the three SWE.3 code skills. Both skills run in the SWE.3 project repository
-> (project-config.md §1) but never build it: the DOORS exports are pinned by
-> content hash, the code by the repository's revision. The two files are not
-> merged: the pinning mechanism (§2 below) and the input matrix (§1) are
-> genuinely different here.
+> (project-config.md §1) but never build it and never read its source code:
+> every input — DOORS export, ARXML, RTE header, A2L, database — is pinned by
+> content hash. The two files are not merged: the pinning mechanism (§2 below)
+> and the input matrix (§1) are genuinely different here.
 
 ## 0. Standalone & idempotent — NO pipeline assumption
 
 - Either skill may be the first (and only) test-spec skill ever run in this
   repository. Never assume the other one ran first, and never assume a code
   skill ran first either.
-- **`qualification-test` is black-box.** It never reads the source code, even
-  though the code sits in the same repository: an expected result derived from
-  the code would test the code against itself (qualification-test-patterns
-  §0).
+- **Neither skill reads the source code.** Both run in the SWE.3 repository,
+  where the code is within reach, and neither opens it. `integration-test`'s
+  test basis is the architectural design — the DOORS export, the ARXML and the
+  RTE headers generated from it (integration-test-patterns §9);
+  `qualification-test`'s is the requirements (qualification-test-patterns §0).
+  An expected result, a breakpoint or a variable name derived from the code
+  would test the code against itself.
 - On every run, ensure `20_AI/ai_test_project.yaml` and the module/feature
   manifest exist. The **project config** is per-repo and belongs on the base
   branch — a missing one goes through
@@ -46,16 +49,15 @@
 | Requirements workbook (`docs.requirements_workbook`) | – | ✔ |
 | Signals & Parameters (`docs.signals_params`) | where a signal's raw values are exercised | ✔ |
 | Existing test-spec export for this module/feature | ✔ under `integration_test.authoring_mode: extend_existing` · – under `from_scratch` (integration-test-patterns §0.1) | ✔, unless `N/A` by a recorded engineer decision (§1.2) |
-| The code (`docs.source_repo` — this repository by default) — breakpoint lines and observed variables | ✔ — waivable only by a recorded engineer decision, which makes the run *degraded* (integration-test-patterns §9) | – black-box: searched only for the name of a fault-injection variable the A2L does not settle (qualification-test-patterns §0) |
-| ARXML / `Rte_*.h` / `Rte_Type.h` (`docs.rte_type_headers`, or `layout.rte_inc` in `ai_project.yaml`) | ✔ — every RTE symbol and every enum literal | – |
-| OS and RTE configuration (`docs.os_config`) — ECUC ARXML or the generated OS/RTE code | **ask** — P-05's task and period (integration-test-patterns §7); without it, they rest on the architecture text alone | – |
-| Debug build — ELF with symbols and/or map file (`docs.debug_build`) | **ask** — every observed variable exists in the build (integration-test-patterns §9); without it, none is checked | – |
+| ARXML — software-component descriptions and composition (`docs.arxml`) | ✔ — ports, connectors, runnable symbols and events, checkpoints, types (integration-test-patterns §9) | – |
+| RTE headers `Rte_<Swc>.h` / `Rte_Type.h` (`docs.rte_type_headers`, or `layout.rte_inc` in `ai_project.yaml`) | ✔ — the spelling of every RTE symbol and every enum literal | – |
+| The source code, the OS configuration, the build (ELF / map) | **never** — the test basis is the architecture; breakpoints are named by symbol and module (integration-test-patterns §9) | **never**, with one exception: a search for the **name only** of a fault-injection variable the A2L does not settle (qualification-test-patterns §0) |
 | A2L file or code variable list (`docs.a2l_or_varlist`) | – | ✔ |
 | DiagSpec (`docs.diagspec`) | diagnostic interfaces (pattern P-07) only | diagnostic features only |
-| Communication database — DBC / LDF / ARXML system extract (`docs.comm_database`) | – (tests at RTE level) | **ask** — every bus signal's encoding, cycle time and timeout; without it those values are Open Points |
+| Communication database — DBC / LDF / ARXML system extract (`docs.comm_database`) | **ask** — decodes the bus and gives the message attributes for the basic-software patterns (integration-test-patterns §7, P-10); without it, P-10 cases name the I-PDU from the ARXML and every signal value, cycle and timeout is an Open Point | **ask** — every bus signal's encoding, cycle time and timeout; without it those values are Open Points |
 | Test Plan (`docs.test_plan`) | – | **ask** — Series SW or Debug SW per feature (`atcRemark`); without it, asked once per feature |
 | Test environment description (`docs.test_environment`) | **ask** | **ask** — what the bench can stimulate and observe (§4), including the CANoe configuration's panel list; without it, every means is asked in the Phase-1 catalogue (qualification-test-patterns §3.2) |
-| Reference specifications (`docs.reference_specs`) — OEM performance or test specifications, standards | – | **ask**, at every run, for each document the in-scope requirements cite that is not registered (qualification-test-patterns §3.1); without one, the requirements depending on it are Open Points |
+| Reference specifications (`docs.reference_specs`) — OEM performance or test specifications, standards | – | ✔ for a feature listed in `qualification_test.spec_governed_features` — the named specification defines the behaviour (E2E, network management, diagnostics) and a run without it stops (qualification-test-patterns §3.1) · **ask** otherwise, at every run, for each document the in-scope requirements cite that is not registered; without one, the requirements depending on it are Open Points |
 
 **The two SWE.5 test-basis documents are not interchangeable with the SWE.6
 one.** `integration-test` reads the Functional_Architecture export and never
@@ -244,17 +246,12 @@ so the equivalent of revision pinning is:
   on any file, tracked or untracked, inside a repository or outside one, so a
   document kept outside Git is pinned the same way). Record `{file: hash}` for
   every DOORS export/xlsx read this run.
-- **The code, by git revision** (`integration-test`, `docs.source_repo` —
-  `.`, this repository, in the default setup; the SWE.3 repo's path in the
-  fallback setup). Pin it the way the SWE.3 skills do
-  (common/workflow-discipline.md §2): record `git -C <path> rev-parse HEAD`,
-  whether its worktree is dirty (`git -C <path> status --porcelain`), and
-  `git -C <path> hash-object <file>` for every `.c`/`.h`/`.arxml` read. If
-  `docs.source_repo.ref` is set and `HEAD` is not that revision, **stop** and
-  ask — a breakpoint line is valid only at the revision it was read from. A
-  dirty worktree is reported and confirmed before analysis, never used
-  silently: in the default setup the skill's own `20_AI/` files make the
-  worktree dirty too, so judge dirtiness on the code only, outside `20_AI/`.
+- **The ARXML and the RTE headers, by content hash** (`integration-test`) —
+  `git hash-object` on every `.arxml` and `.h` read, like any other input.
+  Generated headers carry generator timestamps, so two copies can differ by
+  bytes while exporting the same symbols: compare symbol sets
+  (integration-test-patterns §9) and pin the copy actually read. No source
+  revision is recorded, because no source file is read.
 - **Per-requirement/per-interface hash** — hash each in-scope requirement's or
   interface's Object Text, so a later run can tell *new* from *changed* from
   *unchanged* (§8) without re-reading the whole export. An **interface's** hash
@@ -266,8 +263,8 @@ so the equivalent of revision pinning is:
 - **Re-hash immediately before generation**, not only at pre-flight. An input
   can change mid-session — a new export dropped into the folder between Phase 1
   and Phase 2 is common — and the analysis the engineer approved is valid only
-  for the files it was made from. Re-run `git hash-object` on every input (and
-  `rev-parse HEAD` in the source repo) right before Phase 2; any difference from
+  for the files it was made from. Re-run `git hash-object` on every input
+  right before Phase 2; any difference from
   the pre-flight pin is a **STOP**: name the file, and redo the affected part of
   Phase 1 rather than generate from a mixed baseline.
 
@@ -329,8 +326,9 @@ Both manifests **inherit** `ai_test_project.yaml` (`release`, `variants`,
 
 ## 4. Grounding & no silent assumptions
 
-- **Symbol/value grounding.** Every `Rte_` symbol, source file name, signal
-  name, DID/RID/NRC, enum value, and numeric threshold used in a test case is
+- **Symbol/value grounding.** Every `Rte_` symbol, runnable name, module
+  name, signal name, DID/RID/NRC, enum value, and numeric threshold used in a
+  test case is
   copied **verbatim** from a supplied input — never fabricated, and never
   constructed by analogy with a similar-looking symbol that does exist.
   Self-check before emitting; list any symbol you cannot confirm and **stop**
@@ -448,6 +446,20 @@ observation means, one row per item, each answered on its own
 (qualification-test-patterns §3.2). Its rows are read back like the questions:
 answered rows are resolved, only `open` ones are re-emitted.
 
+**qualification-test adds a third sheet, `Requirements Hygiene`** — one row
+per defect found in the inputs themselves (a requirement status that lags the
+software, a parameter or tolerance that differs between documents, a cited
+specification that is missing), with the owner it goes to
+(qualification-test-patterns §12). These rows are findings, not questions: a
+row becomes a Phase-1 question only where it changes a case's value, and then
+the question carries a concrete proposal as usual. The sheet is mirrored into
+the final workbook's Open Points under `Input hygiene`.
+
+**The proposed-cases table carries each case's scenario family**
+(qualification-test-patterns §10) and, for a timing case, the database
+attribute it measures (§11), so the engineer can see at the gate which
+families the run covers and which it says do not apply.
+
 **Row-count gate (mandatory — the last Phase-1 question).** After the
 proposed-cases table, state how many rows the `Test Cases` sheet will have —
 heading rows and case rows, counted from that table — and require the engineer
@@ -482,10 +494,10 @@ row:
 8. Every in-scope requirement/interface either has a test case or appears in
    Open Points with a reason.
 9. **integration-test only** — every case names **both** ends: a `Rte_Write`
-   breakpoint in the writer's file and a `Rte_Read` breakpoint in the reader's
-   file (or the `Rte_Call`/server pair), with the two files actually different
-   where the interface crosses modules — including where the peer is named but
-   not authored (integration-test-patterns §2, Depth).
+   breakpoint in the writer module and a `Rte_Read` breakpoint in the reader
+   module (or the `Rte_Call`/server pair), with the two modules actually
+   different where the interface crosses modules — including where the peer is
+   named but not authored (integration-test-patterns §2, Depth).
 10. **integration-test only** — every interface appears under the target
     module's section; a peer has a section only under `peer_depth: peer_ports`
     or with mirroring on, and every mirror row is marked as such in
@@ -501,10 +513,12 @@ row:
 12. **integration-test only** — every enum literal used states its source
     (`Rte_Type.h`/ARXML, or an existing test case in `extend_existing` mode);
     no literal is derived from a value's prose description.
-13. **integration-test only** — no `atcActions` entry names a `.h` file. Every
-    breakpoint line and observed variable is quoted verbatim from a `.c` file
-    at the pinned source revision, with file and line number in `Traceability`
-    — or, in a degraded run, is a marked placeholder with an Open Point.
+13. **integration-test only** — no `atcActions` entry names a source file
+    (`.c` or `.h`) or a line number, and no edited or observed value is named
+    by an identifier from the implementation. Every breakpoint is an RTE or
+    runnable symbol found in the ARXML or the RTE header, named with its
+    module, and `Traceability` cites that source (integration-test-patterns
+    §9).
 14. **integration-test only, `from_scratch`** — nothing in the workbook, the
     Traceability sheet or Open Points cites a legacy test-case workbook.
 15. **integration-test only** — every enum interface has its negative case, or
@@ -525,12 +539,13 @@ row:
     names, each marked `from code`; every bus-signal value, cycle
     time and timeout cites `docs.comm_database` (qualification-test-patterns
     §0, §1.1, §3).
-19. **integration-test only** — every P-05 case cites the task and period found
-    in `docs.os_config`, or an Open Point says they were not checked or
-    disagree with the architecture (integration-test-patterns §7).
-20. **integration-test only** — every variable a case edits or watches was
-    found in `docs.debug_build` (cited in Traceability), or an Open Point says
-    it was not checked or is missing (integration-test-patterns §9).
+19. **integration-test only** — every P-05 case cites the runnable's ARXML
+    symbol and the timing or init event it was checked against, or an Open
+    Point says the ARXML carries none or disagrees with the architecture
+    (integration-test-patterns §7).
+20. **integration-test only** — nothing in the workbook, `Traceability` or
+    Open Points was derived from a `.c` file, the OS configuration or a build
+    output (integration-test-patterns §9).
 21. **Both skills** — `aChangeRequID` is empty on a first run, and on a re-run
     carries the change request of each new or changed object behind the case,
     or an Open Point says why not (§8).
@@ -577,6 +592,33 @@ row:
 31. **Both skills** — every answer or value taken from the engineer or QA
     carries its source as §4 defines it; nothing is attributed to QA that QA
     has not written or confirmed.
+32. **qualification-test only** — every scenario family of
+    qualification-test-patterns §10 is either covered by at least one case
+    whose `Traceability` row names the family, or listed once in Open Points
+    with the reason it does not apply to this feature; no family is skipped
+    silently.
+33. **qualification-test only** — every message the feature transmits has its
+    cycle-time case and, where the communication database defines them, its
+    fast-cycle, repetition and payload-coherency cases; every message it
+    receives with a timeout has its detection-window case; each cites the
+    database attribute and the tolerance source, or is an Open Point
+    (qualification-test-patterns §11).
+34. **qualification-test only** — every finding of the `Requirements Hygiene`
+    sheet appears in Open Points under `Input hygiene` with its owner, and no
+    case takes a value from a document the sheet marks as conflicting without
+    saying which one it followed and why (qualification-test-patterns §12).
+35. **qualification-test only** — for a feature in
+    `qualification_test.spec_governed_features`, every state, timing and
+    error-handling rule a case checks cites the governing specification's
+    section, not only the SW requirement that transcribes it
+    (qualification-test-patterns §3.1).
+36. **integration-test only** — every basic-software-facing port (a port
+    mapped to a system signal or signal group, a mode-switch or service port)
+    has its P-10 cases — each shape that applies, with the ARXML entry and the
+    database attribute it rests on cited in `Traceability` — or one Open Point
+    per port saying which shapes do not apply and why; every P-10d case checks
+    both that the timeout is indicated and that it is not indicated early
+    (integration-test-patterns §7, P-10).
 
 ## 7. Traceability & Open Points (both skills, every run)
 
@@ -607,10 +649,23 @@ category `Input hygiene`:
   only dropping it.
 - **Lost table content** — the §1.3(3) count of rows whose content cell is
   empty while their attributes are filled.
-- **integration-test** — name disagreements between the architecture and the
-  code/RTE/ARXML (integration-test-patterns.md §9), mislabelled definitions (a
-  `COMPU-METHOD` holding another type's literals, §5.2), and range-text variants
-  a strict `Range:` match would have missed (§5.2).
+- **integration-test** — name disagreements between the architecture text
+  and the ARXML/RTE headers, connectors the composition has but the text does
+  not describe or vice versa, periods that differ between the text and the
+  ARXML timing event, a port's data mapping that disagrees with the message
+  the architecture text names, and a cycle, timeout or E2E parameter that
+  differs between the ARXML extract and the communication database
+  (integration-test-patterns.md §2, §7, §9), mislabelled
+  definitions (a `COMPU-METHOD` holding another type's literals, §5.2), and
+  range-text variants a strict `Range:` match would have missed (§5.2).
+- **qualification-test** — the `Requirements Hygiene` findings
+  (qualification-test-patterns §12): a behaviour the software shows whose
+  requirement is still `to review` or `ready for implementation`; a parameter,
+  threshold or tolerance that differs between the requirement, Signals &
+  Parameters, the communication database and the OEM specification it
+  implements; a requirement cited by another document but absent from the
+  export or outside the status filter; a requirement changed after the
+  release under test.
 
 ## 8. Ledger & run history (audit)
 
@@ -622,8 +677,8 @@ Same two-record shape as `common/workflow-discipline.md` §9, adapted to this
 domain's pin:
 
 - **`last_run:` in the manifest — working state, overwritten each run.** Holds
-  `run_id`, `started`, `ended`, `timing` totals, `skill_version`, `release_id`, `variants`, `input_hashes` (§2)
-  — for integration-test also the `source_repo` pin —, the **`scope`** the run
+  `run_id`, `started`, `ended`, `timing` totals, `skill_version`, `release_id`, `variants`, `input_hashes` (§2),
+  the **`scope`** the run
   was made at, the **`output`** it wrote (path + hash), the inputs
   **`supplied_but_not_read`**, the requirement/interface snapshot
   (`ID -> {hash, change requests, cases: [...]}`), and the delta. Drives

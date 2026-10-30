@@ -7,12 +7,18 @@ description: >-
   Traceability / Open Points) an engineer reviews and enters into DOORS by
   hand. Test basis is the Functional_Architecture DOORS export, including its
   UserDefinedTypes chapter — never the SW requirements export, which is SWE.6's.
-  Runs in the SWE.3 project repository like the code skills, reading breakpoint
-  lines from its .c files at a pinned revision, with its own test-spec config
-  (20_AI/ai_test_project.yaml) beside ai_project.yaml. v1 is
-  Excel-only (no .vtt / vTestStudio automation-script generation) and
-  RTE-debugger-based (AUTOSAR only) — it stops rather than inventing a black-box
-  pattern for a module with no RTE symbols. Author by inspection only — never
+  Runs in the SWE.3 project repository like the code skills, with its own
+  test-spec config (20_AI/ai_test_project.yaml) beside ai_project.yaml, and
+  designs every case from the architecture alone — the DOORS export, the ARXML
+  and the RTE headers generated from it — naming breakpoints by RTE symbol and
+  module; it never reads the module's source code. Covers the module's
+  interfaces to other application modules (RTE data flow, client/server,
+  watchdog, runnable timing) and its hand-off to the basic software
+  (coherent transmission, transmission trigger, start-up and mode switch,
+  reception timeout, E2E protection — observed on the bus). v1 is Excel-only
+  (no .vtt / vTestStudio automation-script generation) and RTE-debugger-based
+  (AUTOSAR only) — it stops rather than inventing a black-box pattern for a
+  module with no RTE symbols. Author by inspection only — never
   claims a DOORS write or a test execution. Use when asked to generate, draft,
   or update SWE.5 integration test cases for a module.
 argument-hint: [module]
@@ -30,17 +36,20 @@ refused as a module.
 
 An integration test case exercises **one interface across two modules**: one
 writes it (`Rte_Write`), the other reads it (`Rte_Read`). So every case names
-the **peer module** at the other end of the target's port — its breakpoint
-line, in its own `.c` file. By default the peer gets no section of its own:
+the **peer module** at the other end of the target's port — the RTE call it
+breaks on, in the peer module. By default the peer gets no section of its own:
 `peer_depth` and mirroring decide that, explicitly (integration-test-patterns
 §2–§3).
 
 The test basis is the **Functional_Architecture** export — one DOORS module,
 whose section 1.2 is the **UserDefinedTypes** chapter that resolves its data
 types. The SW requirements export is SWE.6's basis and is not read here.
-Breakpoint lines and observed variables come from the module's **`.c` files** —
-this repository's own code by default (`docs.source_repo`) — read at a pinned
-revision: a header carries no executable line (integration-test-patterns §9).
+Breakpoints are named by **module and RTE symbol** (`Rte_Write_P_<port>_<element>`
+in `<WriterSwc>`), taken from the ARXML and the RTE headers generated from it —
+never by a line quoted from a `.c` file. The source code is within reach in
+this repository and **must not be read**: SWE.5's test basis is the
+architectural design, and a case built from the implementation would test the
+code against itself (integration-test-patterns §9).
 
 **Run it from the SWE.3 project repository**, like `code-dev`, `code-review` and
 `unit-test` — never from a vTestStudio project folder, which is usually outside
@@ -62,8 +71,8 @@ from memory.
 ## Step 1 — Resolve the test-spec project config
 
 Read `20_AI/ai_test_project.yaml`, and `20_AI/ai_project.yaml` beside it: the
-test-spec config takes `project.type`, `layout.app_root` and `layout.rte_inc`
-from there rather than holding copies (project-config §4.3). Not in a Git
+test-spec config takes `project.type` and `layout.rte_inc` from there rather
+than holding copies (project-config §4.3). Not in a Git
 repository → stop, and say to run from the SWE.3 repository (project-config §1).
 If the test-spec config is **absent**, follow
 [../_shared/testspec/project-config.md](../_shared/testspec/project-config.md)
@@ -94,22 +103,24 @@ Per workflow-discipline §3, in this order:
    (integration-test-patterns §0.1) — ask it if the config lacks it.
 4. **Discover only the inputs whose config entry is unset**
    (workflow-discipline §1.2): existing test cases for this module only under
-   `extend_existing`, never under `from_scratch`; the module's `.c` files in
-   `docs.source_repo`, found from its `Rte_` call sites and `module.path` resolved
-   per [../_shared/common/module-location.md](../_shared/common/module-location.md)
-   (the module may sit outside `layout.app_root`; ask rather than assume); RTE headers if needed.
-   A discovered file is a proposal, never registered on its own, and a recorded
-   `N/A` is never re-opened. Offer the test environment description, the OS
-   and RTE configuration and the debug build if they are not configured
-   (workflow-discipline §1.1).
-5. **Resolve and pin the source repo** (workflow-discipline §2) — no source
-   repo and no recorded waiver is a stop; a recorded waiver makes the run
-   degraded (integration-test-patterns §9).
+   `extend_existing`, never under `from_scratch`; the ARXML — the module's
+   software-component description and the composition it sits in
+   (`docs.arxml`) — and the RTE headers (`docs.rte_type_headers`, or
+   `layout.rte_inc`) if their entry is unset. A discovered file is a proposal,
+   never registered on its own, and a recorded `N/A` is never re-opened. Offer
+   the test environment description and the communication database if they
+   are not configured (workflow-discipline §1.1) — the database decodes the
+   bus for the basic-software patterns (integration-test-patterns §7, P-10). **Never open a `.c` file, the OS configuration
+   or a build output** — a question that seems to need one is a Phase-1
+   question or an Open Point (integration-test-patterns §9).
+5. **Pin the architecture artefacts** (workflow-discipline §2) — a content
+   hash of the export, of every ARXML file and of every RTE header read; a
+   missing ARXML is a mandatory-input stop.
 6. **Run the export-completeness gate** (workflow-discipline §1.3) — the run
    needs each object's **name** *and* its **text**: two columns, one column
    carrying both (split on the first newline), or two views of the module
-   joined on `ID`. Text missing is a stop — but first check what the ARXML and
-   the source repo already resolve, and offer the names-only downgrade as the
+   joined on `ID`. Text missing is a stop — but first check what the ARXML
+   already resolves, and offer the names-only downgrade as the
    AI proposal for the engineer to accept or refuse.
 7. **Apply the AUTOSAR-only guard** (integration-test-patterns §0) — if the
    module shows no RTE symbols to work from, stop here and say so.
@@ -123,18 +134,21 @@ this module in this project.
 Per integration-test-patterns §1–§6 and workflow-discipline §1/§2/§4:
 1. **Pre-flight input acquisition** (workflow-discipline §1, incl. the §1.3
    completeness gate) and **pin the baseline** — `release.id`/`variants` + a
-   content hash of every supplied export, and the source repo's revision (§2).
-   Every symbol/value/breakpoint line is valid only at that baseline.
+   content hash of every supplied export, ARXML file and RTE header (§2).
+   Every symbol and value is valid only at that baseline.
    On a re-run, read QA's validity verdicts in the previous output here
    (workflow-discipline §8): cases marked `Yes` are kept, every `Reason for
    Invalid` the inputs cannot answer becomes a Phase-1 question, and every
    `Question` gets a written reply for QA before its case is reworked.
 2. **Resolve the peers** (integration-test-patterns §2) — direction per port
-   from its text, then the writer→reader pairing; reuse the cached
-   `integration_test.peer_modules` if present, otherwise discover, confirm and
-   offer to cache. Present the **peer matrix**, with the fan-out and projected
-   cases per target port. Ambiguous pairings become numbered questions, never a
-   pick.
+   from its text, then the writer→reader pairing confirmed by the ARXML
+   connector; reuse the cached `integration_test.peer_modules` if present,
+   otherwise discover, confirm and offer to cache. Ports whose far end is the
+   **basic software** (mapped to a system signal, a mode-switch or service
+   port) are listed separately with their message, I-PDU and database
+   attributes (§5.1, P-10). Present the **peer matrix**, with the fan-out and
+   projected cases per target port. Ambiguous pairings become numbered
+   questions, never a pick.
 3. **Depth and mirroring** (integration-test-patterns §2 Depth, §3) — use the
    configured `peer_depth` / `peer_module_mirroring` (manifest overrides
    first); if either is unset, ask, stating the projected row count for each
@@ -153,9 +167,12 @@ Per integration-test-patterns §1–§6 and workflow-discipline §1/§2/§4:
    came from (the chapter names enum types but lists no literals).
 7. **Pattern per object** from its `aTestCriteria` (integration-test-patterns
    §6) — including the objects that map to P-08 and get no case. For P-05,
-   report each runnable's task and period from the OS configuration next to
-   the architecture's, flagging any mismatch (§7); for every variable a case
-   will edit or watch, report whether the debug build has it (§9).
+   report each runnable's ARXML symbol and timing/init event next to the
+   architecture's period, flagging any mismatch (§7). For each
+   basic-software-facing port, the P-10 shapes that apply (coherent
+   transmission, trigger, start-up/mode switch, reception timeout, E2E) with
+   the ARXML entry and database attribute behind each, and the ones that do
+   not apply with the reason.
 8. **Proposed test cases** — one line each, no steps yet, marking primary vs
    mirror.
 9. **Row-count gate** (workflow-discipline §5) — the number of rows that table
@@ -167,15 +184,16 @@ proposed-cases table, and numbered questions (written to
 
 ## Step 5 — Phase 2 — Generation
 
-Only after acknowledgement. First **re-hash every input and re-check the
-source repo's `HEAD`** (workflow-discipline §2) — anything changed since
-pre-flight is a stop, not a mixed baseline. Apply the patterns (P-01…P-09) and attributes from
+Only after acknowledgement. First **re-hash every input** (workflow-discipline
+§2) — anything changed since
+pre-flight is a stop, not a mixed baseline. Apply the patterns (P-01…P-10) and attributes from
 [integration-test-patterns.md](../_shared/testspec/integration-test-patterns.md)
 §7–§8, and — only where mirroring is on — mirror each interface into its
 peer's section per §3. Every symbol, struct member, enum literal and boundary
-value traced to a supplied input, and every breakpoint line quoted from a `.c`
-file at the pinned revision (workflow-discipline §4, integration-test-patterns
-§9); an unresolved one goes to Open Points, never a guess.
+value traced to a supplied input, and every breakpoint named by RTE or
+runnable symbol and module from the ARXML and the RTE headers
+(workflow-discipline §4, integration-test-patterns §9); an unresolved one goes
+to Open Points, never a guess.
 For a re-run, read QA's validity verdicts first and leave accepted cases
 untouched — a `Question` case is reworked only after QA has accepted the
 reply — then run the three checks of workflow-discipline §8 — previous
@@ -197,7 +215,7 @@ summary in chat plus the no-fabrication disclaimer.
 
 Overwrite `last_run` in the manifest (workflow-discipline §8) — including
 `run_id`, `started`, `ended`, `timing`, the
-source-repo pin, the scope, the output path + hash, and the inputs supplied but
+scope, the output path + hash, and the inputs supplied but
 not read — through a comment-preserving YAML writer, append `run_end` to
 `20_AI/manifests/integration-test/history/<MODULE>.jsonl`, then make the
 **final commit** — the workbook, manifest and history — and delete the
