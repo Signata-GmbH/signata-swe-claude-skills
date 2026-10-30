@@ -8,8 +8,12 @@ design; implemented 2026-10-16 on branch `fix/swe6-qa-stepped-cases-2026-10`
 its Phase-1 answers showed — was implemented 2026-10-26 on branch
 `fix/swe6-qa-motor-control-2026-10` (§8). A fourth round — the analysis of
 nineteen customer HiL findings on one release — was implemented 2026-10-30 on
-branch `feat/swe5-arch-only-swe6-scenarios` (§9). Next: the blind test
-described in §9.4.
+branch `feat/swe5-arch-only-swe6-scenarios` (§9). A fifth round — the QA
+validation of the Actuator Data and Motor Control workbooks, consolidated in
+the project lead's "QA Feedback for Test Case Generation Skill" (30 October)
+— was implemented 2026-10-30 on branch `fix/swe6-qa-round5-2026-10` (§10).
+Next: re-run Actuator Data and Motor Control and compare against the twelve
+findings.
 
 **Source:** the QA validation of a generated SWE.6 workbook for one CAN
 feature — 37 concrete cases accepted, 77 rejected. The detailed feedback is
@@ -235,3 +239,44 @@ communication, end-to-end protection and mode-management features using only
 the inputs that existed before the customer test, **without** the ticket list,
 and count how many of the nineteen scenarios appear as cases. The 12 October
 cross-feature run cannot answer that, because it was given the tickets.
+
+## 10. Fifth round — QA validation of two features (2026-10-30)
+
+**Source:** QA's validity columns in the Actuator Data and Motor Control
+SWE.6 workbooks — four cases `Invalid`, eight `Question`, none in CAN — as
+consolidated by the project lead in "QA Feedback for Test Case Generation
+Skill" (kept beside this file, not committed: it names project requirement IDs
+and values). The SWE.5 runs drew no rejections.
+
+### 10.1 What the generated cases showed
+
+The four rejections and eight questions were re-read in the workbooks before
+writing rules, with two results that differ from the consolidated document:
+
+| Finding | Document's root cause | What the workbook shows |
+|---|---|---|
+| F4, direction change through IDLE | the PWM channel values and the state signal were not checked | They **were** checked — all four channels at zero and the state signal at zero — inside one 90-word result sentence. The reviewer could not find them. The defect is one compound result line, not a missing check. |
+| F5–F9, "× 48" and "R16 / R13" | expected values in a foreign unit, symbolic placeholders | Already corrected in the workbooks by round 3 (§8): the cases now read `× 4800 / 100 ± 48 ticks (decimal, e.g. 50 % = 2400)` and `16000 / 13000`, `5000 / 4000`. The QA comments predate that fix. |
+
+F1, F2/F3, F10/F11 and F12 are as the document describes.
+
+### 10.2 Changes made
+
+| # | Rule (document numbering) | Where |
+|---|---|---|
+| R1 | An engineer or QA answer overrides a criterion step; the step is dropped, the conflict goes to `Requirements Hygiene`; a step the run's own Open Point doubts never stays in a case presented as valid | patterns §1.1; §12 finding types; self-check 37; no-fabrication validity rule |
+| R2 | Every parameter an expected result rests on has a provenance step — read, set, or fixed-in-build with source — and a Phase-1 **parameter table**; an "inaccessible" verdict applies to every case using the parameter | patterns §3 (before §3.1); SKILL Step 4.4; self-check 38; no-fabrication validity rule |
+| R3 | **One observable per result line** (sub-numbered `2a`, `2b`…; no range expressions); a named state is followed by its defining outputs as their own lines. The round-3 "state outputs" rule stands; this round fixes how the checks are written | patterns §7; self-check 39 |
+| R4 | The requirement's unit first, raw or converted form after it with the derivation | patterns §7 (strengthens the round-3 formula rule) |
+| R5 | No symbolic placeholders | already in force since round 3 (§8, self-check 29); no change |
+| R6a | A bound borrowed from another requirement or parameter names its source **and direction inline** in the result | patterns §7; self-check 39 |
+| R6b | An error-guessing line in the criterion is a Phase-1 question with the criterion's expectation as proposal; unconfirmed → `isValid = No` with a `Decision` Open Point. **Deviation from the document:** not written into `atcRemark`, which carries the software level (§8) | patterns §1.1; §12; self-check 40; no-fabrication validity rule |
+
+### 10.3 For the requirement owners (project side)
+
+The document's four input findings — a criterion naming a stimulus that
+cannot produce the value, a criterion whose error-guessing expectation QA
+disputes, criteria resting on a parameter the A2L does not expose, and
+calibrations with no documented scaling — are exactly the finding types the
+new `Requirements Hygiene` sheet (§9, patterns §12) now reports with an owner.
+They are tracked in the project repository, not here.

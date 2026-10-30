@@ -93,6 +93,35 @@ It is an input, not decoration, exactly as on the architecture side
   pass criterion derived from the requirement text", so the gap goes back to
   the requirement owner. This is not a Phase-1 question: it is common, and a
   question per requirement would bury the real ones.
+- **An engineer or QA answer overrides it.** Where a Phase-1 answer (or a
+  validity reason on a re-run) contradicts a step the criterion prescribes —
+  the stimulus it names does not produce the behaviour, the value it names
+  cannot occur — the **answer wins**: the criterion-derived step is dropped
+  from the case, the case is built on the answer, and the conflict goes to the
+  `Requirements Hygiene` sheet (§12) and Open Points as `Input hygiene` for
+  the requirement owner, quoting both. Never keep both readings — a separate
+  case for the answer *and* the contradicted step in the original case — and
+  never leave a step the run's **own** Open Point doubts in a case presented
+  as valid: either the step goes, or the case is `isValid = No` naming that
+  Open Point. *(Observed: the criterion said "set an out-of-range angle and
+  read 4095"; the Phase-1 answer said 4095 appears only when the sensor loses
+  its magnet. The run wrote the magnet-loss case, kept the out-of-range step
+  in the range case, and doubted that step in an Open Point. QA rejected the
+  case.)*
+- **An error-guessing line in the criterion is an assumption, not a pass
+  criterion.** Criteria sometimes end with an expectation that no requirement
+  text or specification states ("reset to Init → Intermediate to be sent").
+  Such an expectation is raised as a Phase-1 **question** whose proposal is
+  the criterion's expectation, so the engineer confirms or corrects it before
+  it decides pass or fail. Confirmed → the case is written to it, the
+  confirmation recorded (workflow-discipline §4), `atsTestDesignTechnique`
+  carries `ErrorGuessing`. Unanswered → the case is generated with the
+  criterion's expectation, `isValid = No` ("expected result rests on an
+  unconfirmed error-guessing assumption, Q-nn") and an Open Point of category
+  `Decision`. `atcRemark` is not the place for it: it carries the software
+  level (§8). *(Observed: an Init-during-replacement case made "Intermediate
+  stays" the pass criterion straight from the error-guessing line; QA
+  expected the actuator to return to its position.)*
 
 Typos and case vary ("wehther", "CHnage") — match on meaning, and never copy a
 misspelling into a generated case.
@@ -157,6 +186,31 @@ operator read the case, not the DBC.
 signal or variable, say which it is — "message `<Msg>`", "signal `<Sig>` in
 message `<Msg>`", "XCP variable `<Var>`" — so nobody has to guess what a bare
 identifier refers to.
+
+**Every parameter a case depends on states where its value comes from.** A
+calibration or timing parameter that an expected result rests on — a recovery
+time, a debounce, a limit, a threshold — is established in the preconditions
+in one of three ways, and the step says which:
+
+- **read** — `Verify XCP variable <Var> = <value> (<Param>, SW_Param-n)` /
+  a DID read-back, where the A2L or the DiagSpec exposes it;
+- **set** — `Write XCP variable <Var> = <value>`, then the read-back check,
+  where a writable item exists in the catalogue (§3.2);
+- **fixed** — a precondition stating `<Param> = <value> (<source>) is fixed
+  in this SW build and not readable on the bench`, where neither exists.
+
+A parameter with none of the three — its value is not in Signals &
+Parameters, the A2L, the DiagSpec or a specification — leaves the case
+`isValid = No` naming the parameter. Keep a **parameter table** in the Phase-1
+analysis: parameter, value and source, means (read / set / fixed / none),
+every case that uses it. A verdict reached for one requirement ("not in the
+A2L, cannot be set") applies to **every** case in the table that uses the
+parameter, in this run and in the cache for later ones — never to the one
+requirement where it was first noticed. *(Observed: two cases built a 400 ms
+window on a recovery-time parameter with no step saying where the 400 ms came
+from, while an Open Point for a third requirement had already concluded the
+same parameter was not in the A2L. QA rejected both: "how are you setting it,
+and where".)*
 
 ### 3.1 Reference specifications
 
@@ -374,6 +428,22 @@ to bottom.
   case passes only when every result holds. No placeholder result (`-`) and no
   separate pass/fail marker. An action with nothing to check is either a
   precondition or part of the next action.
+- **One observable per result line.** Where one action has several things to
+  check, the result is a numbered list of sub-items — `2a`, `2b`, `2c` — each
+  checking **one** item with its value, in the order they occur. Never a
+  single sentence that checks a state, a signal and four variables at once,
+  and never a range expression (`channels 0 .. 3 = 0`): each channel is its
+  own line with its own value. A reviewer who cannot find the value in the
+  result marks the case invalid even when the check is there. *(Observed: a
+  direction-change case checked the idle state, the state signal and all four
+  PWM channels at zero in one 90-word result; QA rejected it as "channel
+  values not mentioned".)*
+- **A state is asserted by its defining outputs, listed.** When a result
+  checks that the system is in a named state (idle, stop, mute), the outputs
+  that define that state in the feature's requirements follow as their own
+  sub-items — the same checks the sibling case for the defining requirement
+  uses — and that requirement joins `Requirement ID` (merged requirements,
+  below).
 - `atcPostconditions` — numbered steps that **restore the baseline** from the
   preconditions **and verify it**, the same way.
 - Two test cases distinguishable only by title are redundant — merge them; the
@@ -387,6 +457,12 @@ to bottom.
   raw value R, then write R × 5 / 16"). Where the scaling that would give the
   number is unknown, it is a Phase-1 question (§3); unanswered, the case
   keeps a marked placeholder and is `isValid = No`.
+- **The requirement's unit comes first.** An expected value is stated in the
+  unit the requirement uses — percent, volts, degrees, milliseconds — and only
+  then, where the bench reads something else, in the raw or converted form
+  with its derivation: `CH0 = DutyCyc % (raw counts = DutyCyc % × 4800 / 100,
+  since 100 % = 4800 counts; e.g. 50 % = 2400)`. A result that leads with the
+  converted form reads as a different quantity to the reviewer.
 - **A derived expected value is written as its formula, with units and a
   worked example.** When the expected value follows from another observed
   value through a scaling, write the whole relation in decimal with its
@@ -453,6 +529,15 @@ one observable item, with its kind and the expected value:
   reasonable. Where no input gives the time, the result checks the end state
   ("changes to `<value>`") without a window, and the missing time is an Open
   Point.
+- **A borrowed bound names its source in the result itself.** When the time
+  or limit in a result comes from a requirement or parameter **other than the
+  one the case traces to**, the result says so inline — `within 400 ms
+  (tRecoverPosition, SW_Param-60, via SW_Requ-93)` — not only in
+  `Traceability`, and states whether it is an upper bound, a lower bound or an
+  exact value. A bare "less than 400 ms" borrowed from a neighbouring
+  requirement reads as the case's own claim, and the reviewer asks where it
+  came from. Where the borrowed bound is only implied by the neighbouring
+  requirement, it is a Phase-1 question with the bound as the proposal.
 - **The observation must be faster than the timing it checks.** Compare
   every timing a requirement states (one task cycle, a slope per ms, a
   window) with the fastest observation the bench offers for that item — the
@@ -657,6 +742,15 @@ under `Input hygiene`. Check, every run:
   reported.
 - **No verification criterion** (§1.1) — reported here as before, one row per
   requirement.
+- **Criterion contradicted by the bench or by an answer** (§1.1) — a
+  criterion step whose stimulus or value an engineer or QA answer says cannot
+  occur; the case follows the answer and the owner rewrites the criterion.
+- **Criterion rests on a parameter the bench cannot reach** (§3, parameter
+  provenance) — a criterion that says "start timer X" or "set limit Y" where
+  X or Y is in no A2L, DiagSpec or writable item; owner decision between an
+  A2L entry and moving the requirement to another test level.
+- **Criterion carries an unconfirmed error-guessing expectation** (§1.1) —
+  reported with the engineer's confirmation or correction once given.
 
 Each row names an **owner** — requirements engineer, system engineer,
 architect, database owner — so the sheet can be split and passed on without
