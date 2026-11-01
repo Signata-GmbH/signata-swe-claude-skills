@@ -28,7 +28,7 @@ write, so engineers stop translating reviewed test cases into scripts by hand:
 | P-05 task and period checked against the OS configuration (`docs.os_config`) | Timing checks in a script need the configured period, not only the intended one |
 | Test environment description and the bench check (`docs.test_environment`) | What the bench can stimulate and observe |
 | Communication database for SWE.6 (`docs.comm_database`) | Exact signal and message names, encoding, cycle times, timeouts |
-| `isValid = No` and Open Points on cases that cannot run as written | No script is generated for a case already known not to run |
+| SWE.5: `isValid = No` on cases that cannot run as written; SWE.6: a `Notes` entry starting `BLOCKED - ` (the QA columns are QA's only) | No script is generated for a case already known not to run |
 
 ## 3. Ground rules already decided
 

@@ -13,7 +13,10 @@
   existing does not license writing `Rte_Write_P_Y_Y`).
 - Invent a numeric value, threshold, tolerance, or step size. Where a
   requirement states a limit but no parameter backs it with a resolution, put
-  the requirement on Open Points rather than inventing a step size.
+  the requirement on Open Points rather than inventing a step size. (The
+  value a blocked SWE.6 case *assumes* is not an invention: it is the
+  recorded Phase-1 proposal or a supporting specification's value, declared
+  as an assumption in `Notes` — qualification-test-patterns.md §13.)
 - Invent a test procedure. Behaviour no supplied input describes — a state
   machine, an initialisation sequence, a mode transition, a wake-up or
   shut-down order — is a Phase-1 question or an Open Point, never a procedure
@@ -27,9 +30,13 @@
   it.
 - Set `atsState` to `agreed` — that is a post-review value only a human sets.
 - Write `Yes` in a validity column (below) — nothing was built, flashed or
-  executed, so nothing is known to work.
+  executed, so nothing is known to work. **qualification-test writes nothing
+  at all there** — not `Yes`, not `No`, not `Question`, not a reason.
 - Change a validity value or reason QA entered — on a re-run, QA's `Yes`, `No`,
-  `Question` and reasons stay as QA left them (workflow-discipline.md §8).
+  `Question` and reasons stay as QA left them (workflow-discipline.md §8). The
+  one exception, qualification-test only: a case whose text the run changed
+  has both cells **cleared** for re-review, after the old verdict is copied to
+  `Traceability` and `last_run.review` — never rewritten.
 - Attribute an answer to someone who did not give it. "QA confirmed" means QA
   wrote it in the workbook or the engineer said QA agreed; a value the
   engineer picked from an AI proposal is "engineer, accepting the AI proposal"
@@ -62,7 +69,22 @@ Every generated workbook includes a line stating plainly:
 > *"Draft test cases by inspection only — not entered into DOORS, not executed,
 > no coverage claimed."*
 
-## The validity column (`isValid`, when configured)
+## The validity columns — qualification-test: QA's only
+
+In a SWE.6 workbook, `isValid` and `Reason for Invalid` (spelled `isValid?` /
+`Reason for not Valid` in some workbooks) belong to the **QA engineer
+only**. The skill leaves both cells **empty on every row, always** — also on a
+case it knows cannot run yet. That case is still written in full and says
+what holds it back in its `Notes` cell, starting `BLOCKED - `
+(qualification-test-patterns.md §13). "Blocked" names what is missing;
+whether the case is valid is QA's verdict.
+
+On a re-run, QA's verdict is kept on every case whose text did not change and
+cleared on every case whose text did (workflow-discipline.md §8). State the
+number of blocked cases per category in the run summary; read across runs,
+that count is the grounding score.
+
+## The validity column — integration-test (`isValid`, when configured)
 
 Where the config declares the validity columns (output-format.md, reference
 columns), `isValid` says whether a case can be executed **as written** — and
@@ -70,11 +92,10 @@ authoring by inspection can only ever establish that it **cannot**:
 
 - **`No`** — only where you *know* the case cannot run as written: a symbol,
   breakpoint, observed variable or expected value is still a placeholder; a
-  parameter the result rests on has no stated provenance
-  (qualification-test-patterns §3); an expected result rests on an
-  unconfirmed error-guessing assumption, or on a step the run's own Open
-  Points doubt (§1.1). `Reason for Invalid` names the missing or doubted
-  item, the file or answer that would resolve it, and the Open Point number.
+  means the bench lacks (workflow-discipline.md §4); an expected result rests
+  on a step the run's own Open Points doubt. `Reason for Invalid` names the
+  missing or doubted item, the file or answer that would resolve it, and the
+  Open Point number.
 - **blank** — every other case. That is the reviewer's verdict to give.
 - **`Yes`** — **never**.
 - **`Question`** — **never**. It is QA's value for "I cannot judge this case

@@ -393,6 +393,26 @@ the projected count for each. **Mirroring** (off by default) adds a second copy
 of each interface under the peer's section as `<Writer> to <Reader>`, with
 primary vs mirror marked in `Traceability`.
 
+**SWE.6 review columns: QA's verdict, the generator's notes.** In a
+`qualification-test` workbook the generator never writes a verdict. The
+`Test Cases` sheet ends like this:
+
+| Column | Who writes it | Content |
+|---|---|---|
+| `isValid`, `Reason for Invalid` (or `isValid?`, `Reason for not Valid`) | **QA only** | always empty when generated; on a re-run, QA's verdict is kept on unchanged cases and cleared on cases whose text changed |
+| `Change vs v<N-1>` (re-run only) | generator | `Content updated in v<N> - re-review`, `New in v<N> - review`, or empty when unchanged |
+| `Notes` (last) | generator | empty when the case can run; otherwise one plain-language paragraph: `BLOCKED - <category>. <what the test does>. <what is missing (OP/Q/CID id)>. Action: <who delivers what>. QA: <what to review now>.` |
+
+The five categories are `needs clarification`, `missing test equipment`,
+`bench capability not confirmed`, `missing test method` and `two inputs
+contradict each other`. A blocked case is still written in full, with any
+assumed value named in its note, so QA can review the logic before the
+missing item arrives. A read-back check on the written file fails the run if
+any QA cell was filled by the generator or a note does not start
+`BLOCKED - `. Rules: `_shared/testspec/qualification-test-patterns.md` §13,
+example rows in `output-format.md`. `integration-test` (SWE.5) is unchanged:
+it still marks `isValid = No` on cases that cannot run as written.
+
 **v1 scope is Excel-only.** A real vTestStudio project folder also holds `.vtt`
 test tables and `.vtsoproj`/CAPL automation — generating or updating those is an
 explicit **v2**, not attempted here. Two v1 inputs exist mainly to prepare for
@@ -429,6 +449,7 @@ for a module with no RTE symbols to work from.
 | 17 | **SWE.5 cases are designed from the architecture only — the source code is never read** (2026-10-30) | Engineering writes integration test cases from the architecture documents, and ASPICE SWE.5 / ISO 26262-6 define integration testing as verifying the architectural design. The earlier practice quoted breakpoint lines from `.c` files at a pinned revision, treated a run without code as "degraded", and let the code win spelling disputes against the architecture — which couples cases to one revision and inverts the authority. Now every breakpoint is an RTE or runnable symbol named with its module, from the ARXML (the design model) and the RTE headers generated from it; values are described by role (the argument of `Rte_Write`, the out-parameter of `Rte_Read`); the OS configuration and the debug build are no longer inputs; there is no degraded mode. |
 | 18 | **SWE.6 adds scenario families, database-driven timing cases, spec-governed features and a requirements-hygiene sheet** (2026-10-30) | Nineteen customer HiL findings on one release were analysed: none would have been caught by the integration-test pattern, twelve were start-up, suppression-exit, fault-during-motion or repeated-request *sequences* that requirement-by-requirement cases had not driven, four were timing measurements the bus database already parameterises, and six traced to requirements that were unreleased, contradictory or changed. `qualification-test` now checks every feature against eight scenario families at Phase 1, generates cycle-time / fast-cycle / payload-coherency / timeout cases from the database attributes, treats the OEM specification as mandatory for features it governs (E2E, NM, diagnostics), and reports input defects on a `Requirements Hygiene` sheet addressed to their owners. |
 | 19 | **SWE.5 gains an application ↔ basic-software pattern (P-10)** (2026-10-30) | Four of the nineteen customer findings were defects at the hand-off between an application module and the communication stack — a frame sent before all its signals were written, two error flags in one frame, a message counter reset twice at start-up, a reception timeout taken from the module's own cycle — and the RTE value-pass-through pattern cannot see them. P-10 applies the stimulus with the debugger at the module's RTE call and observes the bus: coherent transmission of a signal group, transmission trigger and repetition, start-up and mode switch, reception timeout (indicated at the configured time and **not earlier**), E2E counter and CRC. Expected values come from the ARXML data mapping, I-PDU timing, `ALIVE-TIMEOUT` and E2E entries and from the communication database's message attributes — design artefacts, so the architecture-only rule (decision 17) holds. |
+| 20 | **SWE.6: the QA columns are QA's only; blocked cases are explained in `Notes`** (2026-11-01) | The generator wrote `isValid = No` on cases it knew could not run yet, so QA's verdict column mixed two authors and two meanings — "this case is wrong" and "this case is fine but the bench, a file or an answer is missing". QA now owns `isValid` / `Reason for Invalid` outright. The generator states the second meaning in a separate `Notes` column with a fixed, plain-language structure and one of five categories, readable by someone without automotive background. It keeps every blocked case complete, so the logic can be reviewed before execution is possible. On a re-run it marks changed and new cases in `Change vs v<N-1>` and keeps QA's verdict only where the case text is unchanged. |
 
 ---
 

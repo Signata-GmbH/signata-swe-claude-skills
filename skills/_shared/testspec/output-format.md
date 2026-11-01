@@ -22,19 +22,26 @@ confirm which skill is running before writing the header row.
 ## Reference columns (beside the 21, never imported)
 
 Columns DOORS never imports: an ID column that links each row to what it
-tests — **always written** — and the validity columns for QA's validation,
+tests — **always written** — the validity columns for QA's validation,
 declared once in the running skill's config block
 (`integration_test.reference_columns` or `qualification_test.reference_columns`
-in `ai_test_project.yaml`) instead of re-requested per run:
+in `ai_test_project.yaml`) instead of re-requested per run, and — SWE.6 only —
+a change column on a re-run and a `Notes` column, always last:
 
 | Key | Column(s) | Position | Content |
 |---|---|---|---|
 | — always (SWE.5) | `Architecture Requirement ID` | **before** the 21 (column A) | the ID of the architecture object the row traces to — the same ID as in `Traceability`; empty on a heading row that has no object of its own |
 | — always (SWE.6) | `Requirement ID` | **before** the 21 (column A) | the ID of the requirement the row traces to — every ID, separated by newlines, for a merged case; empty on a heading row |
-| `validity_review` | `isValid`, `Reason for Invalid` | **after** the 21 | the validity policy in [no-fabrication.md](no-fabrication.md); QA's verdict, read back on a re-run (workflow-discipline.md §8). `isValid` carries an Excel drop-down (data validation, list `Yes,No,Question`) on every case row, so QA picks a value instead of typing one |
+| `validity_review` (SWE.5) | `isValid`, `Reason for Invalid` | **after** the 21 | the validity policy in [no-fabrication.md](no-fabrication.md); QA's verdict, read back on a re-run (workflow-discipline.md §8). `isValid` carries an Excel drop-down (data validation, list `Yes,No,Question`) on every case row, so QA picks a value instead of typing one |
+| `validity_review` (SWE.6) | `isValid`, `Reason for Invalid` — or `isValid?`, `Reason for not Valid` where the previous workbook spells them so (keep its spelling) | **after** the 21 | **QA's columns only. The skill leaves both cells empty on every row, always** (no-fabrication.md). Same drop-down on `isValid`. On a re-run, QA's verdict is kept on a case whose text did not change and cleared on one whose text did (workflow-discipline.md §8) |
+| — re-run only (SWE.6) | `Change vs v<N-1>` | after the QA columns, before `Notes` | on a run that writes version N of a workbook whose version N-1 exists: `Content updated in v<N> - re-review` on a case whose text changed, `New in v<N> - review` on a new case, **empty** on an unchanged one (workflow-discipline.md §8). Wrap text, width ~35 |
+| — always (SWE.6) | `Notes` | **last** | empty on a case that can run; on a case that is complete but cannot be executed yet, one paragraph starting `BLOCKED - <category>.` in the fixed structure of qualification-test-patterns.md §13. Never on a heading row. Wrap text, width ~70 |
 
-The 21 attributes stay **contiguous and in schema order** between them. State
-the import consequence once — in the run summary, and as one Open Points row —
+The 21 attributes stay **contiguous and in schema order** between them. The
+full SWE.6 order is therefore `Requirement ID` · the 21 · `isValid` ·
+`Reason for Invalid` · `Change vs v<N-1>` (re-run only) · `Notes`; without
+`validity_review`, the two QA columns are absent and the rest keep their
+order. State the import consequence once — in the run summary, and as one Open Points row —
 rather than leaving the reviewer to discover it: *a name-based DOORS import
 filter is unaffected; a position-based one must skip the leading column and
 drop the trailing ones.*
@@ -76,7 +83,8 @@ skill-specific — see `integration-test-patterns.md` / `qualification-test-patt
 ## The 3-sheet workbook contract
 
 **Sheet 1 — `Test Cases`.** The 21 columns above, in the order for the running
-skill — framed by the configured reference columns, if any, and nothing else.
+skill — framed by the configured reference columns, if any, and, for SWE.6,
+followed by `Change vs v<N-1>` (re-run only) and `Notes`; nothing else.
 
 **Sheet 2 — `Traceability`.** One row per generated test case: proposed title,
 the requirement/architecture object it covers (and, for SWE.6, which clause of
@@ -98,7 +106,8 @@ catalogue row (`CID`) behind each means, the **scenario family** the case
 belongs to (qualification-test-patterns.md §10) and, for a timing case, the
 database attribute it measures with its tolerance source (§11), and any
 fault-injection variable named from the code — marked `from code`, with file
-and line (§0). The engineer creates the DOORS links by hand from this sheet —
+and line (§0), and, on a re-run, the QA verdict a changed case had in the
+previous version (value and reason, verbatim) before it was cleared. The engineer creates the DOORS links by hand from this sheet —
 it must be complete and readable on its own.
 
 **A case with no object of its own.** A pattern sometimes requires a case that
@@ -130,10 +139,80 @@ Observed: cell `E4` of a returned, engineer-validated workbook had become an
 array formula displaying `#NAME?`, silently destroying the preconditions of
 that test case.
 
+## SWE.6 trailing columns — example
+
+Three case rows of a version-2 workbook (the 21 attributes before them not
+shown):
+
+| `Object Text` | `isValid` | `Reason for Invalid` | `Change vs v1` | `Notes` |
+|---|---|---|---|---|
+| `TC_ActData_PosReport_in_range` | `Yes` *(QA's, kept: text unchanged)* | | | |
+| `TC_ActData_Recovery_after_voltage_drop` | *(cleared: text changed)* | *(cleared)* | `Content updated in v2 - re-review` | `BLOCKED - needs clarification. The test checks that the actuator is back at its rest position within the recovery time after a voltage drop. No document gives the recovery time; the case assumes 400 ms, the value proposed in the question list (Q-12, OP-04). Action: the requirements engineer confirms or corrects the recovery time. QA: review the logic now; execution waits for the confirmed value, and the time in result 3 changes if it differs.` |
+| `TC_ActData_MotorSupply_off_while_moving` | | | `New in v2 - review` | `BLOCKED - bench capability not confirmed. The test switches off the motor supply while the actuator is moving and checks that the control unit reports the fault in signal MotCtrl_ErrSt. Nobody has confirmed that the test bench can switch the motor supply off on command (catalogue CID-14, OP-07). Action: the bench owner names the panel control or device that switches the motor supply. QA: review the steps and expected results now; execution waits for the bench confirmation.` |
+
+On a first run there is no `Change vs` column and every QA cell is empty.
+
+## Final read-back check (qualification-test, hard)
+
+After writing the workbook, **re-open the written file** and run this check
+on the `Test Cases` sheet. It is a gate, not a checklist line: a failure is
+fixed and the check run again — never listed as an Open Point, never
+reported as passed without running it. `prev` holds the QA cells of the
+previous version, keyed by case title, read **before** the workbook was
+overwritten (`{}` on a first run, so every QA cell must be empty).
+
+```python
+from openpyxl import load_workbook
+
+QA_HEADERS = {"isValid", "isValid?", "Reason for Invalid", "Reason for not Valid"}
+CATEGORIES = ("needs clarification", "missing test equipment",
+              "bench capability not confirmed", "missing test method",
+              "two inputs contradict each other")
+
+def check(path, prev, version):
+    ws = load_workbook(path)["Test Cases"]
+    head = [c.value for c in ws[1]]
+    col = {h: i for i, h in enumerate(head)}
+    fail = []
+    if head[-1] != "Notes":
+        fail.append("Notes is not the last column")
+    qa = [col[h] for h in head if h in QA_HEADERS]
+    chg = next((col[h] for h in head if str(h or "").startswith("Change vs v")), None)
+    allowed_chg = {None, "", f"Content updated in v{version} - re-review",
+                   f"New in v{version} - review"}
+    for r, row in enumerate(ws.iter_rows(min_row=2, values_only=True), start=2):
+        title = row[col["Object Text"]] or row[col["Object Heading"]]
+        changed = chg is not None and row[chg] not in (None, "")
+        if chg is not None and row[chg] not in allowed_chg:
+            fail.append(f"row {r}: change cell {row[chg]!r}")
+        for i in qa:
+            if row[i] in (None, ""):
+                continue
+            if changed or prev.get(title, {}).get(head[i]) != row[i]:
+                fail.append(f"row {r}: QA cell {head[i]!r} written by the generator")
+        note = row[col["Notes"]]
+        if note in (None, ""):
+            continue
+        note = str(note)
+        if row[col["atsType"]] == "no testcase":
+            fail.append(f"row {r}: Notes on a heading row")
+        if not any(note.startswith(f"BLOCKED - {c}.") for c in CATEGORIES):
+            fail.append(f"row {r}: Notes does not start with 'BLOCKED - <category>.'")
+        elif " Action: " not in note or " QA: " not in note:
+            fail.append(f"row {r}: Notes lacks 'Action:' or 'QA:'")
+    return fail   # must be [] before the workbook is final
+```
+
+A QA cell may be non-empty only where QA wrote it in the previous version
+**and** the case's text did not change. Report the result — rows checked,
+failures (none) — in the run summary.
+
 ## Output location & filename
 
 - `integration-test` → `20_AI/IntegrationTest/<MODULE>_SWE5_TestCases.xlsx`
 - `qualification-test` → `20_AI/QualificationTest/<FEATURE_SLUG>_SWE6_TestCases.xlsx`
 
 On a re-run (workflow-discipline §8), update the existing workbook in place per
-the delta rather than creating a new dated copy.
+the delta rather than creating a new dated copy. For qualification-test the
+version number N lives in the manifest (`last_run.output.version`); a
+previous workbook with no version recorded is v1.

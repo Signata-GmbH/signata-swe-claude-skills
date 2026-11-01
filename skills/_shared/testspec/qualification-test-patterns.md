@@ -102,8 +102,8 @@ It is an input, not decoration, exactly as on the architecture side
   the requirement owner, quoting both. Never keep both readings — a separate
   case for the answer *and* the contradicted step in the original case — and
   never leave a step the run's **own** Open Point doubts in a case presented
-  as valid: either the step goes, or the case is `isValid = No` naming that
-  Open Point. *(Observed: the criterion said "set an out-of-range angle and
+  as runnable: either the step goes, or the case is blocked — `two inputs
+  contradict each other` — with a `Notes` entry naming that Open Point (§13). *(Observed: the criterion said "set an out-of-range angle and
   read 4095"; the Phase-1 answer said 4095 appears only when the sensor loses
   its magnet. The run wrote the magnet-loss case, kept the out-of-range step
   in the range case, and doubted that step in an Open Point. QA rejected the
@@ -116,9 +116,9 @@ It is an input, not decoration, exactly as on the architecture side
   it decides pass or fail. Confirmed → the case is written to it, the
   confirmation recorded (workflow-discipline §4), `atsTestDesignTechnique`
   carries `ErrorGuessing`. Unanswered → the case is generated with the
-  criterion's expectation, `isValid = No` ("expected result rests on an
-  unconfirmed error-guessing assumption, Q-nn") and an Open Point of category
-  `Decision`. `atcRemark` is not the place for it: it carries the software
+  criterion's expectation as its assumption, blocked — `needs
+  clarification` — with a `Notes` entry naming the question (§13), and an
+  Open Point of category `Decision`. `atcRemark` is not the place for it: it carries the software
   level (§8). *(Observed: an Init-during-replacement case made "Intermediate
   stays" the pass criterion straight from the error-guessing line; QA
   expected the actuator to return to its position.)*
@@ -160,8 +160,9 @@ related item where one exists (the bus signal carrying the same quantity, a
 parameter's specified default compared against the same variable's other
 form). Never propose reading the raw value on the bench and scaling it there:
 it puts a symbol for an unknown number into the case (§7) and a "Yes" to it
-settles nothing (workflow-discipline §5). Unanswered → the value stays a
-placeholder and the case is `isValid = No`. *(Observed: "R16 × 5 / 16" —
+settles nothing (workflow-discipline §5). Unanswered → the case is written
+with the proposed scaling's numbers and blocked — `needs clarification` —
+with the scaling stated as an assumption in `Notes` (§13). *(Observed: "R16 × 5 / 16" —
 "note the raw value for 16 V, then write 5/16 of it" — was accepted at
 Phase 1 and then returned by QA as "What is R16?".)*
 
@@ -201,7 +202,8 @@ in one of three ways, and the step says which:
 
 A parameter with none of the three — its value is not in Signals &
 Parameters, the A2L, the DiagSpec or a specification — leaves the case
-`isValid = No` naming the parameter. Keep a **parameter table** in the Phase-1
+blocked — `needs clarification` — with the value it assumes and the
+parameter named in `Notes` (§13). Keep a **parameter table** in the Phase-1
 analysis: parameter, value and source, means (read / set / fixed / none),
 every case that uses it. A verdict reached for one requirement ("not in the
 A2L, cannot be set") applies to **every** case in the table that uses the
@@ -272,7 +274,9 @@ every case still traces to a requirement.
   case text stays in the workbook's language; test IDs, signal names and
   section titles are quoted as the document writes them.
 - **Not available** (`N/A` recorded) → every requirement that depends on it is
-  listed in Open Points with the document named, and gets no case with a
+  listed in Open Points with the document named. Its case is still written,
+  with the values the Phase-1 proposals give, and blocked — `needs
+  clarification` — naming the document in `Notes` (§13); never a case with a
   placeholder pass criterion.
 
 ### 3.2 Stimulus and observation catalogue (Phase 1)
@@ -321,8 +325,10 @@ Set by | Read in | Manual steps | Series SW | Debug SW | Answer | Status`
   and asks only about new items. A cached row whose item is not in this run's
   inputs any more is reported, not deleted.
 
-An item whose means stays unconfirmed is not used: the case that needs it is an
-Open Point.
+An item whose means stays unconfirmed gets no invented name: the case that
+needs it is still written, says the step in plain words without a means name,
+and is blocked — `bench capability not confirmed` — naming the `CID` in
+`Notes` (§13).
 
 ## 4. Structure
 
@@ -456,7 +462,8 @@ to bottom.
   symbol for a value to be noted on the bench and reused later ("note the
   raw value R, then write R × 5 / 16"). Where the scaling that would give the
   number is unknown, it is a Phase-1 question (§3); unanswered, the case
-  keeps a marked placeholder and is `isValid = No`.
+  uses the proposed scaling's number and is blocked, with the assumption in
+  `Notes` (§13) — never a placeholder.
 - **The requirement's unit comes first.** An expected value is stated in the
   unit the requirement uses — percent, volts, degrees, milliseconds — and only
   then, where the bench reads something else, in the raw or converted form
@@ -476,8 +483,9 @@ to bottom.
   at least one step of the coarser side — derived from the scalings, cited
   in `Traceability`. An exact match would fail on rounding alone.
 - **No remarks inside a step.** Open Point numbers, "to be confirmed", source
-  notes and explanations belong in `Open Points` and `Traceability`, never in
-  a precondition, action, result or postcondition.
+  notes and explanations belong in `Open Points` and `Traceability` — and,
+  for a blocked case, what holds it back in `Notes` (§13) — never in a
+  precondition, action, result or postcondition.
 
 **Every action names its means — in plain words.** The step is the manual
 instruction itself: the tool, panel or generator block and the control from
@@ -495,7 +503,8 @@ and no bracket tag:
 ```
 
 - **Never invent a panel, block or control name.** A means the catalogue has
-  not confirmed is not used; the case that needs it is an Open Point (§3.2).
+  not confirmed is described in plain words without a name, and the case is
+  blocked — `bench capability not confirmed` (§3.2, §13).
 - **Never write a state as an action.** "ECU is in normal mode" or "the fault is
   active" is not something an operator does. Either it is a precondition, or
   the action says how it is brought about (`Write XCP variable <Var> =
@@ -583,7 +592,7 @@ its clause and the result steps that check it.
 
 | Attribute | How to fill |
 |---|---|
-| `atcRemark` | `Series SW` or `Debug SW`, per the feature's entry in the Test Plan (`docs.test_plan`). Without a Test Plan — or with a feature it does not list — ask once, as a Phase-1 question, and record the answer in the manifest (`feature.test_software`) so later runs reuse it. Never guess it: a case meant for Series SW that relies on a Debug SW variable cannot run. Every item a case sets or reads must exist on that software (the catalogue's Series SW / Debug SW columns, §3.2); one that does not is an Open Point |
+| `atcRemark` | `Series SW` or `Debug SW`, per the feature's entry in the Test Plan (`docs.test_plan`). Without a Test Plan — or with a feature it does not list — ask once, as a Phase-1 question, and record the answer in the manifest (`feature.test_software`) so later runs reuse it. Never guess it: a case meant for Series SW that relies on a Debug SW variable cannot run. Every item a case sets or reads must exist on that software (the catalogue's Series SW / Debug SW columns, §3.2); one that does not is an Open Point, and the case is blocked — `needs clarification` (§13) |
 | `aFeature` | The target feature |
 | `atsClassification` | Per `attributes.classification_rule`, derived from the linked requirement's safety/security/regulatory/OBD attributes where the governing matrix defines that mapping — state your reasoning in Open Points whenever the case falls to error-severity judgement (A/B/C) rather than a rule-driven class |
 | `atsTestKind` | `Functional test` by default; the robustness/EMC wording for robustness cases; `Performance test` for timing/resource cases |
@@ -758,3 +767,105 @@ the test engineer rewriting it. A finding becomes a Phase-1 **question** only
 where it changes a case's value, and then it carries a concrete proposal that
 "Yes" accepts (workflow-discipline §5); otherwise it is a finding, and the case
 is written as the rules above say.
+
+## 13. Blocked cases and the `Notes` column
+
+A case is **blocked** when it is complete — preconditions, actions, results
+and postconditions an operator could run top to bottom — but cannot be
+executed yet, because something outside the workbook is missing or
+unconfirmed. Blocked cases are **written, never dropped**: every case that
+traces a requirement is on the `Test Cases` sheet, and what holds it back is
+said in its `Notes` cell (output-format.md, reference columns). The QA
+columns stay empty (no-fabrication.md): "blocked" is the generator's
+statement of what is missing, not a verdict on the case — that is QA's to
+give.
+
+**When a case is blocked, and its category.**
+
+| Category | When | Typical triggers |
+|---|---|---|
+| `needs clarification` | an input is ambiguous or missing a value | an A2L item without a scaling, unanswered (§3); a parameter with no provenance (§3, parameter provenance); an unconfirmed error-guessing expectation (§1.1); a value only a document marked `N/A` would give (§3.1); an item that exists only on the other software (§8) |
+| `missing test equipment` | a file, tool or sample is not delivered | the A2L, the communication database, the CANoe configuration, a flash file, a sample part or harness the case needs |
+| `bench capability not confirmed` | a means from the bench catalogue is unconfirmed | a `Catalogue` row (§3.2) still open, or answered without naming the panel, control or device |
+| `missing test method` | no one has said how to do a physical step | disconnecting a connector, shorting a line, blocking the actuator — no input or answer says how |
+| `two inputs contradict each other` | two inputs disagree and no answer has picked one | a criterion step the run's own Open Point doubts (§1.1); a value that differs between documents with no ruling (§12) |
+
+One category per note. Where several apply, use the one whose item the
+expected result rests on, and name the other items in the same note.
+
+**A blocked case is still complete.** Every step follows §7 — no placeholder,
+no "to be confirmed", no Open Point number inside a step. A value that is not
+confirmed is written as the number the case **assumes**, and the assumption
+is stated in `Notes`. The assumed value is the concrete AI proposal of the
+open Phase-1 question for that item (workflow-discipline §5), or the value a
+supporting specification states (§3) — never a number with no source. An
+item with neither is a Phase-1 question that was missed: ask it now
+(workflow-discipline §5, check the answers), never invent the value. A means
+the catalogue has not named is described in plain words without a name
+("switch off the motor supply"), never with an invented one (§3.2).
+
+Not blocked, and still an Open Point `Not covered`: a requirement no case can
+be written for without inventing its observable or its stimulus (§7, an
+internal state is not an observation), and one whose criterion rules the
+test level out (§1.1).
+
+**The note — one paragraph, fixed structure:**
+
+```
+BLOCKED - <category>. <What the test has to do, in one sentence.> <What is
+missing or unconfirmed, in plain words, with the catalogue / OP / Q id in
+brackets.> Action: <who has to deliver or confirm what>. QA: <what the
+reviewer should do now, e.g. review the logic; execution waits for ...>.
+```
+
+- It starts with `BLOCKED - ` exactly, then one of the five categories
+  verbatim, then a full stop.
+- **Written for a reader without automotive background.** Use the plain word
+  where one works; keep the exact signal, variable, panel and document names,
+  because the tester needs them.
+
+  | Instead of | Write |
+  |---|---|
+  | UDS service, `22` / `2E` / `31` request | diagnostic command (read data / write data / start routine) |
+  | NV block, NvM | memory block |
+  | HIL, HiL bench | test bench |
+  | DTC | stored fault code |
+  | ECU | control unit |
+  | DID / RID | diagnostic data item / diagnostic routine |
+  | XCP variable | variable `<Var>` (read with the measurement tool) |
+
+- An **assumed value** goes in the "missing" sentence: "The case assumes
+  <value>, the value proposed in the question list (Q-nn)".
+- **Refer, do not repeat.** The analysis behind the gap — the documents
+  compared, the values seen, the reasoning — is in `Traceability` and
+  `Open Points`; the note names the OP id instead of restating it.
+- `Action:` names a role (requirements engineer, bench owner, database owner,
+  test engineer, project lead), not a person, unless an input names one.
+- `QA:` says what the reviewer can do now and what execution waits for.
+- **Empty** on every case that can run, and on every heading row.
+
+Examples:
+
+```
+BLOCKED - bench capability not confirmed. The test switches off the motor
+supply while the actuator is moving and checks that the control unit reports
+the fault in signal MotCtrl_ErrSt. Nobody has confirmed that the test bench
+can switch the motor supply off on command (catalogue CID-14, OP-07).
+Action: the bench owner names the panel control or device that switches the
+motor supply. QA: review the steps and expected results now; execution waits
+for the bench confirmation.
+
+BLOCKED - needs clarification. The test checks that the actuator is back at
+its rest position within the recovery time after a voltage drop. No document
+gives the recovery time; the case assumes 400 ms, the value proposed in the
+question list (Q-12, OP-04). Action: the requirements engineer confirms or
+corrects the recovery time. QA: review the logic now; execution waits for the
+confirmed value, and the time in result 3 changes if it differs.
+
+BLOCKED - missing test equipment. The test sends the diagnostic command that
+reads the actuator position and checks the reply against signal
+PosActuator_Act. The variable list file (A2L) for the delivered software has
+not been supplied, so the variable used in precondition 2 cannot be looked up
+(OP-09). Action: the software integrator delivers the A2L for the release
+under test. QA: review the logic now; execution waits for the file.
+```

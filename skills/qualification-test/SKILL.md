@@ -116,8 +116,8 @@ Per qualification-test-patterns §1–§3 and workflow-discipline §1/§2/§4:
    concrete proposal (§3). The **parameter table**: every calibration or
    timing parameter the proposed cases rest on, its value and source, and
    how the bench establishes it — read, set, fixed-in-build, or none (→ the
-   cases using it are `isValid = No`); one verdict per parameter, applied to
-   every case (§3, parameter provenance). The **criterion conflicts**: every
+   cases using it are written blocked, §13); one verdict per parameter,
+   applied to every case (§3, parameter provenance). The **criterion conflicts**: every
    criterion step a Phase-1 answer or a run finding contradicts (the answer
    wins, the step is dropped), and every error-guessing expectation in a
    criterion, each as its own question with the criterion's expectation as
@@ -149,7 +149,9 @@ Per qualification-test-patterns §1–§3 and workflow-discipline §1/§2/§4:
    its scenario family or timing attribute, with each proposed merge of
    requirements (qualification-test-patterns §7) — including the states each
    case passes through, matched against the in-scope requirements that specify
-   those states' outputs.
+   those states' outputs, and — for a case that will be written blocked unless
+   a question or catalogue row is answered — its blocked category and that
+   QID/CID (qualification-test-patterns §13).
 11. **Row-count gate** (workflow-discipline §5) — the number of rows that
    table produces, heading and logical-parent rows included, as the last
    question.
@@ -180,7 +182,13 @@ scenario-family cases
 features) the DID/RID templates from
 [qualification-test-patterns.md](../_shared/testspec/qualification-test-patterns.md)
 §4–§11. Every symbol/value traced to a supplied input (workflow-discipline §4);
-an unresolved one goes to Open Points, never a guess. Every value a step
+an unresolved one goes to Open Points, never a guess. **Every case that traces
+a requirement is written, blocked or not** (qualification-test-patterns §13):
+a blocked case is complete — preconditions, actions, results, postconditions
+— uses the Phase-1 proposal for any unconfirmed value, and states that
+assumption and what holds it back in `Notes` (`BLOCKED - <category>. …`, in
+plain words). **The QA columns `isValid` / `Reason for Invalid` are never
+written** (no-fabrication.md). Every value a step
 writes or checks is a concrete number; a derived one is written as its formula
 with units and a worked example, with a tolerance where the two sides resolve
 differently (qualification-test-patterns §7). For a re-run, read QA's
@@ -189,23 +197,33 @@ case is reworked only after QA has accepted the reply — then run the
 three checks of workflow-discipline §8 — previous output gone or edited
 since, scope changed (→ regeneration, not a delta), layout-only (→ re-render,
 no analysis) — then apply the in-place diff: new → add, changed → update the
-mapped case in place, removed → flag.
+mapped case in place, removed → flag. The re-run writes version N: QA's
+verdict is kept on cases whose text did not change and cleared on those whose
+text did, and `Change vs v<N-1>` marks `Content updated in v<N> - re-review` /
+`New in v<N> - review` (workflow-discipline §8).
 
 ## Step 6 — Self-check & output
 
 Run the checklist in workflow-discipline §6; fix failures or list them as Open
 Points. Write the 3-sheet workbook per
 [output-format.md](../_shared/testspec/output-format.md) (Object Text before
-Object Heading for this skill), with the `Yes,No,Question` drop-down on
-`isValid`, to
-`20_AI/QualificationTest/<FEATURE_SLUG>_SWE6_TestCases.xlsx`. Print the
-workbook summary in chat plus the no-fabrication disclaimer.
+Object Heading for this skill) — columns `Requirement ID` · the 21 ·
+`isValid` · `Reason for Invalid` (empty, with the `Yes,No,Question`
+drop-down on `isValid`) · `Change vs v<N-1>` (re-run only) · `Notes` (last,
+wrap text, width ~70) — to
+`20_AI/QualificationTest/<FEATURE_SLUG>_SWE6_TestCases.xlsx`. Then re-open
+the written file and run the **final read-back check** of output-format.md
+(self-check 41): any QA cell the skill wrote, or a `Notes` cell not starting
+`BLOCKED - <category>.`, fails the run until fixed. Print the workbook summary
+in chat — including the blocked cases per category, the check result, and
+that the QA columns are left for QA — plus the no-fabrication disclaimer.
 
 ## Step 7 — Ledger, history & final commit
 
 Overwrite `last_run` in the manifest (workflow-discipline §8) — including
 `run_id`, `started`, `ended`, `timing`, the
-scope, the output path + hash, the validity values read, and the inputs
+scope, the output path, hash and version, QA's validity values as read
+(and which were cleared because the case text changed), and the inputs
 supplied but not read — and write the confirmed catalogue rows to
 `qualification_test.bench_catalogue` in the config, both through a
 comment-preserving YAML writer, append `run_end` to
