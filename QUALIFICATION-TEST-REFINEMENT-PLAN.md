@@ -12,8 +12,12 @@ branch `feat/swe5-arch-only-swe6-scenarios` (§9). A fifth round — the QA
 validation of the Actuator Data and Motor Control workbooks, consolidated in
 the project lead's "QA Feedback for Test Case Generation Skill" (30 October)
 — was implemented 2026-10-30 on branch `fix/swe6-qa-round5-2026-10` (§10).
-Next: re-run Actuator Data and Motor Control and compare against the twelve
-findings.
+Round 11 — QA columns are QA's only — is §11. Round 12 — requirements left
+without a case, found by comparing a project's second-stage runs with the
+manual SWE.6 module — was implemented 2026-11-01 on branch
+`fix/swe6-coverage-round12-2026-11` (§12).
+Next: re-run Actuator Data, Motor Control and CAN and check the coverage table
+against the requirements listed in §12.1.
 
 **Source:** the QA validation of a generated SWE.6 workbook for one CAN
 feature — 37 concrete cases accepted, 77 rejected. The detailed feedback is
@@ -301,3 +305,50 @@ the bench".
 **Deliberately not done:** `integration-test` (SWE.5) keeps writing
 `isValid = No`; the shared rules now say which skill each policy applies to.
 Moving SWE.5 to the same convention is a separate decision.
+
+## 12. No requirement leaves scope at classification (2026-11-01)
+
+**Source:** a project's second-stage runs (2026-11-01). In-scope requirements
+that got no generated case were compared afterwards with the manual SWE.6
+module. The requirement IDs and the comparison stay out of Git, as in §10:
+this repository is public (N5).
+
+### 12.1 Five causes
+
+| # | Cause | Where it showed | What the skill did |
+|---|---|---|---|
+| A | The observable is an internal value, reachable only by XCP on a symbol absent from the supplied A2L, or by a debugger | 3 Actuator Data requirements; 27 Motor Control controller-internal requirements (count as reported — the ID ranges in the evidence add up to 37; to be reconciled) | §7 "an internal state is not an observation" → Open Point, no case |
+| B | The requirement is a read-cycle or peripheral configuration | 14 Actuator Data requirements; 4 Motor Control requirements | classed as integration level by the skill, no case proposed |
+| C | The stimulus must be injected by writing a calibration (several inputs, one of them a hardware-ID voltage) | 3 Actuator Data requirements, plus the hardware-ID voltage | §0 allowed only fault-injection variable names |
+| D | The requirement delegates to a specification ("implemented according to `<doc>`") | 4 CAN requirements | classed as configuration review or "covered by the OEM package" |
+| E | `release.variants` excluded a second variant | 13 CAN requirements | dropped by the filter with no line saying so |
+
+None of them was visible at the row-count gate: it counts output rows, and a
+requirement with no row does not change the count the engineer confirms.
+
+### 12.2 Changes made
+
+| # | Change | Where |
+|---|---|---|
+| 1 | **No requirement leaves scope at classification.** Only the four filters — feature, testability, status, variant — remove a requirement (the variant filter is now explicit in §1); the attrition report names no other reason. Every in-scope requirement gets at least one proposed case and a written one, blocked where needed (§13). A doubt about the level or the observable goes to `Requirements Hygiene` as `possibly integration level` or `observable not on bench`, with an owner, beside the case. Removed: §1.1 "the criterion rules the test level out → no case", §2 "already covered → leave alone" (the split is now information only), §7 "no observable → Open Point", §13 "not blocked, still `Not covered`", §3.1 "covered by the OEM's own testing" question | patterns §1, §1.1, §2, §6, §7, §12, §13; workflow-discipline §5, §6 item 8; no-fabrication; output-format (Open Points `Not covered`) |
+| 2 | **Observation means by bench capability.** `qualification_test.debug_means`: `none` (default) / `xcp_varlist` / `xcp_and_debugger`; new optional `docs.variable_list` (map file, ELF symbol export, Debug-SW A2L). Under `xcp_varlist` any listed symbol is an XCP observable, scaling and data type asked at Phase 1; under `xcp_and_debugger` the catalogue kinds `breakpoint at symbol` (period or hit count, as a timing case, tolerance from an input or an Open Point) and `debugger variable`, on Debug-SW cases only. Symbols from the two lists only. §7 keeps "an internal state is not an observation"; its consequence is now a written case, blocked `bench capability not confirmed`, proposing the symbol | patterns §0, §3, §3.2, new §3.3, §7, §8, §11 (period at a symbol), §13; workflow-discipline §1.1; project-config §4.1, §4.2, §5; config template |
+| 3 | **Stimulus injection.** §0's name-only exception now covers any input the bench cannot drive physically (ADC voltage, sensor angle, hardware-ID pin, supply measurement), not only faults. Same rules: name only, in a variable list, marked `from code`, offered in the catalogue, no value or expected result from the code | patterns §0, §3.2 (`injection variable` kind), §6 (an injection variable is a settable source); SKILL intro and description |
+| 4 | **Spec-delegating requirements are expanded, not reviewed.** Registered document → cases from its observable rules (E2E counter, CRC, timeout, invalid-data reaction; NM states, timings, bit fields; development-message database: each message present with its cycle), traced to the requirement. Not registered → one blocked case per requirement, `missing test equipment`, naming the document, which is asked for at the gate. "Covered by the OEM test package" is never a reason to omit a case — a `Traceability` note at most | patterns new §3.4, §3.1; self-check 26 |
+| 5 | **Variant scope report** at the Phase-1 gate: per variant outside `release.variants`, the requirements it excluded, by ID, with one question each whether to include them; answers in `scope.included_variants`; included cases carry that variant in `aVariant` | patterns new §1.2; output-format `aVariant`; manifest template |
+| 6 | **Coverage gate** replaces the SWE.6 row-count gate: in-scope requirements, cases per requirement, every zero-case requirement with its reason. A zero-case requirement is a STOP; the engineer's decision is recorded in `last_run.coverage` and repeated in Open Points as `Not covered`. Recomputed after generation. Self-checks 43 (hard: no requirement without a case or a recorded decision), 44 (no symbol outside the variable list / A2L), 45 (no `possibly integration level` finding without a written case); 23, 25, 26 extended. integration-test keeps its row-count gate | workflow-discipline §3, §5, §6, §8; SKILL Steps 4.11, 6, 7; manifest template |
+| 7 | Documentation | README §3.10 and decision 21; config template (`debug_means`, `docs.variable_list`); manifest template (`last_run.coverage`); this section |
+
+### 12.3 Decisions
+
+- **`debug_means` defaults to `none`.** Whether the bench reaches a symbol
+  outside the delivered A2L, or runs a debugger, is the project's fact to
+  state, not the skill's to assume. Under `none` nothing is lost: the case is
+  written, blocked, proposing the symbol, and the Hygiene row tells the bench
+  owner what would unblock it.
+- **The manual DOORS test module is not an input**, and the comparison that
+  found these causes is not repeated by the skill. The existing-cases export
+  (`docs.qualification_test_spec_export` / the manifest's
+  `existing_qualification_test_cases`) is unchanged and is not used by
+  anything new: the coverage gate counts this run's cases only.
+- `integration-test` is untouched; the shared files say which rule applies to
+  which skill.

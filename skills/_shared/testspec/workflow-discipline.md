@@ -51,8 +51,9 @@
 | Existing test-spec export for this module/feature | ✔ under `integration_test.authoring_mode: extend_existing` · – under `from_scratch` (integration-test-patterns §0.1) | ✔, unless `N/A` by a recorded engineer decision (§1.2) |
 | ARXML — software-component descriptions and composition (`docs.arxml`) | ✔ — ports, connectors, runnable symbols and events, checkpoints, types (integration-test-patterns §9) | – |
 | RTE headers `Rte_<Swc>.h` / `Rte_Type.h` (`docs.rte_type_headers`, or `layout.rte_inc` in `ai_project.yaml`) | ✔ — the spelling of every RTE symbol and every enum literal | – |
-| The source code, the OS configuration, the build (ELF / map) | **never** — the test basis is the architecture; breakpoints are named by symbol and module (integration-test-patterns §9) | **never**, with one exception: a search for the **name only** of a fault-injection variable the A2L does not settle (qualification-test-patterns §0) |
+| The source code, the OS configuration, the build (ELF / map) | **never** — the test basis is the architecture; breakpoints are named by symbol and module (integration-test-patterns §9) | **never**, with two exceptions: a search for the **name only** of an injection variable — a fault, or an input the bench cannot drive physically — the A2L does not settle (qualification-test-patterns §0); and a map file or ELF symbol export supplied **as** `docs.variable_list`, read for symbol names only (qualification-test-patterns §3.3) |
 | A2L file or code variable list (`docs.a2l_or_varlist`) | – | ✔ |
+| Variable list of the software under test — map file, ELF symbol export or Debug-SW A2L (`docs.variable_list`) | – | **ask** — the symbols a case may observe or inject beyond the A2L, as far as `qualification_test.debug_means` allows (qualification-test-patterns §3.3); without it, a requirement whose observable the A2L lacks is still written, blocked |
 | DiagSpec (`docs.diagspec`) | diagnostic interfaces (pattern P-07) only | diagnostic features only |
 | Communication database — DBC / LDF / ARXML system extract (`docs.comm_database`) | **ask** — decodes the bus and gives the message attributes for the basic-software patterns (integration-test-patterns §7, P-10); without it, P-10 cases name the I-PDU from the ARXML and every signal value, cycle and timeout is an Open Point | **ask** — every bus signal's encoding, cycle time and timeout; without it those values are Open Points |
 | Test Plan (`docs.test_plan`) | – | **ask** — Series SW or Debug SW per feature (`atcRemark`); without it, asked once per feature |
@@ -320,8 +321,10 @@ Both manifests **inherit** `ai_test_project.yaml` (`release`, `variants`,
   yet*; `[]` means *asked, no rules*. Until it is answered, classify by
   judgement as before. It is a project-wide answer: say that the config change
   must reach the base branch, like any other config change.
-- The **row-count gate** is not part of this gate: it closes Phase 1 (§5),
-  because a count only means something once the scope analysis is on the table.
+- The **row-count gate** (integration-test) and the **coverage gate**
+  (qualification-test) are not part of this gate: each closes Phase 1 (§5),
+  because a count only means something once the scope analysis is on the
+  table.
 - **STOP and wait for confirmation** before doing any work.
 
 ## 4. Grounding & no silent assumptions
@@ -463,18 +466,58 @@ attribute it measures (§11), so the engineer can see at the gate which
 families the run covers and which it says do not apply. A case that will be
 written blocked unless an open question or catalogue row is answered carries
 its blocked category and that QID or CID (qualification-test-patterns §13), so
-the engineer sees which answers unblock which cases.
+the engineer sees which answers unblock which cases. It also marks, per case,
+a `possibly integration level` or `observable not on bench` finding behind it
+(qualification-test-patterns §12), the document section a delegating
+requirement's case expands (qualification-test-patterns §3.4), and an
+existing case that already covers the requirement (qualification-test-patterns
+§2).
 
-**Row-count gate (mandatory — the last Phase-1 question).** After the
-proposed-cases table, state how many rows the `Test Cases` sheet will have —
-heading rows and case rows, counted from that table — and require the engineer
-to confirm it or enter their own; "accept the AI proposal" is a valid answer.
-Persist the answer as `expected_row_count`. Never learn it silently; on a later
-run with unchanged scope a mismatch halts (§8). Two things this replaces: the
-count used to be asked at the manifest gate, before the scope had been
-analysed, so the engineer was asked to predict a number nobody had seen yet;
-and it counted the objects the scope filter selected, while
+**qualification-test asks one question per excluded variant** before the
+coverage gate (qualification-test-patterns §1.2): the requirements the
+variant filter removed, by variant and ID, with "include them" as the
+proposal.
+
+**Row-count gate (integration-test — mandatory, the last Phase-1 question).**
+After the proposed-cases table, state how many rows the `Test Cases` sheet will
+have — heading rows and case rows, counted from that table — and require the
+engineer to confirm it or enter their own; "accept the AI proposal" is a valid
+answer. Persist the answer as `expected_row_count`. Never learn it silently; on
+a later run with unchanged scope a mismatch halts (§8). Two things this
+replaces: the count used to be asked at the manifest gate, before the scope had
+been analysed, so the engineer was asked to predict a number nobody had seen
+yet; and it counted the objects the scope filter selected, while
 `expected_row_count` holds rows of the output.
+
+**Coverage gate (qualification-test — mandatory, closes Phase 1).** A row
+count says how big the output is, not whether a requirement fell out of it.
+qualification-test closes Phase 1 with a **coverage table** instead:
+
+- the number of in-scope requirements (after the four filters and the
+  variant answers, qualification-test-patterns §1, §1.2);
+- per requirement, the proposed cases that trace it — a merged case counts
+  for every requirement in its `Requirement ID`; a case kept unchanged from
+  the previous version on a re-run counts; an existing case from
+  `docs.existing_qualification_test_cases` does **not**;
+- every requirement with **zero** proposed cases, each with the reason it has
+  none.
+
+Under the rule that no requirement leaves scope at classification
+(qualification-test-patterns §1) the zero-case list should be empty. Any
+requirement on it is a **STOP**: it gets its own question — "Proposal: add
+case `<title>` for `<ID>`. Accept?", or, where the engineer has already
+declined one (an existing case covers it, a merge was refused), the decision
+to record — and Phase 2 does not start while one is unanswered (check the
+answers, below). The engineer's decision for each is recorded with its source
+(§4) in the manifest under `last_run.coverage`, and repeated in the final
+workbook's Open Points as `Not covered`, quoting it. On a re-run, a recorded
+decision is shown and reused for a requirement whose hash is unchanged, and
+asked again for one that changed. The coverage table is recomputed after
+generation (self-check 43); a requirement that lost its last case on the way is
+the same STOP, asked before the workbook is written. An older SWE.6 manifest's
+`scope.expected_row_count` is ignored and removed on the next manifest write,
+saying so. *(Replaces the SWE.6 row-count gate, round 12: an engineer can
+confirm a row count without noticing that a requirement has no row.)*
 
 ## 6. Self-check before output
 
@@ -496,8 +539,10 @@ row:
    stepped case (qualification-test-patterns §6) count as its negative
    coverage.
 7. `atsState` = `in work` and `ID` empty on every row.
-8. Every in-scope requirement/interface either has a test case or appears in
-   Open Points with a reason.
+8. integration-test: every in-scope interface either has a test case or
+   appears in Open Points with a reason. qualification-test: every in-scope
+   requirement has a test case, or a recorded engineer decision from the
+   coverage gate (item 43).
 9. **integration-test only** — every case names **both** ends: a `Rte_Write`
    breakpoint in the writer module and a `Rte_Read` breakpoint in the reader
    module (or the `Rte_Call`/server pair), with the two modules actually
@@ -543,8 +588,10 @@ row:
     Points (§4).
 18. **qualification-test only** — every case's results implement its
     requirement's `aTestCriteria`, or an Open Point says why not; nothing in
-    the workbook was derived from source code except fault-injection variable
-    names, each marked `from code`; every bus-signal value, cycle
+    the workbook was derived from source code except injection-variable names
+    (a fault, or an input the bench cannot drive physically), each marked
+    `from code` and present in `docs.a2l_or_varlist` or `docs.variable_list`;
+    every bus-signal value, cycle
     time and timeout cites `docs.comm_database` (qualification-test-patterns
     §0, §1.1, §3).
 19. **integration-test only** — every P-05 case cites the runnable's ARXML
@@ -564,21 +611,31 @@ row:
     Open Point number or remark inside any step (qualification-test-patterns
     §7).
 23. **qualification-test only** — every `atcResult` entry checks an observable
-    item (a signal, message or A2L variable), never an internal state; a sent
-    bus signal is used wherever one shows the behaviour; no result reads a
-    signal or message the case's own actions removed; every observation window
-    cites its source (qualification-test-patterns §7).
+    item (a signal, a message, an A2L variable, a `docs.variable_list` symbol
+    or a breakpoint, as `qualification_test.debug_means` allows), never an
+    internal state — the one exception being a case blocked `missing test
+    equipment` because no variable list carries the symbol (qualification-test-patterns
+    §7); a sent bus signal is used wherever one shows the behaviour; no
+    result reads a signal or message the case's own actions removed; every
+    observation window cites its source (qualification-test-patterns §7).
 24. **Both skills** — no precondition contradicts the case's own actions.
 25. **qualification-test only** — every item a case sets or reads exists on
     the feature's `test_software`; every boundary value is on a settable
-    quantity; no database shorthand in the text (qualification-test-patterns
-    §3, §6, §8).
+    quantity; no database shorthand in the text; a `docs.variable_list`
+    symbol is used unblocked only under `debug_means: xcp_varlist` or
+    `xcp_and_debugger`, a breakpoint or debugger variable only under
+    `xcp_and_debugger` and only in a case whose `atcRemark` is `Debug SW`
+    (qualification-test-patterns §3, §3.3, §6, §8).
 26. **qualification-test only** — every value or procedure taken from a
     reference specification cites its document, version and section in
     `Traceability`; every version difference has its one Open Point; every
     requirement depending on an unavailable document is an Open Point and its
     case is blocked, naming the document, never a case with a placeholder pass
-    criterion (qualification-test-patterns §3.1, §13).
+    criterion; every requirement that delegates to a document has the cases
+    expanded from that document's observable rules, or — document not
+    supplied — one blocked case `missing test equipment` naming it; "covered
+    by the OEM test package" appears nowhere as the reason a requirement has
+    no case (qualification-test-patterns §3.1, §3.4, §13).
 27. **Both skills, when the validity columns are configured** — on a re-run,
     every case QA marked `isValid = Yes` is unchanged unless an input behind it
     changed. integration-test: no value or reason QA entered was altered.
@@ -667,6 +724,21 @@ row:
     every `Notes` cell is written in plain words, names its OP / Q / CID id
     and does not restate the analysis from `Traceability` or Open Points; no
     case that can run has a `Notes` entry (qualification-test-patterns §13).
+43. **qualification-test only, hard** — the coverage table recomputed on the
+    generated cases: no in-scope requirement (after the four filters and the
+    variant answers) without a case on the `Test Cases` sheet or an engineer
+    decision recorded in `last_run.coverage` and repeated in Open Points as
+    `Not covered`. A requirement with neither stops the run before the
+    workbook is written (§5, coverage gate) — never listed as an Open Point
+    instead.
+44. **qualification-test only** — no case names a variable, breakpoint symbol
+    or debugger variable that is not, verbatim, in `docs.variable_list` or
+    `docs.a2l_or_varlist`; `Traceability` says which list each came from
+    (qualification-test-patterns §0, §3.3).
+45. **qualification-test only** — every `Requirements Hygiene` finding of type
+    `possibly integration level` names a requirement that has a written case
+    in this workbook, blocked or not; the same for `observable not on bench`
+    (qualification-test-patterns §12).
 
 ## 7. Traceability & Open Points (both skills, every run)
 
@@ -713,7 +785,8 @@ category `Input hygiene`:
   Parameters, the communication database and the OEM specification it
   implements; a requirement cited by another document but absent from the
   export or outside the status filter; a requirement changed after the
-  release under test.
+  release under test; a requirement that is `possibly integration level` or
+  whose observable is `not on bench` — each with its written case.
 
 ## 8. Ledger & run history (audit)
 
@@ -727,7 +800,9 @@ domain's pin:
 - **`last_run:` in the manifest — working state, overwritten each run.** Holds
   `run_id`, `started`, `ended`, `timing` totals, `skill_version`, `release_id`, `variants`, `input_hashes` (§2),
   the **`scope`** the run
-  was made at, the **`output`** it wrote (path + hash), the inputs
+  was made at, the **`output`** it wrote (path + hash), qualification-test's
+  **`coverage`** (§5, coverage gate: in-scope count, cases per requirement,
+  every zero-case requirement with the engineer's decision), the inputs
   **`supplied_but_not_read`**, the requirement/interface snapshot
   (`ID -> {hash, change requests, cases: [...]}`), and the delta. Drives
   re-runs; not history.
@@ -753,12 +828,13 @@ diagnostic interface in scope`). A later run can then tell "not needed" from
 2. **Has the scope changed?** Compare `last_run.scope` with this run's —
    integration-test: the modules authored, `peer_depth`,
    `peer_module_mirroring`, `authoring_mode`, `scope.interfaces`;
-   qualification-test: the feature and `requirement_ids`. If it differs, the
+   qualification-test: the feature, `requirement_ids` and `included_variants`. If it differs, the
    per-item delta below is **not comparable**: a narrowed scope would surface
    every case that left it as "removed" and flag each one. Say plainly that the
    scope changed, show the old and the new scope side by side, list once what
    left the scope by that decision, treat the run as a regeneration, and
-   re-confirm `expected_row_count` (§5).
+   re-confirm `expected_row_count` (integration-test) or re-run the coverage
+   gate (qualification-test) (§5).
 3. **Is it layout only?** If every input hash and the scope are unchanged and
    only the output layout differs (reference columns, column order —
    output-format.md), **re-render** the existing workbook into the new layout:

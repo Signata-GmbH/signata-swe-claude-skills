@@ -168,6 +168,14 @@ docs:
                                               #     §4). Without it, SWE.6 asks every means in its Phase-1 catalogue
                                               #     (qualification-test-patterns §3.2). Mandatory once scripts are generated (v2).
   a2l_or_varlist:        <path or N/A>       # <-- fill  A2L file or code variable list — MANDATORY for SWE.6
+  # SWE.6 only — never read by integration-test (README decision 17). A symbol
+  # list of the software under test: a linker MAP file, an ELF symbol export,
+  # or a Debug-SW A2L. Read for symbol NAMES only (sizes / data types where the
+  # file carries them) — never for a value. Lets a case observe or inject an
+  # internal value the delivered A2L lacks, as far as
+  # qualification_test.debug_means allows (qualification-test-patterns §3.3).
+  # Without it, such a case is still written — blocked, proposing a symbol.
+  variable_list:          N/A                # <-- ask  default N/A; <path> to a map file / ELF symbol export / Debug-SW A2L
   diagspec:               <path or N/A>      # <-- fill  UDS DiagSpec (e.g. EE0339_UDS_DiagSpec) — SWE.6 diagnostic features;
                                               #     SWE.5 diagnostic interfaces (pattern P-07) only
   integration_test_spec_export: <path or N/A> # <-- fill  existing SWE.5 test-spec export (exemplars + coverage baseline).
@@ -280,6 +288,24 @@ qualification_test:
   # them project-wide. A family that does not apply to a feature is said so in
   # that run's Open Points, never skipped silently.
   scenario_families: default       # <-- confirm
+  # What the bench can observe and inject BEYOND bus signals, diagnostic
+  # requests and docs.a2l_or_varlist items (qualification-test-patterns §3.3).
+  # A fact about the bench, decided once for the project — never per
+  # requirement by the skill:
+  #   none             : nothing more. A case whose observable or injection
+  #                      exists only in docs.variable_list or only under a
+  #                      debugger is still WRITTEN, blocked "bench capability
+  #                      not confirmed", proposing the symbol; the requirement
+  #                      goes to Requirements Hygiene as "observable not on bench".
+  #   xcp_varlist      : any symbol in docs.variable_list is a valid XCP
+  #                      observable / injection variable; its scaling and data
+  #                      type are asked at Phase 1 like an A2L item's.
+  #   xcp_and_debugger : as xcp_varlist, plus "breakpoint at symbol" (period or
+  #                      hit-count checks, as timing cases) and "debugger
+  #                      variable" — on Debug-SW cases only.
+  # Default none (round 12 decision): a wider means is granted by the project,
+  # never assumed by the skill.
+  debug_means: none                # <-- confirm  none | xcp_varlist | xcp_and_debugger
   # Columns beside the 21 DOORS attributes, never imported (output-format.md,
   # reference columns). Column A, `Requirement ID`, is always written, and
   # `Notes` is always the last column: empty on a case that can run,

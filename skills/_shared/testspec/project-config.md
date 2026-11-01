@@ -98,6 +98,11 @@ from the "most common" spelling seen:**
   — whether the project wants the validity columns beside the 21
   (output-format.md); propose off. The ID column (column A) is always written
   and is not asked.
+- `qualification_test.debug_means` — what the bench can observe and inject
+  beyond bus signals, diagnostic requests and the A2L: `none`, `xcp_varlist`
+  or `xcp_and_debugger` (qualification-test-patterns.md §3.3). Propose `none`
+  and say what each value grants; never raise it without the engineer. A
+  missing key in an older config means `none` until asked.
 - `qualification_test.spec_governed_features` — which features' behaviour an
   OEM or standard specification defines (E2E protection, network management,
   diagnostics, bus communication), and which document for each. For these the
@@ -129,6 +134,11 @@ table.
   sets rather than their bytes (integration-test-patterns.md §9). It is a
   mandatory SWE.5 input: there is no waiver and no degraded mode. The source
   code is never an input and is not asked for.
+- **`docs.variable_list`** (qualification-test) — optional; a linker map
+  file, an ELF symbol export or a Debug-SW A2L of the software under test,
+  read for symbol names only (qualification-test-patterns.md §3.3). Discover
+  and **offer** it like the other optional inputs; `N/A` is a valid answer.
+  It is not a build input and is never read by `integration-test`.
 - **`docs.reference_specs`** (qualification-test) — starts empty; filled at
   the start of each run from the documents its requirements cite
   (qualification-test-patterns.md §3.1), and reused by every feature after.
@@ -189,7 +199,10 @@ and agrees with `docs.integration_test_spec_export` (path ⇔ `extend_existing`,
 `N/A` ⇔ `from_scratch`); `docs.arxml` resolves to at least one readable ARXML
 file; no `docs.source_repo`, `docs.os_config` or `docs.debug_build` key
 survives from an older config (remove it and say why: the code is not an
-input); `qualification_test.spec_governed_features` is present (absent → never
+input); `qualification_test.debug_means` is one of `none`, `xcp_varlist`,
+`xcp_and_debugger` (absent → ask once, propose `none`), and
+`docs.variable_list` is `N/A` or a readable file;
+`qualification_test.spec_governed_features` is present (absent → never
 asked: ask once, record `{}` for "none"); no fact that §4.3
 reads from `ai_project.yaml` is duplicated here with a different value;
 `vteststudio.write_access` is `false` while v1 is the running version;

@@ -67,7 +67,7 @@ parameterised parent).
 |---|---|
 | `ID` | **Always empty.** DOORS assigns it and never reuses a deleted one. |
 | `atsReference` | Empty unless the case has no requirement/architecture link — then state the origin (norm, standard, error tracker ID, `error guessing execution`). |
-| `aVariant` | From `ai_test_project.yaml` `release.variants`. |
+| `aVariant` | From `ai_test_project.yaml` `release.variants`. qualification-test: a case for a requirement included by the variant scope answer (qualification-test-patterns.md §1.2) carries the variant it was included under. |
 | `atsRelease` | From `ai_test_project.yaml` `release.id`. |
 | `atsRegression` | `new`. |
 | `atsClassification` | Per `attributes.classification_rule` — **not** a constant. A tier decided by a configured `attributes.classification_attribute_rules` entry is applied mechanically and cited in `Traceability` (rule + the attribute value it matched); every other choice is a judgement, justified in Open Points. An empty attribute cell matches no rule, and a rule whose column is missing from this skill's export is skipped (workflow-discipline.md §1.3) — both leave the case to judgement. |
@@ -104,9 +104,13 @@ result step that checks it, the reference specification, version and section a
 value or procedure came from (qualification-test-patterns.md §3.1), the
 catalogue row (`CID`) behind each means, the **scenario family** the case
 belongs to (qualification-test-patterns.md §10) and, for a timing case, the
-database attribute it measures with its tolerance source (§11), and any
-fault-injection variable named from the code — marked `from code`, with file
-and line (§0), and, on a re-run, the QA verdict a changed case had in the
+database attribute it measures with its tolerance source (§11), any
+injection variable named from the code — marked `from code`, with file and
+line (§0) — the list each variable, breakpoint symbol or debugger variable
+came from (`docs.a2l_or_varlist` or `docs.variable_list`, §3.3), the document
+section a delegating requirement's case expands (§3.4), a note where an OEM
+test package also covers the behaviour (§3.1 — a note only, never a reason
+to omit a case), and, on a re-run, the QA verdict a changed case had in the
 previous version (value and reason, verbatim) before it was cleared. The engineer creates the DOORS links by hand from this sheet —
 it must be complete and readable on its own.
 
@@ -129,7 +133,11 @@ why, every assumption made, every spelling variant normalized. Every row
 carries a `Category` — `Unresolved`, `Not covered`, `Classification`,
 `Spelling variant`, `Decision`, or `Input hygiene` (workflow-discipline.md §7)
 — so the input defects, which belong to other owners (the architect, the code
-owner, the DOORS admin), can be filtered out and passed on.
+owner, the DOORS admin), can be filtered out and passed on. In a
+qualification-test workbook, `Not covered` holds only the engineer's decisions
+from the coverage gate (workflow-discipline.md §5), each quoting the decision
+and who made it — the skill itself never leaves an in-scope requirement
+without a case (qualification-test-patterns.md §1).
 
 **Formula-prone cells.** Any cell whose text begins with `-`, `=`, `+` or `@` —
 which is every `atcPreconditions` and `atcPostconditions` block, since both

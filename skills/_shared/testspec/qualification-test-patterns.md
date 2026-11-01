@@ -18,24 +18,32 @@ Every expected result comes from the requirement and its verification
 criterion (§1.1) and the specifications behind them — Signals & Parameters,
 the A2L, the DiagSpec, the communication database. Where those do not settle
 a value, it is an Open Point, never a look at the implementation. Measurable
-internal variables are named from the A2L/variable list, which is a
-specification of what can be observed, not from the source.
+internal variables are named from `docs.a2l_or_varlist` or `docs.variable_list`
+(§3.3) — lists of what can be observed, not specifications of values — never
+from the source.
 
-**One narrow exception: the name of a fault-injection variable.** A fault
-condition (a sensor fault, a lost signal, a corrupted counter) is often injected
-by writing a variable over XCP, and the A2L alone may not say which variable
-produces which fault. Then the code may be searched for **the name only** of a
-variable that injects the requirement's fault condition, and only where the
-A2L/variable list does not settle it. That name:
+**One narrow exception: the name of an injection variable.** Some inputs
+cannot be driven physically on the bench: a fault condition (a sensor fault, a
+lost signal, a corrupted counter), and any other input the bench has no
+physical source for — an ADC voltage, a sensor angle, a hardware-ID pin, a
+supply measurement. Such an input is injected by writing a variable over XCP,
+and the A2L or the variable list alone may not say which variable feeds which
+input. Then the code may be searched for **the name only** of a variable that
+injects the requirement's stimulus, and only where the A2L/variable list does
+not settle it. That name:
 
-- must exist in `docs.a2l_or_varlist` — XCP reaches only what the A2L
-  describes; a variable the A2L lacks cannot be written on the bench, and is an
-  Open Point;
+- must exist in `docs.a2l_or_varlist` — or in `docs.variable_list` where
+  `qualification_test.debug_means` is `xcp_varlist` or `xcp_and_debugger`
+  (§3.3). XCP reaches only what those describe; a variable in neither cannot
+  be written on the bench, and the case that needs it is written blocked —
+  `bench capability not confirmed` (§13), never dropped;
 - is marked `from code` in `Traceability`, with file and line, and is offered
   as a proposal in the Phase-1 catalogue (§3.2), never used unconfirmed;
 - carries **nothing else** from the code — not the value to write, not the
-  expected reaction, not a debounce time or threshold. Those still come from
-  the requirement and its specifications, or are Open Points.
+  expected reaction, not a debounce time or threshold. The value written is the
+  requirement's stimulus value, converted with the scaling confirmed at
+  Phase 1 (§3); the expected result comes from the requirement and its
+  specifications, or is an Open Point.
 
 **When the engineer asks for a value "from the code".** An engineer stuck on
 a question may suggest reading the source ("check the code for which request
@@ -65,11 +73,42 @@ Select requirements where **all** hold:
 - `aTestability` = `test` — exclude `verification`, `test =>` and
   `verification =>` (owned by another test level)
 - `aStatusOfAnalysis` ∈ `attributes.status_filter`
-- `aRequirementObjectType` = `functional requirement` or `non functional requirement`
-- Object Text is non-empty
+- `aVariant` carries one of `release.variants` — a two-line cell
+  (`MQB\nCEA`) is split on its newlines and matches when any line matches.
+  What this filter removes is reported by variant at the Phase-1 gate (§1.2),
+  never dropped silently.
+
+An object must also **be a requirement** to be counted at all:
+`aRequirementObjectType` = `functional requirement` or `non functional
+requirement`, and Object Text non-empty. Headings and information objects are
+not requirements; they are counted separately in the report, not as attrition.
 
 Report: total objects for the feature, survivors at each filter, final in-scope
-count.
+count. **The four filters — feature, testability, status, variant — are the
+only reasons a requirement leaves scope**, and the attrition report names no
+other.
+
+**No requirement leaves scope at classification.** Every in-scope requirement
+gets **at least one proposed case** at Phase 1 and is written in Phase 2,
+blocked where something is missing (§13). The skill never rules a requirement
+out on its own judgement — not because it reads like integration level, a
+read cycle or a peripheral configuration; not because its observable is an
+internal value or its stimulus cannot be driven physically (§0, §3.3, §7); not
+because it delegates to a specification (§3.4); not because an OEM test
+package or an existing test case covers it (§2, §3.1). A doubt about the test
+level or the observable is written to the `Requirements Hygiene` sheet
+(`possibly integration level`, `observable not on bench`, §12) with its owner,
+**and** the case is still proposed and written. Only the engineer takes a
+requirement's case away, at the coverage gate (workflow-discipline §5), as a
+recorded decision. *(Observed, one project's second stage: requirements in
+scope with no generated case, for five reasons — an internal observable
+reachable only by XCP on a symbol absent from the A2L or by a debugger;
+read-cycle and peripheral-configuration requirements classed as integration
+level; a stimulus that had to be injected by writing a calibration;
+requirements delegating to a specification classed as configuration review or
+"covered by the OEM package"; and a variant excluded by `release.variants`.
+Each was the skill's own decision, and none was shown to the engineer as a
+gap.)*
 
 ### 1.1 `aTestCriteria` is the requirement's verification criterion
 
@@ -82,12 +121,15 @@ It is an input, not decoration, exactly as on the architecture side
   measurement, tolerance or observation it states. Where a
   generated case cannot follow it, say so in Open Points instead of
   substituting another criterion.
-- **It can rule the test level out.** A criterion that asks for a review, an
-  analysis or an inspection, or names another test level, gets **no** test
-  case: list the requirement in Open Points with the criterion verbatim. If the
-  requirement nevertheless has a concrete, observable behaviour in the
-  specifications, that disagreement is a Phase-1 question — default proposal:
-  author the case.
+- **It may name another level or method — the case is still written.** A
+  criterion that asks for a review, an analysis or an inspection, or names
+  another test level, does not take the requirement out of scope: its
+  `aTestability` says `test`. The case is proposed and written from the
+  requirement text and its specifications as usual (§1), the criterion is
+  quoted verbatim on the `Requirements Hygiene` sheet as `possibly integration
+  level` with the requirements engineer as owner (§12), and the proposed-cases
+  table marks the case so the engineer sees the conflict at the coverage gate
+  (workflow-discipline §5).
 - **Empty** → derive the pass criterion from the requirement text, as before,
   and list the requirement once in Open Points as "no verification criterion:
   pass criterion derived from the requirement text", so the gap goes back to
@@ -126,19 +168,46 @@ It is an input, not decoration, exactly as on the architecture side
 Typos and case vary ("wehther", "CHnage") — match on meaning, and never copy a
 misspelling into a generated case.
 
+### 1.2 Variant scope report (Phase-1 gate)
+
+The variant filter removes requirements whose every other attribute is in
+order, so its effect is the easiest to miss. At the Phase-1 gate, for the
+chosen `release.variants`, report the requirements that pass the feature,
+testability and status filters but not the variant filter, grouped by the
+variant value they carry:
+
+`Variant | Requirements excluded | IDs`
+
+and ask **one question per variant** (workflow-discipline §5): "Proposal:
+include the <n> requirements carried only by variant `<V>` (<IDs>) in this
+run; their cases carry `aVariant` = `<V>`. Accept?" — "No" keeps them out.
+Record the answer in the manifest (`scope.included_variants`, with its source,
+workflow-discipline §4) so later runs of the feature reuse it, and add the
+included requirements to the scope like any other: they get proposed cases
+and count at the coverage gate. A run in which the variant filter removes
+nothing says so in one line. *(Observed: thirteen requirements of a bus
+feature carried only by a second variant were excluded with no line saying
+so.)*
+
 ## 2. Existing coverage
 
-Split the in-scope set into: **already covered** (leave alone unless asked to
-re-derive), **not covered** (your generation scope), **partially covered**
-(covered, but a clause of the requirement text has no corresponding test case —
-say which clause).
+Split the in-scope set into: **already covered**, **not covered**, **partially
+covered** (covered, but a clause of the requirement text has no corresponding
+test case — say which clause). The split is **information, not a filter**:
+every in-scope requirement still gets at least one proposed case (§1),
+whichever group it falls in. A requirement the existing cases cover is marked
+in the proposed-cases table with the existing case named (module and ID,
+output-format.md), so the engineer can decline the new case at the coverage
+gate (workflow-discipline §5) — a recorded decision, never the skill's. The
+existing cases are not counted by the coverage gate.
 
 ## 3. Vocabulary resolution
 
 List every signal, variable, parameter, state and error name needed. Name the
-source for each: `docs.signals_params`, `docs.a2l_or_varlist`, `docs.diagspec`,
-`docs.comm_database`, a reference specification (`docs.reference_specs`, §3.1), or an
-existing test case for this feature — never the source code (§0). Any identifier that cannot be resolved goes to Open Points —
+source for each: `docs.signals_params`, `docs.a2l_or_varlist`,
+`docs.variable_list` (§3.3), `docs.diagspec`, `docs.comm_database`, a reference
+specification (`docs.reference_specs`, §3.1), or an existing test case for this
+feature — never the source code (§0). Any identifier that cannot be resolved goes to Open Points —
 never invented, never a guessed variant of one you can see.
 
 **Supporting specifications.** Where the feature's own inputs do not settle a
@@ -162,7 +231,10 @@ form). Never propose reading the raw value on the bench and scaling it there:
 it puts a symbol for an unknown number into the case (§7) and a "Yes" to it
 settles nothing (workflow-discipline §5). Unanswered → the case is written
 with the proposed scaling's numbers and blocked — `needs clarification` —
-with the scaling stated as an assumption in `Notes` (§13). *(Observed: "R16 × 5 / 16" —
+with the scaling stated as an assumption in `Notes` (§13). A symbol from
+`docs.variable_list` (§3.3) is treated the same way: a map file or ELF export
+carries no scaling and often no data type, so both are asked per symbol, with
+a concrete proposal. *(Observed: "R16 × 5 / 16" —
 "note the raw value for 16 V, then write 5/16 of it" — was accepted at
 Phase 1 and then returned by QA as "What is R16?".)*
 
@@ -267,9 +339,10 @@ every case still traces to a requirement.
 - **A test specification is a procedure source.** Where a reference
   specification is itself a test specification and one of its tests covers the
   requirement, follow that test's conditions and steps and put its test ID in
-  `atsReference`, rather than writing a procedure of your own. Whether a case
-  that only repeats an OEM test is wanted at all — or is already covered by the
-  OEM's own testing — is one Phase-1 question per document, not per case.
+  `atsReference`, rather than writing a procedure of your own. The case is
+  written whether or not the OEM tests the same behaviour in its own package:
+  "covered by the OEM test package" is **never a reason to omit a case** — it
+  may appear only as a note in the case's `Traceability` row (§1).
 - **Language.** A reference specification may be in another language. The
   case text stays in the workbook's language; test IDs, signal names and
   section titles are quoted as the document writes them.
@@ -286,8 +359,15 @@ A case is only executable if it says **how** each stimulus is applied and
 the proposed cases will set or read, as its own sheet `Catalogue` in the
 Phase-1 workbook (workflow-discipline §5), one row per item:
 
-`CID | Item | Kind (message / signal / variable / DID / I/O / supply) | Source |
-Set by | Read in | Manual steps | Series SW | Debug SW | Answer | Status`
+`CID | Item | Kind (message / signal / variable / injection variable / DID /
+I/O / supply / breakpoint at symbol / debugger variable) | Source | Set by |
+Read in | Manual steps | Series SW | Debug SW | Answer | Status`
+
+The two debugger kinds are offered only where `qualification_test.debug_means`
+is `xcp_and_debugger`, and only for Debug-SW cases (§3.3); an `injection
+variable` is a variable written to stand in for an input the bench cannot
+drive physically (§0), marked `from code` in `Source` where its name came from
+the code search.
 
 - **Set by / Read in** — the means: a CANoe panel and the control on it,
   rest-bus simulation, an XCP measurement or calibration window, a CAPL
@@ -303,7 +383,9 @@ Set by | Read in | Manual steps | Series SW | Debug SW | Answer | Status`
   well as automated.
 - **Series SW / Debug SW** — whether the item exists on each software. An XCP
   or A2L variable may exist on Debug SW only; a case for a feature tested on
-  Series SW (§8, `atcRemark`) may not depend on it.
+  Series SW (§8, `atcRemark`) may not depend on it unblocked — it is written
+  blocked (§8, §13), or, for a debugger kind, moved to Debug SW by a Phase-1
+  answer (§3.3).
 - **One answer per row.** Each row is answered on its own — never "confirm the
   whole table" as one question (workflow-discipline §5, one question per QID).
 - **`Answer` is the engineer's column — leave it empty.** A cached row shows
@@ -329,6 +411,111 @@ An item whose means stays unconfirmed gets no invented name: the case that
 needs it is still written, says the step in plain words without a means name,
 and is blocked — `bench capability not confirmed` — naming the `CID` in
 `Notes` (§13).
+
+### 3.3 Observation and injection means by bench capability (`debug_means`)
+
+Many requirements specify an internal value — a filtered sensor value, a
+controller's set-point or limit, a peripheral's read cycle — that no bus
+signal shows and the delivered A2L does not describe. Whether the bench can
+reach such a value is a fact about the bench, not about the requirement, so
+it is configured once per project — `qualification_test.debug_means` in
+`ai_test_project.yaml` — and never decided per requirement by the skill.
+
+| `debug_means` | What cases may observe and inject, beyond bus signals, diagnostic requests and `docs.a2l_or_varlist` items |
+|---|---|
+| `none` (default) | nothing more. A case whose observable or injection exists only in `docs.variable_list`, or only under a debugger, is written blocked — `bench capability not confirmed` — proposing the symbol |
+| `xcp_varlist` | any symbol in `docs.variable_list` is a valid XCP observable or injection variable |
+| `xcp_and_debugger` | as `xcp_varlist`, plus the catalogue kinds `breakpoint at symbol` and `debugger variable`, on Debug-SW cases only |
+
+`docs.variable_list` is an optional, project-wide input beside
+`docs.a2l_or_varlist`: a symbol list of the software under test — a linker map
+file, an ELF symbol export, or a Debug-SW A2L. Like the A2L it says what can be
+reached, not what a value should be (§0): the run reads symbol names and,
+where the file carries them, sizes and data types — nothing else.
+
+- **Symbols come from the two lists only.** Every variable, breakpoint symbol
+  and debugger variable a case names exists verbatim in `docs.variable_list`
+  or `docs.a2l_or_varlist`, and `Traceability` says which. The source code is
+  never searched for an observable; an injection variable's name may come from
+  the name-only search of §0, and must still be in one of the two lists. A
+  symbol is matched to the requirement's quantity by name, offered as a
+  proposal in the catalogue (§3.2), and used only once confirmed.
+- **`xcp_varlist`** — a symbol from `docs.variable_list` is measured or
+  written over XCP like an A2L item. Its scaling and data type are asked at
+  Phase 1, one question per symbol with a concrete proposal (§3, A2L items
+  without a scaling); unanswered → the case uses the proposal and is blocked
+  — `needs clarification`.
+- **`xcp_and_debugger`** — two further catalogue kinds:
+  - **`breakpoint at symbol`** — a breakpoint on a function or code symbol
+    from the lists. A breakpoint case checks the symbol's **period or hit
+    count**, as a timing case (§11): `Verify the breakpoint at <Sym> is hit
+    every <T> ms (<requirement>), tolerance ± <tol> (<source>)`, or its hit
+    count over `k` periods, `k` confirmed at Phase 1 (proposal 10). The
+    tolerance comes from an input; without one, the case checks the nominal
+    value and the missing tolerance is an Open Point (§11). The catalogue row
+    asks whether the debugger counts hits without halting the CPU — a halting
+    breakpoint disturbs the timing it measures; unconfirmed → the case is
+    blocked — `bench capability not confirmed`.
+  - **`debugger variable`** — a variable read or written in the debugger's
+    watch window, for a value no XCP item reaches.
+
+  Both are allowed **only on Debug-SW cases** (§8, `atcRemark`). For a
+  feature the Test Plan puts on Series SW, each debugger case is a Phase-1
+  question — "Proposal: `<title>` runs on Debug SW, `atcRemark` = `Debug SW`.
+  Accept?" — and an unconfirmed one is written blocked — `needs
+  clarification`.
+- **Bus first still holds** (§7): a variable-list or debugger observation is
+  used only where no sent bus signal and no A2L item shows the behaviour.
+- **Beyond the configured means → blocked, never dropped.** A case whose
+  observable or stimulus needs more than `debug_means` grants is written in
+  full with the proposed symbol and the means it needs, blocked — `bench
+  capability not confirmed` — and the requirement is reported on
+  `Requirements Hygiene` as `observable not on bench` (§12), owner: the bench
+  owner. Raising `debug_means` is the project's decision; the skill never
+  assumes a means the config does not grant. *(Observed: Actuator Data
+  requirements and dozens of controller-internal Motor Control requirements
+  had no case, because their values were reachable only by XCP on symbols
+  absent from the delivered A2L, or by a debugger.)*
+
+### 3.4 Requirements that delegate to a specification
+
+A requirement whose text hands its content to a document — "implemented
+according to `<doc>`", "configured according to `<doc>`", "as per `<spec>`" —
+is **expanded, not reviewed**. It is not a configuration review and not
+something "covered by the OEM package" (§3.1): its behaviour is the document's
+observable rules, and those are tested.
+
+- **Document registered** in `docs.reference_specs` → derive cases from the
+  document's observable rules in its relevant sections, and trace each to the
+  delegating requirement (`Requirement ID`), with the section cited in
+  `Traceability` (§3.1):
+  - an E2E protection profile — the counter sequence, the CRC, the reception
+    timeout, the reaction to invalid data;
+  - a network-management specification — the states and transitions, the
+    timings, the bit fields of the NM message;
+  - a development-message or other database — each message present on the bus
+    with its cycle time (§11);
+  - any other document the same way: every rule it states that is observable
+    at the software's boundary.
+
+  The cases are proposed at Phase 1 like any other, each marked with the
+  document section it expands.
+- **Document not registered** → ask for it at the Phase-1 gate (§3.1), and
+  write **one blocked case per requirement** — `missing test equipment`,
+  naming the document in `Notes` (§13). The case is complete for what the
+  requirement text and the supplied inputs state — for a message the
+  requirement names, its presence and its cycle time from `docs.comm_database`
+  — and never carries a placeholder pass criterion. The expanded cases follow
+  on the run after the document is supplied.
+- A document recorded `N/A` (§3.1) is handled the same way as one not
+  registered: the one blocked case is written, the document named — as
+  `missing test equipment`, because the document is what the case is missing,
+  not one value of it.
+
+*(Observed: four bus-feature requirements delegating to an E2E profile, a
+network-management specification and a development-message database were
+classed as configuration review or "covered by the OEM package", and got no
+case.)*
 
 ## 4. Structure
 
@@ -395,7 +582,8 @@ Apply only where a parameter with a stated resolution exists in
 `docs.signals_params` — or, for a bus signal, in `docs.comm_database`, where the
 signal's factor is its resolution and its physical min/max are its range.
 Where a requirement states a limit but no backing parameter/resolution exists,
-put it on Open Points rather than inventing a step size.
+put the boundary steps on Open Points rather than inventing a step size — the
+requirement's own case is still written (§1), without them.
 
 **Only on a quantity the bench can set.** A boundary value is a stimulus, so
 the quantity must have a confirmed **Set by** means in the catalogue (§3.2): a
@@ -405,8 +593,10 @@ signal *reportable*, not settable — a signal the ECU *sends* cannot be set to
 its boundary. For such a dependent quantity (a measured current, a computed
 angle, a reported status), drive the **source** to an operating point that
 puts it at the boundary, and capture the source and the reported signal
-together; the result compares the two within the stated resolution. If
-no settable source drives it, the boundary is an Open Point.
+together; the result compares the two within the stated resolution. An
+injection variable (§0) that stands in for the source is a settable source. If
+no settable source drives it, the boundary steps are an Open Point; the
+requirement's case is still written (§1).
 
 ## 7. Writing the steps
 
@@ -519,7 +709,11 @@ one observable item, with its kind and the expected value:
 1. Verify signal <Sig> in message <Msg> = <value>.
 2. Verify message <Msg> is sent every <cycle> ms.
 3. Verify XCP variable <Var> = <value>.
+4. Verify the breakpoint at function <Sym> is hit every <T> ms ± <tol> ms.
 ```
+
+Item 4 only under `qualification_test.debug_means: xcp_and_debugger`, on a
+Debug-SW case (§3.3).
 
 - **Observe on the bus first.** Where a signal the ECU sends shows the
   behaviour — the value itself, a timeout or error flag, a status — check that
@@ -527,8 +721,18 @@ one observable item, with its kind and the expected value:
   is there on Series SW, and one signal can serve every step of a sweep.
 - **An internal state is not an observation.** "The ECU uses the substitute
   value" or "the mode is active" cannot be checked; name the signal or the
-  A2L variable that shows it. If none exists, the requirement is an Open
-  Point.
+  variable that shows it — a sent bus signal first, then an A2L item, then,
+  as `qualification_test.debug_means` allows, a symbol from
+  `docs.variable_list` or a debugger observation (§3.3). Where the bench's
+  confirmed means reach none of them, the requirement does **not** become an
+  Open Point instead of a case: the case is **written**, its result names the
+  symbol proposed from `docs.variable_list` / `docs.a2l_or_varlist` that holds
+  the value, and it is blocked — `bench capability not confirmed` — proposing
+  that symbol and the means it needs (§13); the requirement goes to
+  `Requirements Hygiene` as `observable not on bench` (§12). Where neither list
+  carries a symbol for it, the result names the requirement's quantity in the
+  requirement's own words and the case is blocked — `missing test equipment`
+  — asking for a variable list that carries it.
 - **No result on what the case removed.** A result may not expect a value from
   a signal or message the case's own actions stopped or removed from the bus.
 - **Windows come from the inputs.** An observation window ("absent for
@@ -592,7 +796,7 @@ its clause and the result steps that check it.
 
 | Attribute | How to fill |
 |---|---|
-| `atcRemark` | `Series SW` or `Debug SW`, per the feature's entry in the Test Plan (`docs.test_plan`). Without a Test Plan — or with a feature it does not list — ask once, as a Phase-1 question, and record the answer in the manifest (`feature.test_software`) so later runs reuse it. Never guess it: a case meant for Series SW that relies on a Debug SW variable cannot run. Every item a case sets or reads must exist on that software (the catalogue's Series SW / Debug SW columns, §3.2); one that does not is an Open Point, and the case is blocked — `needs clarification` (§13) |
+| `atcRemark` | `Series SW` or `Debug SW`, per the feature's entry in the Test Plan (`docs.test_plan`). Without a Test Plan — or with a feature it does not list — ask once, as a Phase-1 question, and record the answer in the manifest (`feature.test_software`) so later runs reuse it. Never guess it: a case meant for Series SW that relies on a Debug SW variable cannot run. Every item a case sets or reads must exist on that software (the catalogue's Series SW / Debug SW columns, §3.2); one that does not is an Open Point, and the case is blocked — `needs clarification` (§13). A case using a debugger kind (`breakpoint at symbol`, `debugger variable`, §3.3) is always `Debug SW`; on a Series-SW feature that needs the Phase-1 confirmation of §3.3 |
 | `aFeature` | The target feature |
 | `atsClassification` | Per `attributes.classification_rule`, derived from the linked requirement's safety/security/regulatory/OBD attributes where the governing matrix defines that mapping — state your reasoning in Open Points whenever the case falls to error-severity judgement (A/B/C) rather than a rule-driven class |
 | `atsTestKind` | `Functional test` by default; the robustness/EMC wording for robustness cases; `Performance test` for timing/resource cases |
@@ -689,7 +893,9 @@ Rules:
 
 Timing findings are the easiest to miss by inspection and the easiest to
 measure on a bench. For every message in the feature's scope, generate the
-cases the database attributes support, with `atsTestKind = Performance test`:
+cases the database attributes support — and, for every requirement that states
+a period inside the software, the period-at-a-symbol case (last row) — with
+`atsTestKind = Performance test`:
 
 | Case | For | Measures | Pass criterion source |
 |---|---|---|---|
@@ -698,6 +904,7 @@ cases the database attributes support, with `atsTestKind = Performance test`:
 | **Payload coherency on change** | each transmitted message carrying several signals the ECU updates on one event | the first frame after the event carries every changed signal at its new value | the requirement that defines the event's outputs; a frame with a partial update fails |
 | **Timeout detection** | each received message with a timeout the requirements or the database define | with the message stopped: the flag is set no earlier than `T − tol` and no later than `T + tol`; with the message interrupted for `T − tol` it is not set | the timeout value and its tolerance, each with its source; where two documents give two tolerances, the stricter one is used and the difference goes to `Requirements Hygiene` (§12) |
 | **Time to first frame** | wake-up and start-up (F1) | the time from the wake-up stimulus to the first frame of each transmitted message, and to the first valid value where a requirement states it | the requirement or system requirement that states the limit |
+| **Period at a symbol** | each requirement stating a read cycle, a task period or a peripheral sampling rate, where `debug_means` is `xcp_and_debugger` (§3.3) | the period of hits of a breakpoint at the symbol, or its hit count over `k` periods | the requirement; tolerance from an input, or the nominal value checked and the tolerance an Open Point. With a lower `debug_means`, the case is written blocked — `bench capability not confirmed` |
 
 Rules:
 
@@ -760,6 +967,20 @@ under `Input hygiene`. Check, every run:
   A2L entry and moving the requirement to another test level.
 - **Criterion carries an unconfirmed error-guessing expectation** (§1.1) —
   reported with the engineer's confirmation or correction once given.
+- **Possibly integration level** (§1, §1.1) — a requirement with `aTestability`
+  = `test` whose criterion names a review, an analysis, an inspection or
+  another test level, or whose text reads as a read-cycle, peripheral or
+  configuration setting rather than behaviour at the software's boundary.
+  Owner: the requirements engineer. **The finding never replaces the case:**
+  every requirement reported here has a written case in the same run
+  (self-check 45).
+- **Observable not on bench** (§3.3, §7) — the requirement's observable or
+  stimulus is reachable only through a means the project's
+  `qualification_test.debug_means` does not grant, or through a symbol neither
+  `docs.a2l_or_varlist` nor `docs.variable_list` carries. The row names the
+  proposed symbol and the means needed. Owner: the bench owner (means) or the
+  software integrator (the symbol in the A2L / variable list). The case is
+  written, blocked (§13).
 
 Each row names an **owner** — requirements engineer, system engineer,
 architect, database owner — so the sheet can be split and passed on without
@@ -784,9 +1005,9 @@ give.
 
 | Category | When | Typical triggers |
 |---|---|---|
-| `needs clarification` | an input is ambiguous or missing a value | an A2L item without a scaling, unanswered (§3); a parameter with no provenance (§3, parameter provenance); an unconfirmed error-guessing expectation (§1.1); a value only a document marked `N/A` would give (§3.1); an item that exists only on the other software (§8) |
-| `missing test equipment` | a file, tool or sample is not delivered | the A2L, the communication database, the CANoe configuration, a flash file, a sample part or harness the case needs |
-| `bench capability not confirmed` | a means from the bench catalogue is unconfirmed | a `Catalogue` row (§3.2) still open, or answered without naming the panel, control or device |
+| `needs clarification` | an input is ambiguous or missing a value | an A2L item or a variable-list symbol without a scaling, unanswered (§3, §3.3); a parameter with no provenance (§3, parameter provenance); an unconfirmed error-guessing expectation (§1.1); a value only a document marked `N/A` would give (§3.1); an item that exists only on the other software (§8); a debugger case on a Series-SW feature, unconfirmed (§3.3) |
+| `missing test equipment` | a file, tool or sample is not delivered | the A2L, the communication database, the CANoe configuration, a flash file, a sample part or harness the case needs; the document a requirement delegates to (§3.4); a variable list carrying the symbol for a requirement's internal value (§7) |
+| `bench capability not confirmed` | a means from the bench catalogue is unconfirmed | a `Catalogue` row (§3.2) still open, or answered without naming the panel, control or device; an observable, injection variable or breakpoint that needs more than `qualification_test.debug_means` grants (§3.3); a hit count the debugger may only take by halting (§3.3) |
 | `missing test method` | no one has said how to do a physical step | disconnecting a connector, shorting a line, blocking the actuator — no input or answer says how |
 | `two inputs contradict each other` | two inputs disagree and no answer has picked one | a criterion step the run's own Open Point doubts (§1.1); a value that differs between documents with no ruling (§12) |
 
@@ -804,10 +1025,13 @@ item with neither is a Phase-1 question that was missed: ask it now
 the catalogue has not named is described in plain words without a name
 ("switch off the motor supply"), never with an invented one (§3.2).
 
-Not blocked, and still an Open Point `Not covered`: a requirement no case can
-be written for without inventing its observable or its stimulus (§7, an
-internal state is not an observation), and one whose criterion rules the
-test level out (§1.1).
+**There is no unwritten "not covered" path.** A requirement whose observable
+or stimulus the bench cannot reach is written blocked (§3.3, §7); one whose
+criterion names another level or method is written and reported (§1.1, §12);
+one that delegates to a missing document is written blocked (§3.4). Only the
+engineer's decision at the coverage gate (workflow-discipline §5) leaves an
+in-scope requirement without a case, and that decision is an Open Point `Not
+covered` quoting it, with who decided and when.
 
 **The note — one paragraph, fixed structure:**
 
