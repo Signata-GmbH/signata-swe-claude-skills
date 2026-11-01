@@ -281,11 +281,15 @@ qualification_test:
   # that run's Open Points, never skipped silently.
   scenario_families: default       # <-- confirm
   # Columns beside the 21 DOORS attributes, never imported (output-format.md,
-  # reference columns). Column A, `Requirement ID`, is always written. QA fills
-  # isValid / Reason for Invalid; a re-run reads them back and leaves accepted
-  # cases untouched (workflow-discipline §8).
+  # reference columns). Column A, `Requirement ID`, is always written, and
+  # `Notes` is always the last column: empty on a case that can run,
+  # "BLOCKED - <category>. ..." on one that is complete but cannot run yet
+  # (qualification-test-patterns §13). A re-run adds `Change vs v<N-1>` before
+  # `Notes`. isValid / Reason for Invalid are QA's ONLY — the skill leaves them
+  # empty on every row; a re-run keeps QA's verdict on unchanged cases and
+  # clears it on cases whose text changed (workflow-discipline §8).
   reference_columns:
-    validity_review: false         # <-- confirm  trailing isValid + Reason for Invalid (no-fabrication.md)
+    validity_review: false         # <-- confirm  trailing isValid + Reason for Invalid, QA's only (no-fabrication.md)
   # Stimulus and observation means of THIS bench, confirmed row by row in the
   # Phase-1 catalogue (qualification-test-patterns §3.2) and cached here so the
   # next feature only confirms new items. Never seeded by analogy.

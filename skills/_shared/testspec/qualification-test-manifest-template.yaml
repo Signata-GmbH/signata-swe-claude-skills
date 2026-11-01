@@ -53,9 +53,15 @@ last_run:                          # SKILL-OWNED ledger
   output:                          # the workbook this run wrote — checked before any in-place re-run
     path: null
     hash: null                     # git hash-object at write time; a different hash later = edited since
+    version: null                  # 1 on the first run, +1 on each re-run that writes content; names the
+                                    #   `Change vs v<N-1>` column (workflow-discipline §8). Absent on an older
+                                    #   manifest -> the existing workbook is v1
   supplied_but_not_read: {}        # input -> one-line reason it was not opened this run
   reference_specs:  {}             # title -> { version_read, cited_versions: {req ID: version}, sections_read: [] }
   requirements:     {}             # requirement ID -> { hash, change_request: aChangeRequID, cases: [proposed titles] }
-  review:           {}             # case title -> { isValid, reason } as the skill wrote them — tells QA's entries
-                                    #   from the skill's own on the next run (workflow-discipline §8)
+  review:           {}             # case title -> { isValid, reason, cleared: true|false } — QA's verdicts as read
+                                    #   at the start of this run, and whether this run cleared them because the
+                                    #   case text changed. The skill writes nothing in the QA columns; an entry
+                                    #   from an older run holding the skill's own `No` is a legacy mark, cleared
+                                    #   on the next run (workflow-discipline §8)
   open_points:      []

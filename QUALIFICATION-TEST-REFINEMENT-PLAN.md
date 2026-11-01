@@ -280,3 +280,24 @@ disputes, criteria resting on a parameter the A2L does not expose, and
 calibrations with no documented scaling — are exactly the finding types the
 new `Requirements Hygiene` sheet (§9, patterns §12) now reports with an owner.
 They are tracked in the project repository, not here.
+
+## 11. QA columns belong to QA; blocked cases get `Notes` (2026-11-01)
+
+**Source:** project lead's change request after the fifth round. The skill
+wrote `isValid = No` on cases it knew could not run as written (§10, R1, R2,
+R6b; round 3, V2), and listed those cases in a standing Open Point (`OP-02` in
+the delivered workbooks). QA's verdict column therefore held two authors'
+values with two meanings, and QA could not tell "rejected" from "waiting for
+the bench".
+
+| # | Change | Where |
+|---|---|---|
+| N1 | `isValid` / `Reason for Invalid` (or `isValid?` / `Reason for not Valid`) are QA's only; the skill leaves them empty on every row. The `isValid = No` rule for SWE.6 is removed; the standing Open Point listing those cases is rewritten as withdrawn on the next re-run | no-fabrication (validity columns split by skill); output-format reference columns; workflow-discipline §8 |
+| N2 | New last column `Notes`: one plain-language paragraph `BLOCKED - <category>. <what the test does>. <what is missing (id)>. Action: … QA: …`, with five categories and a jargon list; it refers to Open Points instead of repeating them | patterns §13; output-format (column spec, example rows) |
+| N3 | Every case that traces a requirement is written even when blocked, complete, with any assumed value (the Phase-1 proposal or a supporting specification's value) named in `Notes`. Former `isValid = No` triggers — no scaling, no parameter provenance, unconfirmed error guessing, a self-doubted step, a reference document `N/A`, an unconfirmed catalogue means — now produce blocked cases | patterns §1.1, §3, §3.1, §3.2, §7, §8, §13; no-fabrication (assumed value is not an invention) |
+| N4 | A re-run writes version N with a `Change vs v<N-1>` column (`Content updated in v<N> - re-review` / `New in v<N> - review` / empty); QA's verdict is kept only where the case text did not change, and cleared on changed cases after being copied to `Traceability` and `last_run.review` | workflow-discipline §8; manifest `last_run.output.version`, `last_run.review` |
+| N5 | Hard read-back check on the written file: fails on any QA cell the skill wrote, a `Notes` cell not starting `BLOCKED - <category>.` or lacking `Action:` / `QA:`, `Notes` not last, or a wrong change marker. README and the config template show the column convention | output-format (final read-back check); self-checks 16, 26, 27, 37, 40, 41, 42; SKILL Steps 4–7; README §3.10 and decision 20 |
+
+**Deliberately not done:** `integration-test` (SWE.5) keeps writing
+`isValid = No`; the shared rules now say which skill each policy applies to.
+Moving SWE.5 to the same convention is a separate decision.

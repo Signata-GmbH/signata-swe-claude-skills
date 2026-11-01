@@ -354,10 +354,12 @@ Both manifests **inherit** `ai_test_project.yaml` (`release`, `variants`,
   something — a debugger breakpoint and variable, an XCP measurement, a bus
   signal, a diagnostic request, a HIL I/O channel. With
   `docs.test_environment` supplied, check each case's means against it: a case
-  that needs a means the bench does not have is listed in Open Points and, where
-  the validity columns are configured, marked `isValid = No`
-  (no-fabrication.md) — it cannot be run as written. Without it, list once in
-  Open Points which means the run assumed, so the engineer can check them in
+  that needs a means the bench does not have is listed in Open Points and —
+  integration-test, where the validity columns are configured — marked
+  `isValid = No` (no-fabrication.md); qualification-test writes the case in
+  full and marks it blocked in `Notes`, never in the QA columns
+  (qualification-test-patterns §13). It cannot be run as written. Without it,
+  list once in Open Points which means the run assumed, so the engineer can check them in
   one place. This matters more once scripts are generated (v2): a script that
   names a signal or channel the bench lacks fails on the first line.
 
@@ -458,7 +460,10 @@ the final workbook's Open Points under `Input hygiene`.
 **The proposed-cases table carries each case's scenario family**
 (qualification-test-patterns §10) and, for a timing case, the database
 attribute it measures (§11), so the engineer can see at the gate which
-families the run covers and which it says do not apply.
+families the run covers and which it says do not apply. A case that will be
+written blocked unless an open question or catalogue row is answered carries
+its blocked category and that QID or CID (qualification-test-patterns §13), so
+the engineer sees which answers unblock which cases.
 
 **Row-count gate (mandatory — the last Phase-1 question).** After the
 proposed-cases table, state how many rows the `Test Cases` sheet will have —
@@ -525,11 +530,14 @@ row:
     an Open Point saying why not (integration-test-patterns.md §5.2).
 16. **Both skills** — column A holds the traced ID on every case row; the 21
     attributes sit contiguous and in schema order after it; where the validity
-    columns are configured, no `isValid` cell says `Yes` or `Question` (as
-    written by the skill), every `No` names the missing item and its Open
-    Point, every case row's `isValid` cell carries the `Yes,No,Question`
-    drop-down, and the run summary states the `No` count; the run summary
-    carries the import note (output-format.md).
+    columns are configured, every case row's `isValid` cell carries the
+    `Yes,No,Question` drop-down; the run summary carries the import note
+    (output-format.md). integration-test: no `isValid` cell says `Yes` or
+    `Question` (as written by the skill), every `No` names the missing item
+    and its Open Point, and the run summary states the `No` count.
+    qualification-test: the skill wrote nothing in either QA column (item 41),
+    `Notes` is the last column, and the run summary states the number of
+    blocked cases per category.
 17. **Both skills** — every case's stimulus and observation means is available
     on the bench described by `docs.test_environment`, or is listed in Open
     Points (§4).
@@ -568,11 +576,17 @@ row:
 26. **qualification-test only** — every value or procedure taken from a
     reference specification cites its document, version and section in
     `Traceability`; every version difference has its one Open Point; every
-    requirement depending on an unavailable document is an Open Point, never a
-    case with a placeholder pass criterion (qualification-test-patterns §3.1).
+    requirement depending on an unavailable document is an Open Point and its
+    case is blocked, naming the document, never a case with a placeholder pass
+    criterion (qualification-test-patterns §3.1, §13).
 27. **Both skills, when the validity columns are configured** — on a re-run,
-    every case QA marked `isValid = Yes` is unchanged, and no value or reason
-    QA entered was altered (§8).
+    every case QA marked `isValid = Yes` is unchanged unless an input behind it
+    changed. integration-test: no value or reason QA entered was altered.
+    qualification-test: QA's value and reason are kept, verbatim, on every case
+    whose text did not change and cleared on every case whose text did, with
+    the old verdict copied to `Traceability`; the `Change vs v<N-1>` cell says
+    `Content updated in v<N> - re-review` exactly on the changed cases and
+    `New in v<N> - review` exactly on the new ones (§8).
 28. **qualification-test only** — preconditions set the baseline and verify
     it, postconditions restore it and verify it; the boundary points of one
     parameter are the steps of one case, alternating valid and invalid and
@@ -621,8 +635,8 @@ row:
     (integration-test-patterns §7, P-10).
 37. **qualification-test only** — no step in a case contradicts a recorded
     engineer or QA answer, and no step the run's own Open Points doubt sits in
-    a case not marked `isValid = No`; every such conflict is on the
-    `Requirements Hygiene` sheet (qualification-test-patterns §1.1).
+    a case that is not blocked (qualification-test-patterns §13); every such
+    conflict is on the `Requirements Hygiene` sheet (qualification-test-patterns §1.1).
 38. **qualification-test only** — every calibration or timing parameter an
     expected result rests on has a precondition stating how its value is
     established (read, set or fixed-in-build with source); a parameter judged
@@ -635,8 +649,24 @@ row:
     the result text (qualification-test-patterns §7).
 40. **qualification-test only** — every expected result that comes from an
     error-guessing line of the criterion rather than from requirement text or
-    a specification was confirmed at Phase 1, or the case is `isValid = No`
-    with a `Decision` Open Point (qualification-test-patterns §1.1).
+    a specification was confirmed at Phase 1, or the case is blocked — `needs
+    clarification` — with a `Decision` Open Point (qualification-test-patterns
+    §1.1).
+41. **qualification-test only, hard** — the final read-back check of
+    output-format.md passes on the written file: no QA cell holds a value the
+    skill wrote (first run: every QA cell empty; re-run: only QA's own
+    verdicts on unchanged cases), `Notes` is the last column, and every
+    non-empty `Notes` cell starts `BLOCKED - <category>.` with one of the five
+    categories and carries `Action:` and `QA:`. A failure is fixed before the
+    workbook is final — never listed as an Open Point.
+42. **qualification-test only** — every requirement that has a case in scope
+    has it on the sheet, blocked or not; every blocked case has complete
+    preconditions, actions, results and postconditions with no placeholder;
+    every value it assumes is the Phase-1 proposal or a supporting
+    specification's value and is stated as an assumption in its `Notes`;
+    every `Notes` cell is written in plain words, names its OP / Q / CID id
+    and does not restate the analysis from `Traceability` or Open Points; no
+    case that can run has a `Notes` entry (qualification-test-patterns §13).
 
 ## 7. Traceability & Open Points (both skills, every run)
 
@@ -738,10 +768,12 @@ diagnostic interface in scope`). A later run can then tell "not needed" from
    skip the Phase-1 gate (no-fabrication.md).
 
 **A validated output is read before anything is planned.** When the previous
-workbook carries the validity columns (`isValid`, `Reason for Invalid` —
-output-format.md) and QA has filled them, read every case's value and reason
-first, and work from them. Tell QA's entries from the skill's own by comparing
-with `last_run.review`, which holds what the skill wrote:
+workbook carries the validity columns (`isValid`, `Reason for Invalid` — or
+`isValid?`, `Reason for not Valid` — output-format.md) and QA has filled them,
+read every case's value and reason first, and work from them. Tell QA's
+entries from the skill's own by comparing with `last_run.review`, which holds
+what the skill wrote (qualification-test writes nothing there, so for it
+every entry is QA's except legacy ones, below):
 
 - **`Yes`** (QA) → accepted: leave the case **untouched**, even where a rule has
   changed since it was written. A changed input behind it is still a *changed*
@@ -764,24 +796,63 @@ with `last_run.review`, which holds what the skill wrote:
      tolerance, an ambiguous notation) is its own item in the reply — never
      slipped into the rework of the asked one.
   4. Once QA accepts, rework the case in place, cite the question and the
-     acceptance in `Traceability`; no re-validation is needed unless QA asks
-     for it. QA's `Question` and reason stay in the cells.
+     acceptance in `Traceability`. integration-test: no re-validation is
+     needed unless QA asks for it, and QA's `Question` and reason stay in the
+     cells. qualification-test: the rework changes the text, so the cells are
+     cleared and the case marked for re-review (below).
 - **A reworked case resting on a fact only QA's reason states** (a state value,
   a scaling no input defines) → use it, record it as QA's statement, raise one
   `Input hygiene` Open Point for the document that should define it, and put
   it in the reply for QA to confirm.
-- **`No` the skill wrote** (unchanged since last run) → its own placeholder
-  mark: resolve it if the inputs now settle the missing item, otherwise keep it.
+- **`No` the skill wrote** (unchanged since last run) → integration-test: its
+  own placeholder mark: resolve it if the inputs now settle the missing item,
+  otherwise keep it. qualification-test: a **legacy** mark from a run before
+  the QA columns became QA's only — **clear it** on this run, whether or not
+  the case's text changes, and if the case is still blocked, carry the reason
+  into its `Notes` in the §13 form.
 - **Blank** → not validated yet; treat as an ordinary case.
-- **Never change what QA entered** — a reworked case keeps QA's value and reason
-  until QA changes them. Snapshot the column values in `last_run.review` so the
-  next run can see what QA changed.
+- **Never change what QA entered** — integration-test: a reworked case keeps
+  QA's value and reason until QA changes them. qualification-test: see the
+  next block. Snapshot the column values in `last_run.review` so the next run
+  can see what QA changed.
 - Any other value, or a column a reviewer added: ask, never map it. The
   drop-down (output-format.md) makes this rare; a workbook from before it
   existed may carry `Valid` / `Invalid` — ask once, record the answer in
   `last_run.review`, and do not ask again for that workbook. *(Observed: QA
   typed `Valid`, `Invalid` and `Question`; the engineer confirmed Valid = Yes
   and Invalid = No, and `Question` was adopted as a value.)*
+
+**qualification-test — QA's verdict follows the case text, and the change is
+marked.** A run that writes over a previous workbook writes version N (the
+previous one's `last_run.output.version` + 1; a previous workbook with no
+version recorded is v1) — the layout-only re-render above excepted, which
+keeps the version and copies every cell. Compare each case with its match in
+the previous workbook (by title — the in-place rule keeps titles stable):
+
+- **Text unchanged** — every one of the 21 attribute cells and `Requirement
+  ID` is identical → QA's `isValid` and reason stay exactly as QA left them;
+  `Change vs v<N-1>` empty. A change to `Notes` alone does not count.
+- **Text changed** → **clear** both QA cells, so QA re-reviews; copy the old
+  value and reason, verbatim, into the case's `Traceability` row and into
+  `last_run.review`; `Change vs v<N-1>` = `Content updated in v<N> - re-review`.
+  This applies equally to a `Yes` case updated because an input behind it
+  changed, a `No` case reworked to answer its reason, and a `Question` case
+  reworked after QA accepted the reply.
+- **New case** (no match) → QA cells empty; `Change vs v<N-1>` =
+  `New in v<N> - review`.
+- **Removed case** → flagged and decided before writing (in-place re-run,
+  below); a case the engineer keeps is unchanged.
+
+Run the final read-back check (output-format.md) with QA's own cells of the
+unchanged cases as `prev` — legacy skill-written marks excluded.
+
+**Legacy Open Point on the skill's own `isValid = No`.** A workbook from
+before this rule may carry an Open Points row whose content is the skill's
+own validity marks — typically `OP-02`, "cases marked `isValid = No`". Do not
+delete it (other cells refer to Open Points by number): rewrite its text to
+"Withdrawn in v<N>: the QA columns are QA's only; blocked cases are explained
+in `Notes`", and give every unresolved item it tracked that has no Open Point
+of its own a new row. Never write such a row again.
 
 **In-place re-run** (output present, scope unchanged): recompute each in-scope
 requirement's/interface's hash and compare to `last_run`:
