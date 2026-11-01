@@ -6,8 +6,10 @@ description: >-
   Points) an engineer reviews and enters into DOORS by hand. Runs in the SWE.3
   project repository like the code skills, with its own test-spec config
   (20_AI/ai_test_project.yaml) beside ai_project.yaml — but tests black-box:
-  the code is searched only for the name of a fault-injection variable, never
-  for an expected result. v1 is Excel-only (no .vtt /
+  the code is searched only for the name of an injection variable (a fault, or
+  an input the bench cannot drive physically), never for an expected result.
+  Every in-scope requirement gets at least one case, blocked where the bench,
+  a file or an answer is missing. v1 is Excel-only (no .vtt /
   vTestStudio automation-script generation). Handles requirements-based,
   boundary-value, scenario-based (start-up, suppression exit, fault during an
   operation, recovery, repeated requests, voltage edges), timing (cycle time,
@@ -35,9 +37,19 @@ modules as a popup (qualification-test-patterns §1).
 **Run it from the SWE.3 project repository**, like the code skills — never from
 a vTestStudio project folder, which is usually outside Git (project-config §1).
 The code is within reach there, and **must not be read** for anything but the
-name of a fault-injection variable the A2L does not settle: qualification
-testing is black-box, and an expected result taken from the code would test the
-code against itself (qualification-test-patterns §0).
+name of an injection variable the A2L does not settle — a fault, or an input
+the bench cannot drive physically (an ADC voltage, a sensor angle, a
+hardware-ID pin): qualification testing is black-box, and an expected result
+taken from the code would test the code against itself
+(qualification-test-patterns §0).
+
+**No requirement leaves scope at classification.** Only the four scope
+filters — feature, testability, status, variant — remove a requirement. Every
+requirement that passes them gets at least one proposed case and a written
+one, blocked where needed; a doubt about its test level or its observable is
+reported to its owner on the `Requirements Hygiene` sheet, beside the case,
+never instead of it. Only the engineer takes a case away, at the coverage gate
+(qualification-test-patterns §1).
 
 Follow these steps in order. Detailed rules live in the linked shared files —
 load them as you reach each step (progressive disclosure).
@@ -80,8 +92,11 @@ Per workflow-discipline §3: compute `FEATURE_SLUG`, read
 [../_shared/testspec/qualification-test-manifest-template.yaml](../_shared/testspec/qualification-test-manifest-template.yaml)
 if absent), discover the per-feature input docs whose config entry is unset
 (existing test cases for this feature; workflow-discipline §1.2), offer the
-communication database, the Test Plan and the test environment description if
-they are not configured (workflow-discipline §1.1), list the reference
+communication database, the Test Plan, the test environment description and
+the variable list (`docs.variable_list`) if they are not configured
+(workflow-discipline §1.1), show the project's
+`qualification_test.debug_means` — what the bench may observe and inject
+beyond the bus and the A2L (qualification-test-patterns §3.3) — list the reference
 specifications the in-scope requirements cite — registered ones to be used,
 missing ones asked for; for a feature in
 `qualification_test.spec_governed_features` the named specification is
@@ -97,11 +112,18 @@ Per qualification-test-patterns §1–§3 and workflow-discipline §1/§2/§4:
 1. **Pre-flight input acquisition** (workflow-discipline §1) and **pin the
    baseline** — `release.id`/`variants` + a content hash of every supplied
    export (§2).
-2. **Scope** — apply the filter, report attrition at each step; confirm the
-   feature name against `qualification_test.valid_features`. Report each
-   in-scope requirement's verification criterion (`aTestCriteria`,
-   qualification-test-patterns §1.1): followed, ruling the level out, or empty.
-3. **Existing coverage** split (covered / not covered / partially covered).
+2. **Scope** — apply the four filters (feature, testability, status,
+   variant), report attrition at each step — those four are the only reasons
+   a requirement leaves scope (qualification-test-patterns §1); confirm the
+   feature name against `qualification_test.valid_features`. The **variant
+   scope report**: per variant outside `release.variants`, the requirements it
+   excluded, by ID, with one question each whether to include them (§1.2).
+   Report each in-scope requirement's verification criterion (`aTestCriteria`,
+   §1.1): followed, naming another level or method (→ `possibly integration
+   level` on the Hygiene sheet, case still proposed), or empty.
+3. **Existing coverage** split (covered / not covered / partially covered) —
+   information, not a filter: a covered requirement still gets a proposed
+   case (qualification-test-patterns §2).
    On a re-run, read QA's validity verdicts in the previous output here
    (workflow-discipline §8): cases marked `Yes` are kept, every `Reason for
    Invalid` the inputs cannot answer becomes a Phase-1 question, and every
@@ -113,7 +135,8 @@ Per qualification-test-patterns §1–§3 and workflow-discipline §1/§2/§4:
    searched in the supporting specifications (other features' requirements,
    system requirements, architecture text); every A2L item used with a
    physical value but without a scaling gets its own scaling question with a
-   concrete proposal (§3). The **parameter table**: every calibration or
+   concrete proposal (§3); a symbol taken from `docs.variable_list` gets its
+   scaling and data type asked the same way (§3.3). The **parameter table**: every calibration or
    timing parameter the proposed cases rest on, its value and source, and
    how the bench establishes it — read, set, fixed-in-build, or none (→ the
    cases using it are written blocked, §13); one verdict per parameter,
@@ -126,17 +149,27 @@ Per qualification-test-patterns §1–§3 and workflow-discipline §1/§2/§4:
    sections read in each registered document, and any version difference
    between what a requirement cites and what was supplied; for a
    spec-governed feature, the state machine, timings and error-handling rules
-   the cases will cite.
+   the cases will cite. Every requirement that **delegates** to a document
+   ("implemented / configured according to", "as per") is expanded into the
+   document's observable rules if it is registered, or gets one blocked case
+   and a request for the document if not (§3.4) — never a configuration
+   review, never "covered by the OEM package".
 6. **Requirements hygiene** (qualification-test-patterns §12) — one row per
    finding about the inputs themselves: a status that lags the software, a
    parameter, threshold or tolerance that differs between documents, a cited
-   item that is absent, a requirement changed after the release — each with
-   its owner. Written to the `Requirements Hygiene` sheet; a finding becomes a
-   question only where it changes a case's value.
+   item that is absent, a requirement changed after the release, a
+   requirement `possibly integration level`, an observable `not on bench` —
+   each with its owner. Written to the `Requirements Hygiene` sheet; a finding
+   becomes a question only where it changes a case's value, and never takes
+   the requirement's case away.
 7. **Stimulus and observation catalogue** (qualification-test-patterns §3.2) —
    every item the cases will set or read, with its means, manual steps and
    whether it exists on Series/Debug SW; rows already in
-   `qualification_test.bench_catalogue` shown as confirmed.
+   `qualification_test.bench_catalogue` shown as confirmed. Injection
+   variables (§0), variable-list symbols and — under `debug_means:
+   xcp_and_debugger` only — breakpoints and debugger variables (§3.3) are
+   rows like any other, each with its proposed symbol from
+   `docs.variable_list` or `docs.a2l_or_varlist`.
 8. **Scenario families** (qualification-test-patterns §10) — for each of the
    eight families, whether it applies to this feature and from which
    requirements and specification sections; the cases proposed per applicable
@@ -145,16 +178,20 @@ Per qualification-test-patterns §1–§3 and workflow-discipline §1/§2/§4:
    scope, the database attributes (cycle, fast cycle, repetitions, delay,
    timeout) and the tolerance source behind each proposed case; attributes
    with no case named.
-10. **Proposed test cases** — one line each, no steps yet, each marked with
+10. **Proposed test cases** — at least one for every in-scope requirement;
+   one line each, no steps yet, each marked with
    its scenario family or timing attribute, with each proposed merge of
    requirements (qualification-test-patterns §7) — including the states each
    case passes through, matched against the in-scope requirements that specify
    those states' outputs, and — for a case that will be written blocked unless
    a question or catalogue row is answered — its blocked category and that
    QID/CID (qualification-test-patterns §13).
-11. **Row-count gate** (workflow-discipline §5) — the number of rows that
-   table produces, heading and logical-parent rows included, as the last
-   question.
+11. **Coverage gate** (workflow-discipline §5) — the number of in-scope
+   requirements, the proposed cases per requirement, and every requirement
+   with zero cases listed with its reason. A zero-case requirement is a
+   **STOP**: one question each, and Phase 2 does not start until the
+   engineer has decided every one; the decisions go to `last_run.coverage`
+   and to Open Points.
 Present all of the above and numbered questions (written to
 `20_AI/QualificationTest/<FEATURE_SLUG>/<FEATURE_SLUG>_Phase1_Questions_QualificationTest.xlsx`, with the
 catalogue and the requirements-hygiene findings as their own sheets,
@@ -183,7 +220,7 @@ features) the DID/RID templates from
 [qualification-test-patterns.md](../_shared/testspec/qualification-test-patterns.md)
 §4–§11. Every symbol/value traced to a supplied input (workflow-discipline §4);
 an unresolved one goes to Open Points, never a guess. **Every case that traces
-a requirement is written, blocked or not** (qualification-test-patterns §13):
+a requirement is written, blocked or not** (qualification-test-patterns §1, §13):
 a blocked case is complete — preconditions, actions, results, postconditions
 — uses the Phase-1 proposal for any unconfirmed value, and states that
 assumption and what holds it back in `Notes` (`BLOCKED - <category>. …`, in
@@ -205,7 +242,11 @@ text did, and `Change vs v<N-1>` marks `Content updated in v<N> - re-review` /
 ## Step 6 — Self-check & output
 
 Run the checklist in workflow-discipline §6; fix failures or list them as Open
-Points. Write the 3-sheet workbook per
+Points — except the hard ones, which are never Open Points: a requirement
+with neither a case nor a recorded decision (self-check 43) stops the run
+before the workbook is written, and is asked; the read-back check
+(self-check 41, below) is fixed before the workbook is final. Write the
+3-sheet workbook per
 [output-format.md](../_shared/testspec/output-format.md) (Object Text before
 Object Heading for this skill) — columns `Requirement ID` · the 21 ·
 `isValid` · `Reason for Invalid` (empty, with the `Yes,No,Question`
@@ -216,13 +257,16 @@ the written file and run the **final read-back check** of output-format.md
 (self-check 41): any QA cell the skill wrote, or a `Notes` cell not starting
 `BLOCKED - <category>.`, fails the run until fixed. Print the workbook summary
 in chat — including the blocked cases per category, the check result, and
-that the QA columns are left for QA — plus the no-fabrication disclaimer.
+that the QA columns are left for QA, and the coverage table (in-scope
+requirements, cases per requirement, the zero-case decisions) — plus the
+no-fabrication disclaimer.
 
 ## Step 7 — Ledger, history & final commit
 
 Overwrite `last_run` in the manifest (workflow-discipline §8) — including
 `run_id`, `started`, `ended`, `timing`, the
-scope, the output path, hash and version, QA's validity values as read
+scope (with `scope.included_variants`), the output path, hash and version,
+the coverage (`last_run.coverage`), QA's validity values as read
 (and which were cleared because the case text changed), and the inputs
 supplied but not read — and write the confirmed catalogue rows to
 `qualification_test.bench_catalogue` in the config, both through a

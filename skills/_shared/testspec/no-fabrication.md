@@ -45,6 +45,15 @@
   four places as "given by QA" before QA had seen it.)*
 - Report a test case as executed, passed, failed, or covered by execution — you
   have authored a draft by inspection, nothing has run.
+- **qualification-test:** leave an in-scope requirement without a case on your
+  own judgement — "integration level", "configuration review", "internal
+  value", "covered by the OEM package". Only the four scope filters and an
+  engineer decision at the coverage gate do that; a doubt is a `Requirements
+  Hygiene` finding beside a written case (qualification-test-patterns.md §1).
+- **qualification-test:** name a variable, breakpoint symbol or debugger
+  variable that is not, verbatim, in `docs.variable_list` or
+  `docs.a2l_or_varlist`, or use a means beyond `qualification_test.debug_means`
+  unblocked (qualification-test-patterns.md §3.3).
 - Write to DOORS. The output is a workbook for an engineer to review and enter
   by hand.
 - State a property of the code — a missing `default:` branch, an absent

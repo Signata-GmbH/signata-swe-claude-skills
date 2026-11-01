@@ -314,7 +314,7 @@ repository for test artefacts instead, pointing `docs.arxml` and the RTE
 headers into the SWE.3 repo; a folder outside Git is not supported.
 
 Everything else about the shape is deliberately the same: a hard Phase-1→
-Phase-2 gate, fail-closed input acquisition, a row-count confirmation gate at the end of Phase 1, a
+Phase-2 gate, fail-closed input acquisition, a confirmation gate at the end of Phase 1 (a row count for SWE.5, requirement coverage for SWE.6), a
 skill-namespaced Phase-1-questions workbook, a self-check checklist, and a
 `last_run`/history ledger for in-place re-runs. `integration-test` scopes by
 **module** (`aFunctionModule`); `qualification-test` scopes by **feature**
@@ -413,6 +413,35 @@ any QA cell was filled by the generator or a note does not start
 example rows in `output-format.md`. `integration-test` (SWE.5) is unchanged:
 it still marks `isValid = No` on cases that cannot run as written.
 
+**SWE.6 coverage: every in-scope requirement gets a case.** Only four filters
+take a requirement out of a `qualification-test` run — feature, testability,
+status and variant — and the variant filter's effect is reported at the
+Phase-1 gate, by variant and ID, with a question whether to include them.
+Every requirement that passes gets at least one proposed case and a written
+one, blocked where something is missing. A doubt about its test level or its
+observable is reported to its owner on the `Requirements Hygiene` sheet
+(`possibly integration level`, `observable not on bench`), beside the case,
+never instead of it. What the bench can reach beyond the bus and the A2L is a
+project setting, not a per-requirement judgement:
+
+| `qualification_test.debug_means` | Cases may also use |
+|---|---|
+| `none` (default) | nothing more; a case needing a variable-list symbol or a debugger is written blocked, proposing the symbol |
+| `xcp_varlist` | any symbol in `docs.variable_list` (a map file, ELF symbol export or Debug-SW A2L) over XCP, scaling asked at Phase 1 |
+| `xcp_and_debugger` | also a breakpoint at a symbol (period or hit-count checks) and debugger variables, on Debug-SW cases only |
+
+Symbols come from the variable list or the A2L only. The code is still never
+read for a value; the name-only exception now covers any input the bench
+cannot drive physically (an ADC voltage, a sensor angle, a hardware-ID pin),
+not only faults. A requirement that delegates to a document ("implemented
+according to …") is expanded into the document's observable rules, or gets a
+blocked case and a request for the document. Phase 1 closes with a
+**coverage gate** instead of a row count: in-scope requirements, cases per
+requirement, and every zero-case requirement with its reason — a stop until
+the engineer decides each, recorded in the manifest (`last_run.coverage`) and
+in Open Points. Rules: `_shared/testspec/qualification-test-patterns.md` §1,
+§3.3, §3.4; `workflow-discipline.md` §5.
+
 **v1 scope is Excel-only.** A real vTestStudio project folder also holds `.vtt`
 test tables and `.vtsoproj`/CAPL automation — generating or updating those is an
 explicit **v2**, not attempted here. Two v1 inputs exist mainly to prepare for
@@ -450,6 +479,7 @@ for a module with no RTE symbols to work from.
 | 18 | **SWE.6 adds scenario families, database-driven timing cases, spec-governed features and a requirements-hygiene sheet** (2026-10-30) | Nineteen customer HiL findings on one release were analysed: none would have been caught by the integration-test pattern, twelve were start-up, suppression-exit, fault-during-motion or repeated-request *sequences* that requirement-by-requirement cases had not driven, four were timing measurements the bus database already parameterises, and six traced to requirements that were unreleased, contradictory or changed. `qualification-test` now checks every feature against eight scenario families at Phase 1, generates cycle-time / fast-cycle / payload-coherency / timeout cases from the database attributes, treats the OEM specification as mandatory for features it governs (E2E, NM, diagnostics), and reports input defects on a `Requirements Hygiene` sheet addressed to their owners. |
 | 19 | **SWE.5 gains an application ↔ basic-software pattern (P-10)** (2026-10-30) | Four of the nineteen customer findings were defects at the hand-off between an application module and the communication stack — a frame sent before all its signals were written, two error flags in one frame, a message counter reset twice at start-up, a reception timeout taken from the module's own cycle — and the RTE value-pass-through pattern cannot see them. P-10 applies the stimulus with the debugger at the module's RTE call and observes the bus: coherent transmission of a signal group, transmission trigger and repetition, start-up and mode switch, reception timeout (indicated at the configured time and **not earlier**), E2E counter and CRC. Expected values come from the ARXML data mapping, I-PDU timing, `ALIVE-TIMEOUT` and E2E entries and from the communication database's message attributes — design artefacts, so the architecture-only rule (decision 17) holds. |
 | 20 | **SWE.6: the QA columns are QA's only; blocked cases are explained in `Notes`** (2026-11-01) | The generator wrote `isValid = No` on cases it knew could not run yet, so QA's verdict column mixed two authors and two meanings — "this case is wrong" and "this case is fine but the bench, a file or an answer is missing". QA now owns `isValid` / `Reason for Invalid` outright. The generator states the second meaning in a separate `Notes` column with a fixed, plain-language structure and one of five categories, readable by someone without automotive background. It keeps every blocked case complete, so the logic can be reviewed before execution is possible. On a re-run it marks changed and new cases in `Change vs v<N-1>` and keeps QA's verdict only where the case text is unchanged. |
+| 21 | **SWE.6: no requirement leaves scope at classification; bench capability is a project setting; a coverage gate replaces the row count** (2026-11-01) | Compared after the fact with the manual SWE.6 module, a project's second-stage runs had left in-scope requirements without a case for five reasons, each the skill's own call: an internal value reachable only by XCP on a symbol absent from the A2L or by a debugger; read-cycle and peripheral-configuration requirements classed as integration level; a stimulus that had to be injected by writing a calibration; requirements delegating to a specification classed as configuration review or "covered by the OEM package"; and a variant excluded by `release.variants`. None showed up at the row-count gate, which counts rows, not requirements. Now only the four configured filters remove a requirement; every other doubt is a Hygiene finding beside a written (possibly blocked) case; `qualification_test.debug_means` (default `none`) and `docs.variable_list` say what the bench may observe and inject; the injection-name exception covers any input the bench cannot drive physically; delegating requirements are expanded; and a zero-case requirement stops the run until the engineer decides. The manual DOORS module stays out of the inputs. |
 
 ---
 

@@ -33,9 +33,11 @@ docs:
   run_instructions: ""             # optional free-text custom instructions for a run
 
 scope:
-  expected_row_count: "?"          # row-count gate — rows of the Test Cases sheet, confirmed as the last
-                                    #   Phase-1 question (workflow-discipline §5), never silently learned
   requirement_ids: []              # optional — restrict this run to a subset; [] = all in-scope requirements
+  included_variants: {}            # variant scope report answers (qualification-test-patterns §1.2): variant ->
+                                    #   { include: true|false, requirements: [IDs], source: "engineer <date>" }.
+                                    #   {} = no variant asked yet. (SWE.6 has no row-count gate any more: an older
+                                    #   manifest's expected_row_count is ignored and removed — workflow-discipline §5)
 
 last_run:                          # SKILL-OWNED ledger
   run_id:           null           # <skill>-<KEY>-<UTC start> (run-tracking.md §1); commits carry it as AI-Run:
@@ -50,6 +52,14 @@ last_run:                          # SKILL-OWNED ledger
                                     #   regeneration, not a per-requirement delta (workflow-discipline §8)
     feature:         null
     requirement_ids: []
+    included_variants: {}          #   copy of scope.included_variants as used by this run
+  coverage:                        # coverage gate (workflow-discipline §5), recomputed after generation
+    in_scope:        null           #   number of in-scope requirements (four filters + variant answers)
+    cases:           {}             #   requirement ID -> number of cases tracing it (merged cases count for each)
+    zero_case:       {}             #   requirement ID -> { reason, decision, decided_by: "engineer <date>",
+                                    #   req_hash } — every requirement with no case, with the engineer's
+                                    #   decision; repeated in Open Points as "Not covered". Reused on a re-run
+                                    #   while req_hash is unchanged, asked again otherwise
   output:                          # the workbook this run wrote — checked before any in-place re-run
     path: null
     hash: null                     # git hash-object at write time; a different hash later = edited since
